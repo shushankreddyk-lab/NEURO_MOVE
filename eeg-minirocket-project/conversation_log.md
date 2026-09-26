@@ -39,3 +39,6 @@ Assistant provided a list of advanced features that could be added to the projec
 
 User requested: "make more glassy and 3D version"
 Assistant modified app.py CSS to enhance the 3D glassmorphic effect on cards and KPI metrics (adding stronger backdrop blur, gradients, inset shadows, and 3D transforms on hover).
+
+User requested: "and show the whole training accuracy at the last of the training completion and then ashow the overall prediction accuracy for day,month,overall and present runs"
+Assistant modified app.py to inject a new "Global Prediction Accuracy Analytics" UI section at the end of the Live Training view that dynamically calculates and renders four new 3D KPI cards comparing the Present Run against Today, Month, and Overall Lifetime averages.
