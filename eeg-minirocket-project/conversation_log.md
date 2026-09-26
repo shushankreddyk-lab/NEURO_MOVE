@@ -36,3 +36,6 @@ Assistant estimated completion at 90%, noting that the core methodology is done 
 
 User requested: "can we make morw advanced version of our project"
 Assistant provided a list of advanced features that could be added to the project, such as real-time sliding-window inference, Choquet-integral fusion, and transfer learning for cross-subject adaptation.
+
+User requested: "make more glassy and 3D version"
+Assistant modified app.py CSS to enhance the 3D glassmorphic effect on cards and KPI metrics (adding stronger backdrop blur, gradients, inset shadows, and 3D transforms on hover).

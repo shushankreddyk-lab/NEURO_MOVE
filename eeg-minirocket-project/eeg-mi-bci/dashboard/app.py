@@ -124,34 +124,49 @@ st.markdown("""
         line-height: 1.7;
     }
 
-    /* === ELEGANT GLASSMORPHIC CARD === */
+    /* === 3D GLASSMORPHIC CARD === */
     .glass-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-left: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
         padding: 24px 28px;
-        transition: background 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         position: relative;
         overflow: hidden;
+        transform: perspective(1000px) translateZ(0px);
     }
     .glass-card:hover {
-        background: rgba(255, 255, 255, 0.035);
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+        transform: perspective(1000px) translateZ(12px) translateY(-4px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* === KPI METRIC CARD === */
+    /* === 3D KPI METRIC CARD === */
     .kpi-card {
-        background: rgba(255, 255, 255, 0.015);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.005));
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0, 212, 255, 0.1);
+        border-top: 1px solid rgba(0, 212, 255, 0.25);
+        border-left: 1px solid rgba(0, 212, 255, 0.25);
+        border-radius: 16px;
         padding: 20px 22px;
         text-align: center;
-        transition: all 0.3s ease;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform: perspective(1000px) translateZ(0px);
     }
     .kpi-card:hover {
-        background: rgba(255, 255, 255, 0.03);
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.02));
+        transform: perspective(1000px) translateZ(18px) translateY(-6px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(0, 212, 255, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(0, 212, 255, 0.35);
     }
     .kpi-value {
         font-size: 2.2rem;
@@ -491,11 +506,9 @@ with st.sidebar:
             "📈 Signal Analysis",
             "🎯 Live Inference", 
             "🔍 Accuracy Analysis", 
-            "🖥️ Architecture & Compute",
-            "📚 Literature Benchmark",
-            "🎓 Conclusions"
+            "📡 Technical Details"
         ],
-        icons=["house", "building", "terminal", "lightning", "graph-up", "gear", "activity", "cpu", "bullseye", "pc-display", "book", "check-circle"],
+        icons=["house", "building", "terminal", "lightning", "graph-up", "gear", "activity", "cpu", "bullseye", "gear"],
         default_index=0,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
@@ -519,7 +532,6 @@ def load_image(path):
 
 # --- TAB 1: OVERVIEW ---
 if selected_tab == '🧠 Overview':
-    st.image("assets/overview.jpg", width='stretch', caption="Future of Brain-Computer Interfaces")
     st.markdown("<br>", unsafe_allow_html=True)
 
     # New Detailed Matter Sections (Points 02, 03, 04, 05)
@@ -2122,7 +2134,7 @@ if selected_tab == '🔍 Accuracy Analysis':
         """, unsafe_allow_html=True)
 
 # --- TAB 8: ARCHITECTURE & COMPUTE ---
-if selected_tab == '🖥️ Architecture & Compute':
+if selected_tab == '📡 Technical Details':
     with st.expander('🖥️ Compute', expanded=True):
         st.markdown("""
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
@@ -2156,7 +2168,7 @@ if selected_tab == '🖥️ Architecture & Compute':
         """, unsafe_allow_html=True)
 
     # --- TAB 9: LITERATURE BENCHMARK ---
-if selected_tab == '📚 Literature Benchmark':
+if selected_tab == '📡 Technical Details':
     with st.expander('📚 Benchmarks', expanded=True):
         st.markdown("""
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
@@ -2187,7 +2199,7 @@ if selected_tab == '📚 Literature Benchmark':
         """)
 
     # --- TAB 10: CONCLUSIONS ---
-if selected_tab == '🎓 Conclusions':
+if selected_tab == '📡 Technical Details':
     with st.expander('🎓 Conclusions', expanded=True):
         st.markdown("<br>", unsafe_allow_html=True)
     
@@ -2240,78 +2252,7 @@ if selected_tab == '🎓 Conclusions':
             </div>
             """, unsafe_allow_html=True)
 
-        # --- Team Cards using native st.columns ---
-        st.markdown("""
-        <div style="background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.06);
-                    border-radius:16px; padding:24px 28px; margin-bottom:20px;">
-            <div style="color:#e2eaf4; font-size:0.85rem; font-weight:800; text-transform:uppercase;
-                        letter-spacing:0.1em; margin-bottom:20px;">🧑‍💻 Project Architects & Core Contributors</div>
-        </div>
-        """, unsafe_allow_html=True)
 
-        team_data = [
-            ("🎓", "linear-gradient(135deg,#0077b6,#a855f7)", "Principal Investigator", "Faculty Supervisor", ["BCI Research", "Signal Theory"]),
-            ("🚀", "linear-gradient(135deg,#7c3aed,#a855f7)", "ML Engineer", "MiniRocket Pipeline", ["sktime", "scikit-learn"]),
-            ("🧠", "linear-gradient(135deg,#0077b6,#00b4d8)", "Deep Learning", "EEGNet Architect", ["PyTorch", "EEGNet"]),
-            ("📡", "linear-gradient(135deg,#059669,#00ffa3)", "Data Engineer", "EEG Preprocessing", ["MNE-Python", "PhysioNet"]),
-        ]
-        tc1, tc2, tc3, tc4 = st.columns(4)
-        for col, (icon, grad, name, role, badges) in zip([tc1, tc2, tc3, tc4], team_data):
-            badge_html = " ".join([
-                f'<span style="display:inline-block; background:rgba(0,200,255,0.08); border:1px solid rgba(0,200,255,0.2); '
-                f'border-radius:6px; padding:3px 10px; font-size:0.68rem; font-weight:700; '
-                f'font-family:monospace; color:#00d4ff; margin:3px 2px; letter-spacing:0.05em;">{b}</span>'
-                for b in badges
-            ])
-            with col:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
-                            border-radius:14px; padding:20px; text-align:center;
-                            transition:all 0.3s ease;">
-                    <div style="width:56px; height:56px; border-radius:50%; background:{grad};
-                                display:flex; align-items:center; justify-content:center;
-                                margin:0 auto 12px; font-size:1.4rem;
-                                box-shadow:0 4px 20px rgba(0,180,255,0.3);">{icon}</div>
-                    <div style="font-weight:700; color:#e2eaf4; font-size:0.95rem;">{name}</div>
-                    <div style="font-size:0.72rem; color:#5a7a99; text-transform:uppercase;
-                                letter-spacing:0.1em; margin-top:4px;">{role}</div>
-                    <div style="margin-top:10px;">{badge_html}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # --- Technical Stack using native st.columns ---
-        st.markdown("""
-        <div style="background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.06);
-                    border-radius:16px; padding:20px 28px 8px 28px; margin-bottom:20px;">
-            <div style="color:#e2eaf4; font-size:0.85rem; font-weight:800; text-transform:uppercase;
-                        letter-spacing:0.1em; margin-bottom:18px;">⚙️ Scientific Protocol & Technical Stack</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        stack_data = [
-            ("Signal Processing", ["MNE-Python", "4–38 Hz Bandpass", "CAR Reference", "160 Hz Resample"]),
-            ("ML Pipeline", ["MiniRocket", "SGD Classifier", "StandardScaler", "K=10,000 kernels"]),
-            ("Deep Learning", ["PyTorch", "EEGNet", "Adam Optimizer", "CrossEntropy Loss"]),
-        ]
-        sc1, sc2, sc3 = st.columns(3)
-        for col, (title, items) in zip([sc1, sc2, sc3], stack_data):
-            badges_html = " ".join([
-                f'<span style="display:inline-block; background:rgba(0,200,255,0.08); border:1px solid rgba(0,200,255,0.2); '
-                f'border-radius:6px; padding:4px 12px; font-size:0.7rem; font-weight:700; '
-                f'font-family:monospace; color:#00d4ff; margin:3px 2px;">{it}</span>'
-                for it in items
-            ])
-            with col:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
-                            border-radius:12px; padding:16px 18px;">
-                    <div style="color:#5a7a99; text-transform:uppercase; font-size:0.68rem;
-                                letter-spacing:0.1em; margin-bottom:12px; font-weight:700;">{title}</div>
-                    {badges_html}
-                </div>
-                """, unsafe_allow_html=True)
 
         st.markdown("""
         <p style="color:#3a5a7a; font-size:0.78rem; text-align:center; font-style:italic;">
