@@ -30,3 +30,6 @@ Assistant acknowledged receipt of the 16-page paper and its contents.
 
 User requested: "based on that how much we have completed"
 Assistant reviewed the paper and the codebase, outlining that the core pipelines (MiniRocket, CNN-LSTM, Preprocessing, Dashboard) are complete, while advanced fusion techniques (Choquet integral, fNIRS) remain as future work.
+
+User requested: "____% we have completed"
+Assistant estimated completion at 90%, noting that the core methodology is done and only future scope items remain.
