@@ -33,3 +33,6 @@ Assistant reviewed the paper and the codebase, outlining that the core pipelines
 
 User requested: "____% we have completed"
 Assistant estimated completion at 90%, noting that the core methodology is done and only future scope items remain.
+
+User requested: "can we make morw advanced version of our project"
+Assistant provided a list of advanced features that could be added to the project, such as real-time sliding-window inference, Choquet-integral fusion, and transfer learning for cross-subject adaptation.
