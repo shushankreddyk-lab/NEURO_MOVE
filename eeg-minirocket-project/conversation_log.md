@@ -6,3 +6,6 @@
 
 User requested: "from now every conversation every line init should be there in it ,ok or not tell me if ok proceed"
 Assistant confirmed and will append every step of the conversation into this file moving forward.
+
+User requested: "before we have 13 tabs now we have only 5 tabs"
+Assistant discovered that the previous agent merged 8 tabs into one "Technical Details" tab. Restored the 12 distinct tabs in option_menu and their respective if-conditions in app.py.

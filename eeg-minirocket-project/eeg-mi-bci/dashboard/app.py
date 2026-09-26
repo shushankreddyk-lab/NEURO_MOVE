@@ -482,13 +482,20 @@ with st.sidebar:
     selected_tab = option_menu(
         menu_title=None,
         options=[
+            "🧠 Overview",
+            "🏗️ Model Architectures",
+            "💻 Live Training Console",
+            "🚀 Live Training",
+            "📊 Training Process",
+            "⚙️ Preprocessing",
+            "📈 Signal Analysis",
             "🎯 Live Inference", 
             "🔍 Accuracy Analysis", 
-            "🧠 Overview", 
-            "🚀 Live Training", 
-            "📡 Technical Details"
+            "🖥️ Architecture & Compute",
+            "📚 Literature Benchmark",
+            "🎓 Conclusions"
         ],
-        icons=["cpu", "bullseye", "house", "lightning", "gear"],
+        icons=["house", "building", "terminal", "lightning", "graph-up", "gear", "activity", "cpu", "bullseye", "pc-display", "book", "check-circle"],
         default_index=0,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
@@ -664,7 +671,7 @@ if selected_tab == '🧠 Overview':
             """, unsafe_allow_html=True)
 
 # --- TAB 2: MODEL ARCHITECTURES ---
-if selected_tab == '📡 Technical Details':
+if selected_tab == '🏗️ Model Architectures':
     with st.expander('⚙️ Architectures', expanded=True):
         st.markdown("""
 <div class="glass-card" style="margin-bottom:24px;">
@@ -728,8 +735,8 @@ if selected_tab == '📡 Technical Details':
     """, unsafe_allow_html=True)
 
 # --- TAB 3: LIVE TRAINING CONSOLE ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('📊 Dataset', expanded=False):
+if selected_tab == '💻 Live Training Console':
+    with st.expander('📊 Dataset', expanded=True):
         st.subheader("Dataset Source Directory")
         dataset_path = st.text_input(
             "Enter root path to the 109-subject PhysioNet folder:",
@@ -1116,7 +1123,7 @@ if selected_tab == '🚀 Live Training':
             st.rerun()
 
 # --- TAB TRAINING PROCESS ---
-if selected_tab == '🔍 Accuracy Analysis':
+if selected_tab == '📊 Training Process':
     st.markdown("""
     <div style="background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.2); border-radius:8px; padding:15px; margin-bottom:20px;">
         <h3 style="color:#0ea5e9; font-size:1.2rem; margin-top:0;">Faculty Defense: Specific Model Explanation</h3>
@@ -1397,8 +1404,8 @@ The spatial feature maps are permuted to <code>[Batch, 160, 32]</code> (Treating
 
 
 # --- TAB 5: PREPROCESSING ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('🔬 Preprocessing', expanded=False):
+if selected_tab == '⚙️ Preprocessing':
+    with st.expander('🔬 Preprocessing', expanded=True):
         st.markdown("""
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
             <h3 style="color:#00ff9a; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">Signal Preprocessing Protocol</h3>
@@ -1446,8 +1453,8 @@ if selected_tab == '📡 Technical Details':
                 except Exception as e:
                     st.error(f'Error preprocessing file: {e}')
 # --- TAB 6: SIGNAL ANALYSIS ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('📈 Signal Analysis', expanded=False):
+if selected_tab == '📈 Signal Analysis':
+    with st.expander('📈 Signal Analysis', expanded=True):
         import plotly.graph_objects as go
         import mne
         _np = np  # alias for local use (np already imported at top)
@@ -2115,8 +2122,8 @@ if selected_tab == '🔍 Accuracy Analysis':
         """, unsafe_allow_html=True)
 
 # --- TAB 8: ARCHITECTURE & COMPUTE ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('🖥️ Compute', expanded=False):
+if selected_tab == '🖥️ Architecture & Compute':
+    with st.expander('🖥️ Compute', expanded=True):
         st.markdown("""
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
             <h3 style="color:#0ea5e9; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">Computational Overhead & Hardware Efficiency</h3>
@@ -2149,8 +2156,8 @@ if selected_tab == '📡 Technical Details':
         """, unsafe_allow_html=True)
 
     # --- TAB 9: LITERATURE BENCHMARK ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('📚 Benchmarks', expanded=False):
+if selected_tab == '📚 Literature Benchmark':
+    with st.expander('📚 Benchmarks', expanded=True):
         st.markdown("""
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
             <h3 style="color:#f43f5e; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">Global Literature Benchmark & Superiority</h3>
@@ -2180,8 +2187,8 @@ if selected_tab == '📡 Technical Details':
         """)
 
     # --- TAB 10: CONCLUSIONS ---
-if selected_tab == '📡 Technical Details':
-    with st.expander('🎓 Conclusions', expanded=False):
+if selected_tab == '🎓 Conclusions':
+    with st.expander('🎓 Conclusions', expanded=True):
         st.markdown("<br>", unsafe_allow_html=True)
     
         st.markdown("""
