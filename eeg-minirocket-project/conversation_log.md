@@ -21,3 +21,6 @@ Assistant removed the image from the first tab, combined Architecture, Literatur
 
 User requested: "datasets are there or not"
 Assistant checked and confirmed that the dataset is present locally, but currently only contains Subject 1 (S001) under eeg-mi-bci/data/raw/MNE-eegbci-data/files/eegmmidb/1.0.0/.
+
+User requested: "physionet and BCICIV_2a_gdf are there with full datasets"
+Assistant confirmed that the full PhysioNet dataset (109 subjects) is in \physionet\ and the full BCICIV_2a_gdf dataset (all A01 to A09 files) is in \BCICIV_2a_gdf\.
