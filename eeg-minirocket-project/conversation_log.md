@@ -15,3 +15,6 @@ Assistant provided the local Streamlit URL.
 
 User requested: "RUN the project and give the new url diff from8888"
 Assistant started the Streamlit application on port 8889 and provided the new URL.
+
+User requested: "remove that part and combine last 3 tabs ,and next ren=move the image in the first tab,and tell me you have our base paper or not"
+Assistant removed the image from the first tab, combined Architecture, Literature, and Conclusions into "Technical Details", and removed the team cards and tech stack. Assistant informed the user that the base paper PDF was not found in the project directory.
