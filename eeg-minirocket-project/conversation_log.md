@@ -9,3 +9,6 @@ Assistant confirmed and will append every step of the conversation into this fil
 
 User requested: "before we have 13 tabs now we have only 5 tabs"
 Assistant discovered that the previous agent merged 8 tabs into one "Technical Details" tab. Restored the 12 distinct tabs in option_menu and their respective if-conditions in app.py.
+
+User requested: "just give me the new url  i will test"
+Assistant provided the local Streamlit URL.
