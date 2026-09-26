@@ -27,3 +27,6 @@ Assistant confirmed that the full PhysioNet dataset (109 subjects) is in \physio
 
 User uploaded the full base paper: "Motor imagery EEG signal classification using minimally random convolutional kernel transform and hybrid deep learning" by Jamal Hwaidi and Mohamed Chahine Ghanem (NeuroImage 328, 2026).
 Assistant acknowledged receipt of the 16-page paper and its contents.
+
+User requested: "based on that how much we have completed"
+Assistant reviewed the paper and the codebase, outlining that the core pipelines (MiniRocket, CNN-LSTM, Preprocessing, Dashboard) are complete, while advanced fusion techniques (Choquet integral, fNIRS) remain as future work.
