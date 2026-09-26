@@ -18,3 +18,6 @@ Assistant started the Streamlit application on port 8889 and provided the new UR
 
 User requested: "remove that part and combine last 3 tabs ,and next ren=move the image in the first tab,and tell me you have our base paper or not"
 Assistant removed the image from the first tab, combined Architecture, Literature, and Conclusions into "Technical Details", and removed the team cards and tech stack. Assistant informed the user that the base paper PDF was not found in the project directory.
+
+User requested: "datasets are there or not"
+Assistant checked and confirmed that the dataset is present locally, but currently only contains Subject 1 (S001) under eeg-mi-bci/data/raw/MNE-eegbci-data/files/eegmmidb/1.0.0/.
