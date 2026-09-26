@@ -476,30 +476,29 @@ for col, val, label, sub in kpi_data:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+with st.sidebar:
+    st.markdown("<h2 style='text-align: center; color: #00d4ff; font-family: Playfair Display; margin-bottom: 30px;'>NeuroDecoder</h2>", unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align: center; color: #00d4ff; font-family: Playfair Display; margin-bottom: 30px;'>NeuroDecoder</h2>", unsafe_allow_html=True)
-
-selected_tab = option_menu(
-    menu_title=None,
-    options=[
-        "🎯 Live Inference", 
-        "🔍 Accuracy Analysis", 
-        "🧠 Overview", 
-        "🚀 Live Training", 
-        "📡 Technical Details"
-    ],
-    icons=["cpu", "bullseye", "house", "lightning", "gear"],
-    default_index=0,
-    orientation="horizontal",
-    styles={
-        "container": {"padding": "0!important", "background-color": "transparent"},
-        "icon": {"color": "#a855f7", "font-size": "20px"},
-        "nav-link": {"font-size": "15px", "text-align": "left", "margin":"5px 0", "--hover-color": "rgba(255,255,255,0.05)", "font-weight": "300"},
-        "nav-link-selected": {"background-color": "rgba(0, 212, 255, 0.15)", "border-left": "4px solid #00d4ff", "font-weight": "500", "color": "#fff"},
-    }
-)
-st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center; font-size:12px; color:#666;'>BCI Engine v2.1<br>Powered by Tensor-Conformer</div>", unsafe_allow_html=True)
+    selected_tab = option_menu(
+        menu_title=None,
+        options=[
+            "🎯 Live Inference", 
+            "🔍 Accuracy Analysis", 
+            "🧠 Overview", 
+            "🚀 Live Training", 
+            "📡 Technical Details"
+        ],
+        icons=["cpu", "bullseye", "house", "lightning", "gear"],
+        default_index=0,
+        styles={
+            "container": {"padding": "0!important", "background-color": "transparent"},
+            "icon": {"color": "#a855f7", "font-size": "20px"},
+            "nav-link": {"font-size": "15px", "text-align": "left", "margin":"5px 0", "--hover-color": "rgba(255,255,255,0.05)", "font-weight": "300"},
+            "nav-link-selected": {"background-color": "rgba(0, 212, 255, 0.15)", "border-left": "4px solid #00d4ff", "font-weight": "500", "color": "#fff"},
+        }
+    )
+    st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; font-size:12px; color:#666;'>BCI Engine v2.1<br>Powered by Tensor-Conformer</div>", unsafe_allow_html=True)
 
 # Combine the technical tabs into one 'Technical Details' state
 
