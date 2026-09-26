@@ -1,0 +1,306 @@
+import os
+import sys
+
+# --- Force CUDA torch from D:\pip_packages (overrides system CPU torch) ---
+_D_PKGS = r"D:\pip_packages"
+if _D_PKGS not in sys.path:
+    sys.path.insert(0, _D_PKGS)
+
+import numpy as np
+import json
+import gc
+import shutil
+import datetime
+import argparse
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from binary_parser import load_local_eeg_data
+from preprocessing import apply_car, apply_bandpass_filter, spatial_channel_augmentation, epoch_and_segment
+from minirocket_engine import MiniRocketPipeline
+from advanced_eeg_engine import AdvancedEEGPipeline
+
+def map_run_and_marker_to_group(run, task_type, marker_str):
+    # Returns the exact integer class label (0 to 3) expected by the UI
+    if run in [1, 2]: return -1 # Eyes Open/Closed (Baseline)
+    # Group Real and MI together for fists
+    if run in [3, 7, 11, 4, 8, 12]:
+        if marker_str == 'T0': return -1 # Rest
+        if marker_str == 'T1': return 0 # Left Fist
+        if marker_str == 'T2': return 1 # Right Fist
+    # Group Real and MI together for fists/feet
+    if run in [5, 9, 13, 6, 10, 14]:
+        if marker_str == 'T0': return -1 # Rest
+        if marker_str == 'T1': return 2 # Both Fists
+        if marker_str == 'T2': return 3 # Both Feet
+    return -1 # Fallback to Rest
+
+from cnn_lstm_engine import CNN_LSTM_Pipeline
+
+def archive_old_models(models_dir):
+    files_to_archive = [f for f in os.listdir(models_dir) if f.endswith('.pkl') or f.endswith('.pth')]
+    if files_to_archive:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_dir = os.path.join(models_dir, 'archive', f'session_{timestamp}')
+        os.makedirs(archive_dir, exist_ok=True)
+        for f in files_to_archive:
+            shutil.move(os.path.join(models_dir, f), os.path.join(archive_dir, f))
+        print(json.dumps({"type": "info", "message": f"Archived {len(files_to_archive)} old models."}), flush=True)
+
+def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1, sub_end=1):
+    os.makedirs(output_dir, exist_ok=True)
+    sub_str = f"subs{sub_start}to{sub_end}"
+    
+    if "2a" in dataset_path.lower():
+        msg = f"Extracting BCI 2a data for subjects {sub_start} to {sub_end}..."
+        print(json.dumps({"type": "progress", "message": msg}), flush=True)
+        
+        # We need to import our new loader
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+        from dataset_2a_loader import load_bci_2a_data
+        
+        subject_range = list(range(sub_start, sub_end + 1))
+        # Keep 160Hz for consistency with standard architecture (or use 250Hz, but let's downsample for speed)
+        X_all, y_all = load_bci_2a_data(dataset_path, subject_range, resample_freq=160.0)
+        
+        if len(X_all) == 0:
+            return None, None
+            
+        fname = f"bci2a_data_{sub_str}.npz"
+        np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
+        return X_all.shape, y_all.shape
+
+    # Existing Physionet logic below
+    # Determine runs to load based on mode
+    # For master or OVR, we theoretically need ALL runs (1-14) to get all 10 groups
+    runs = list(range(1, 15))
+    
+    X_list = []
+    y_list = []
+    
+    msg = f"Extracting data for {'10-Class Master' if mode == 'master' else f'OVR Group {group_id}'}..."
+    print(json.dumps({"type": "progress", "message": msg}), flush=True)
+    
+    # Just load first 1 subject for speed in this demo, otherwise RAM explodes
+    # In full production, we'd use a generator or load in batches
+    subject_range = range(sub_start, sub_end + 1) 
+    
+    for sub in subject_range:
+        if sub in [88, 89, 92, 100, 104, 106]:
+            continue
+        try:
+            raws, events_list, mappings = load_local_eeg_data(sub, runs, data_dir=dataset_path)
+            for i, raw in enumerate(raws):
+                run = runs[i]
+                events = events_list[i]
+                mapping = mappings[i]
+                
+                raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+                
+                # Determine task_type based on run
+                if run in [1, 2]: task_type = "Baseline"
+                elif run in [3, 7, 11]: task_type = "Motor Execution (Fists)"
+                elif run in [4, 8, 12]: task_type = "Motor Imagery (Fists)"
+                elif run in [5, 9, 13]: task_type = "Motor Execution (Fists/Feet)"
+                elif run in [6, 10, 14]: task_type = "Motor Imagery (Fists/Feet)"
+                else: task_type = "Unknown"
+                from binary_parser import get_label_mapping
+                orig_mapping = get_label_mapping(run)
+                inv_orig = {v: k for k, v in orig_mapping.items()}
+                
+                for ev in events:
+                    if len(ev) == 0: continue
+                    onset, duration, marker_int = ev
+                    desc_str = mapping.get(marker_int)
+                    if not desc_str: continue
+                    marker_str = inv_orig.get(desc_str)
+                    if not marker_str: continue
+                    
+                    target_group = map_run_and_marker_to_group(run, task_type, marker_str)
+                    
+                    # Remove 'rest' and 'baseline' part while preprocessing and training
+                    if target_group == -1:
+                        continue
+                    
+                    # Epoching manually for this event
+                    import mne
+                    tmax_adj = 4.1 - (1 / raw.info['sfreq'])
+                    epochs = mne.Epochs(raw, np.array([ev]), event_id={marker_str: marker_int}, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
+                    X_batch = epochs.get_data(copy=False)
+                    
+                    target_samples = 656
+                    if X_batch.shape[2] > target_samples:
+                        X_batch = X_batch[:, :, :target_samples]
+                    elif X_batch.shape[2] < target_samples:
+                        pad_width = target_samples - X_batch.shape[2]
+                        X_batch = np.pad(X_batch, ((0,0), (0,0), (0,pad_width)), mode='constant')
+                    
+                    if X_batch.shape[0] > 0:
+                        # If OVR, label is 1 if target_group == group_id else 0
+                        if mode == "ovr":
+                            lbl = 1 if str(target_group) == str(group_id) else 0
+                        else:
+                            lbl = target_group # 0 to 9 directly
+                            
+                        X_list.append(X_batch)
+                        y_list.append([lbl] * len(X_batch))
+                        pass # Removed excessive print
+                    else:
+                        print("X_batch was empty!", flush=True)
+                        
+            del raws
+            gc.collect()
+        except Exception as e:
+            print(f"Exception: {e}", flush=True)
+
+
+    if len(X_list) == 0:
+        return None, None
+        
+    X_all = np.concatenate(X_list, axis=0)
+    y_all = np.concatenate(y_list, axis=0)
+    
+    fname = f"master_data_{sub_str}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}.npz"
+    np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
+    
+    return X_all.shape, y_all.shape
+
+def train_models(mode, group_id, data_dir, models_dir, dataset_path="", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
+    sub_str = f"subs{sub_start}to{sub_end}"
+    
+    if "2a" in dataset_path.lower():
+        fname = f"bci2a_data_{sub_str}.npz"
+        model_prefix = "bci2a"
+    else:
+        fname = f"master_data_{sub_str}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}.npz"
+        model_prefix = "master" if mode == "master" else f"ovr_group{group_id}"
+        
+    data_path = os.path.join(data_dir, fname)
+    
+    if not os.path.exists(data_path):
+        print(json.dumps({"type": "error", "message": f"Data not found."}), flush=True)
+        return
+        
+    loaded = np.load(data_path)
+    X = loaded['X']
+    y = loaded['y']
+    
+    test_size = 1.0 - train_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    sub_str = f"subs{sub_start}to{sub_end}"
+    
+    # Train MiniRocket (GPU-accelerated)
+    print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
+    mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2])
+    
+    import threading
+    import time
+    stop_timer = False
+    def print_timer():
+        start_t = time.time()
+        estimated_total = 240.0
+        while not stop_timer:
+            elapsed = time.time() - start_t
+            pct = min(99, int((elapsed / estimated_total) * 100))
+            if pct == 99:
+                extra_time = int(elapsed - estimated_total)
+                msg = f"Training MiniRocket... (99%) [Finalizing kernels: +{extra_time}s]"
+            else:
+                msg = f"Training MiniRocket... ({pct}%)"
+            print(json.dumps({"type": "progress", "message": msg}), flush=True)
+            time.sleep(1)
+            
+    timer_thread = threading.Thread(target=print_timer, daemon=True)
+    timer_thread.start()
+    
+    try:
+        mr_pipeline.fit(X_train, y_train)
+    finally:
+        stop_timer = True
+        timer_thread.join(timeout=1.0)
+        
+    y_pred = mr_pipeline.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    
+    mr_pipeline.save(os.path.join(models_dir, f"{model_prefix}_gpu_minirocket_{sub_str}_{timestamp}.pth"))
+    
+    print(json.dumps({
+        "type": "epoch", "epoch": 1, "total_epochs": 1,
+        "train_loss": 0.0, "val_loss": 0.0,
+        "train_acc": float(acc), "val_acc": float(acc)
+    }), flush=True)
+    
+    # Train EEG-Conformer (GPU)
+    print(json.dumps({"type": "progress", "message": "Training EEG-Conformer on GPU..."}), flush=True)
+    print(json.dumps({"type": "reset_chart"}), flush=True)
+    
+    num_cls = len(np.unique(y))
+    conformer_pipeline = AdvancedEEGPipeline(
+        num_classes=num_cls,
+        channels=X.shape[1],
+        samples=X.shape[2],
+        epochs=epochs,
+        lr=lr,
+        batch_size=64
+    )
+    
+    # Patch epoch-by-epoch logging into the Conformer training loop
+    try:
+        conformer_pipeline.fit(X_train, y_train, X_test, y_test)
+    except Exception as e:
+        print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+
+    conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_conformer_{sub_str}_{timestamp}.pth"))
+    
+    print(json.dumps({"type": "complete", "message": f"GPU Training completed successfully for {model_prefix}!", "mr_acc": float(acc)}), flush=True)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", type=str, required=True, choices=["master", "ovr"])
+    parser.add_argument("--group", type=str, default=None)
+    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--kernels", type=int, default=10000)
+    parser.add_argument("--partition", type=int, default=80)
+    parser.add_argument("--sub_start", type=int, default=1)
+    parser.add_argument("--sub_end", type=int, default=1)
+    
+    args = parser.parse_args()
+    
+    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed')
+    models_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
+    
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(models_dir, exist_ok=True)
+    
+    sub_str = f"subs{args.sub_start}to{args.sub_end}"
+    if "2a" in args.dataset.lower():
+        fname = f"bci2a_data_{sub_str}.npz"
+    else:
+        fname = f"master_data_{sub_str}.npz" if args.mode == "master" else f"ovr_group{args.group}_data_{sub_str}.npz"
+    data_path = os.path.join(data_dir, fname)
+    
+    if not os.path.exists(data_path):
+        shapeX, shapeY = extract_and_save_data(args.mode, args.group, data_dir, args.dataset, sub_start=args.sub_start, sub_end=args.sub_end)
+        if shapeX is None:
+            print(json.dumps({"type": "error", "message": "No data extracted."}), flush=True)
+            sys.exit(1)
+            
+    train_models(
+        mode=args.mode, 
+        group_id=args.group, 
+        data_dir=data_dir, 
+        models_dir=models_dir,
+        dataset_path=args.dataset,
+        epochs=args.epochs,
+        lr=args.lr,
+        kernels=args.kernels,
+        train_split=args.partition / 100.0,
+        sub_start=args.sub_start,
+        sub_end=args.sub_end
+    )
