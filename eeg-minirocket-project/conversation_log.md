@@ -42,3 +42,6 @@ Assistant modified app.py CSS to enhance the 3D glassmorphic effect on cards and
 
 User requested: "and show the whole training accuracy at the last of the training completion and then ashow the overall prediction accuracy for day,month,overall and present runs"
 Assistant modified app.py to inject a new "Global Prediction Accuracy Analytics" UI section at the end of the Live Training view that dynamically calculates and renders four new 3D KPI cards comparing the Present Run against Today, Month, and Overall Lifetime averages.
+
+User requested: "not shown clearly like flow chart error is there in this part"
+Assistant fixed the broken Mermaid flowcharts in `app.py` by removing the unsupported `st.html` injection (which blocked rendering and displayed raw text) and replacing it with standard `st.markdown("```mermaid\n...\n```")` so Streamlit renders them natively.

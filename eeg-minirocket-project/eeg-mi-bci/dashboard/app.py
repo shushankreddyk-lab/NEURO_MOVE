@@ -1302,14 +1302,7 @@ A Ridge Regression model (Linear Regression with L2 regularization) receives the
             style F fill:#8b5cf6,stroke:#7c3aed,color:#fff
             style G fill:#f43f5e,stroke:#e11d48,color:#fff
         """
-        mr_html = f"""
-            <div class="mermaid" style="display:flex; justify-content:center;">{mr_mermaid}</div>
-            <script type="module">
-                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});
-            </script>
-        """
-        st.html(mr_html, unsafe_allow_javascript=True)
+        st.markdown(f"```mermaid\n{mr_mermaid}\n```")
 
     elif selected_model_view == "EEG-Conformer":
         st.markdown("""
@@ -1448,14 +1441,7 @@ The spatial feature maps are permuted to <code>[Batch, 160, 32]</code> (Treating
             style F fill:#0ea5e9,stroke:#0284c7,color:#fff
             style H fill:#f59e0b,stroke:#d97706,color:#fff
         """
-        cnn_html = f"""
-            <div class="mermaid" style="display:flex; justify-content:center;">{cnn_mermaid}</div>
-            <script type="module">
-                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});
-            </script>
-        """
-        st.html(cnn_html, unsafe_allow_javascript=True)
+        st.markdown(f"```mermaid\n{cnn_mermaid}\n```")
 
 
 # --- TAB 5: PREPROCESSING ---
