@@ -24,3 +24,6 @@ Assistant checked and confirmed that the dataset is present locally, but current
 
 User requested: "physionet and BCICIV_2a_gdf are there with full datasets"
 Assistant confirmed that the full PhysioNet dataset (109 subjects) is in \physionet\ and the full BCICIV_2a_gdf dataset (all A01 to A09 files) is in \BCICIV_2a_gdf\.
+
+User uploaded the full base paper: "Motor imagery EEG signal classification using minimally random convolutional kernel transform and hybrid deep learning" by Jamal Hwaidi and Mohamed Chahine Ghanem (NeuroImage 328, 2026).
+Assistant acknowledged receipt of the 16-page paper and its contents.
