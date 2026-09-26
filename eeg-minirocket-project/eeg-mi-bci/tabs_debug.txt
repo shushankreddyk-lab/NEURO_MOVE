@@ -1,0 +1,30 @@
+516: if selected_tab == '🧠 Overview':
+   st.markdown("<br>", unsafe_allow_html=True)
+669: if selected_tab == '📡 Technical Details':
+   with st.expander('⚙️ Architectures', expanded=True):
+   st.markdown("""
+733: if selected_tab == '📡 Technical Details':
+   with st.expander('📊 Dataset', expanded=False):
+834: if selected_tab == '📡 Technical Details':
+   with st.expander('🧮 Spectrogram (Legacy)', expanded=False):
+1121: if selected_tab == '🚀 Live Training':
+   st.markdown("""
+1402: if selected_tab == '📡 Technical Details':
+   with st.expander('🔬 Preprocessing', expanded=False):
+   st.markdown("""
+1451: if selected_tab == '📡 Technical Details':
+   with st.expander('📈 Signal Analysis', expanded=False):
+1653: if selected_tab == '🎯 Live Inference':
+   st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
+2038: if selected_tab == '🔍 Accuracy Analysis':
+   st.markdown("""
+2121: if selected_tab == '📡 Technical Details':
+   with st.expander('🖥️ Compute', expanded=False):
+   st.markdown("""
+2155: if selected_tab == '📡 Technical Details':
+   with st.expander('📚 Benchmarks', expanded=False):
+   st.markdown("""
+2186: if selected_tab == '📡 Technical Details':
+   with st.expander('🎓 Conclusions', expanded=False):
+   st.markdown("<br>", unsafe_allow_html=True)
+   st.markdown("""
