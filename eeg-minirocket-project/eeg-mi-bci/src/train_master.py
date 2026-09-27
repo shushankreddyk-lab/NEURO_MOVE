@@ -200,6 +200,14 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     test_size = 1.0 - train_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
     
+    try:
+        from dataset_2a_loader import augment_data
+        print(json.dumps({"type": "info", "message": f"Augmenting training data... Original shape: {X_train.shape}"}), flush=True)
+        X_train, y_train = augment_data(X_train, y_train)
+        print(json.dumps({"type": "info", "message": f"Augmented shape: {X_train.shape}"}), flush=True)
+    except ImportError:
+        pass
+    
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     sub_str = f"subs{sub_start}to{sub_end}"
     num_cls = len(np.unique(y))
@@ -231,6 +239,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         timer_thread.start()
         
         try:
+            if args.finetune_model:
+                mr_pipeline.load(args.finetune_model)
             mr_pipeline.fit(X_train, y_train)
         finally:
             stop_timer = True
@@ -262,6 +272,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         )
         
         try:
+            if args.finetune_model:
+                conformer_pipeline.load(args.finetune_model)
             conformer_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
@@ -282,6 +294,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         )
         
         try:
+            if args.finetune_model:
+                eegnet_pipeline.load(args.finetune_model)
             eegnet_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
@@ -293,6 +307,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         print(json.dumps({"type": "reset_chart"}), flush=True)
         shallow_pipeline = ConvNet_Pipeline(arch="shallow", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
         try:
+            if args.finetune_model:
+                shallow_pipeline.load(args.finetune_model)
             shallow_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
@@ -303,6 +319,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         print(json.dumps({"type": "reset_chart"}), flush=True)
         deep_pipeline = ConvNet_Pipeline(arch="deep", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
         try:
+            if args.finetune_model:
+                deep_pipeline.load(args.finetune_model)
             deep_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
@@ -312,6 +330,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         print(json.dumps({"type": "progress", "message": "Training CSP + LDA..."}), flush=True)
         csp_pipeline = CSP_Engine(classifier_type="lda", n_components=4)
         try:
+            if args.finetune_model:
+                csp_pipeline.load(args.finetune_model)
             csp_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
@@ -330,6 +350,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--kernels", type=int, default=10000)
     parser.add_argument("--partition", type=int, default=80)
+    parser.add_argument("--finetune_model", type=str, default="", help="Path to pre-trained model for subject fine-tuning")
     parser.add_argument("--sub_start", type=int, default=1)
     parser.add_argument("--sub_end", type=int, default=1)
     

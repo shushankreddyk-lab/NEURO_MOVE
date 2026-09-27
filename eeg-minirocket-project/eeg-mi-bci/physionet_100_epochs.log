@@ -1,0 +1,33 @@
+==================================================
+     BCI MODEL COMPARISON (QUICK BENCHMARK)       
+==================================================
+Running Subjects 67 to 76 | 100 Epochs per Neural Net
+
+Testing MiniRocket...
+ -> Val Acc: 0.32% | Time: 111.4s
+
+Testing CNN-LSTM...
+ -> Val Acc: 0.37% | Time: 814.2s
+
+Testing EEGNet...
+ -> Val Acc: 0.39% | Time: 35.5s
+
+Testing Shallow ConvNet...
+ -> Val Acc: 0.44% | Time: 48.9s
+
+Testing Deep ConvNet...
+ -> Val Acc: 0.42% | Time: 77.0s
+
+Testing CSP + LDA...
+ -> Val Acc: Completed | Time: 40.4s
+
+==================================================
+Architecture         | Train Acc    | Val Acc      | Time
+-----------------------------------------------------------------
+MiniRocket           | 0.32%        | 0.32%        | 111.4s
+CNN-LSTM             | 1.00%        | 0.37%        | 814.2s
+EEGNet               | 0.00%        | 0.39%        | 35.5s
+Shallow ConvNet      | 0.00%        | 0.44%        | 48.9s
+Deep ConvNet         | 0.00%        | 0.42%        | 77.0s
+CSP + LDA            | Completed    | Completed    | 40.4s
+==================================================

@@ -7,6 +7,29 @@ _D_PKGS = r"D:\pip_packages"
 if _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
+def augment_data(X, y, noise_factor=0.05, shift_max=10):
+    """
+    Augments the EEG data by adding Gaussian noise and small time shifts.
+    This effectively triples the dataset size and prevents overfitting.
+    """
+    if len(X) == 0:
+        return X, y
+        
+    # 1. Add Gaussian Noise
+    noise = np.random.normal(0, noise_factor * np.std(X), X.shape)
+    X_noise = X + noise
+    
+    # 2. Time Shift (roll along time axis)
+    shift = np.random.randint(1, shift_max)
+    X_shift = np.roll(X, shift, axis=2)
+    
+    X_combined = np.concatenate([X, X_noise, X_shift], axis=0)
+    y_combined = np.concatenate([y, y, y], axis=0)
+    
+    # Shuffle the combined data
+    idx = np.random.permutation(len(X_combined))
+    return X_combined[idx], y_combined[idx]
+
 def load_bci_2a_data(data_dir, subjects, tmin=0.5, tmax=4.6, resample_freq=160.0):
     """
     Loads BCI Competition IV 2a dataset GDF files.

@@ -23,6 +23,17 @@ if _D_PKGS not in sys.path:
 # Ensure src is in path to import modules, prioritizing it over the root src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+@st.cache_resource
+def get_model_pipelines():
+    from src.advanced_eeg_engine import AdvancedEEGPipeline
+    from src.minirocket_engine import MiniRocketPipeline
+    from src.eegnet_engine import EEGNet_Pipeline
+    from src.convnets_engine import ConvNet_Pipeline
+    from src.csp_engine import CSP_Engine
+    return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine
+
+AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine = get_model_pipelines()
+
 st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
 
 st.markdown("""
@@ -1038,6 +1049,7 @@ if selected_tab == '🚀 Live Training':
             st.info("Learning Rate not applicable (Closed-Form Ridge/LDA).")
             
         sub_start, sub_end = st.slider('Subject Range (1–109)', min_value=1, max_value=109, value=(1, 5))
+        finetune_model_path = st.text_input("Finetune Pretrained Model (Optional Path)", value="")
         st.markdown(f"""
         <div style="background:rgba(255,255,255,0.02); border-radius:10px; padding:12px 16px;
                     border:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#8aa0b8; margin-top:8px;">
@@ -1148,6 +1160,8 @@ if selected_tab == '🚀 Live Training':
                     '--kernels', str(mr_kernels),
                     '--partition', str(train_partition)
                 ]
+                if finetune_model_path:
+                    args.extend(['--finetune_model', finetune_model_path])
             else:
                 args = [
                     sys.executable, script_path,
@@ -1161,6 +1175,8 @@ if selected_tab == '🚀 Live Training':
                     '--sub_start', str(sub_start),
                     '--sub_end', str(sub_end)
                 ]
+                if finetune_model_path:
+                    args.extend(['--finetune_model', finetune_model_path])
 
             process = subprocess.Popen(
                 args, 
@@ -1870,16 +1886,25 @@ if selected_tab == '🎯 Live Inference':
     models = glob.glob(os.path.join(model_dir, '*.pkl')) + glob.glob(os.path.join(model_dir, '*.pth'))
     
     model_options = [os.path.relpath(p, model_dir) for p in models]
-    # GPU-native conformer models contain 'conformer' in name
-    conformer_models = [m for m in model_options if 'conformer' in m.lower() and m.endswith('.pth')]
-    # GPU-native minirocket models contain 'minirocket' in name
-    mr_gpu_models = [m for m in model_options if 'minirocket' in m.lower() and m.endswith('.pth')]
-    
-    col1, col2 = st.columns(2)
+    conformer_models = [m for m in model_options if 'conformer' in m.lower() or 'cnn_lstm' in m.lower()]
+    minirocket_models = [m for m in model_options if 'minirocket' in m.lower()]
+    eegnet_models = [m for m in model_options if 'eegnet' in m.lower()]
+    shallow_models = [m for m in model_options if 'shallow' in m.lower()]
+    deep_models = [m for m in model_options if 'deep' in m.lower()]
+    csp_models = [m for m in model_options if 'csp' in m.lower()]
+
+    col1, col2, col3 = st.columns(3)
     with col1:
-        selected_cnn = st.selectbox('Select EEG-Conformer Model', ['None'] + conformer_models)
+        sel_cnn = st.selectbox('Select CNN-LSTM Model', ['None'] + conformer_models)
+        sel_shallow = st.selectbox('Select Shallow ConvNet', ['None'] + shallow_models)
     with col2:
-        selected_mr = st.selectbox('Select MiniRocket Model', ['None'] + mr_gpu_models)
+        sel_mr = st.selectbox('Select MiniRocket Model', ['None'] + minirocket_models)
+        sel_deep = st.selectbox('Select Deep ConvNet', ['None'] + deep_models)
+    with col3:
+        sel_eegnet = st.selectbox('Select EEGNet Model', ['None'] + eegnet_models)
+        sel_csp = st.selectbox('Select CSP+LDA Model', ['None'] + csp_models)
+        
+    selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_deep, sel_eegnet, sel_csp] if m != 'None']
     
     if st.button('Load Models'):
         st.success('Models selected successfully!')
@@ -1899,8 +1924,8 @@ if selected_tab == '🎯 Live Inference':
     if predict_clicked:
         if inf_file is None:
             st.warning('⚠️ Please upload an EDF file above before predicting.')
-        elif selected_cnn == 'None' and selected_mr == 'None':
-            st.warning('⚠️ Please select at least one model (CNN-LSTM or MiniRocket) above.')
+        elif len([m for m in selected_models if m != 'None']) == 0:
+            st.warning('⚠️ Please select at least one model above.')
         else:
             with st.spinner('Analyzing EEG signals with actual model...'):
                 import mne
@@ -1940,9 +1965,7 @@ if selected_tab == '🎯 Live Inference':
                 raw.rename_channels(normalize_channel_names(raw.ch_names))
                 
                 # IMPORTANT: Model was trained on exactly these channels!
-                is_bci2a = False
-                if (selected_cnn != 'None' and 'bci2a' in selected_cnn.lower()) or (selected_mr != 'None' and 'bci2a' in selected_mr.lower()):
-                    is_bci2a = True
+                is_bci2a = any('bci2a' in m.lower() for m in selected_models if m != 'None')
 
                 if is_bci2a:
                     picked_channels = raw.ch_names[:22]
@@ -1970,7 +1993,7 @@ if selected_tab == '🎯 Live Inference':
                     # Get data and scale
                     X = epochs.get_data(copy=True) * 1e6
                 else:
-                    # Physionet standard preprocessing
+                    # Physionet standard preprocessing (match training data scaling)
                     raw.apply_function(lambda x: x * 1e6, verbose=False)
                     if raw.info['sfreq'] != 160.0:
                         raw.resample(160.0)
@@ -1991,7 +2014,7 @@ if selected_tab == '🎯 Live Inference':
                     st.error("No valid epochs could be extracted.")
                     st.stop()
                 
-                if selected_cnn == 'None' and selected_mr == 'None':
+                if len([m for m in selected_models if m != 'None']) == 0:
                     st.error('Please select at least one model above.')
                     st.stop()
                     
@@ -2075,53 +2098,54 @@ if selected_tab == '🎯 Live Inference':
                     p = p / row_sums
                     return np.clip(p, 0.0, 1.0)
 
-                if selected_cnn != 'None':
-                    model_path = os.path.join(model_dir, selected_cnn)
-                    from src.advanced_eeg_engine import AdvancedEEGPipeline
+
+                for model_name in [m for m in selected_models if m != 'None']:
+                    model_path = os.path.join(model_dir, model_name)
                     _n_ch = int(X.shape[1])
-                    pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                    pipeline.load(model_path)
-
+                    
+                    if "cnn_lstm" in model_name.lower() or "conformer" in model_name.lower():
+                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                        model_arch = "CNN-LSTM"
+                    elif "minirocket" in model_name.lower():
+                        pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples)
+                        model_arch = "MiniRocket"
+                    elif "eegnet" in model_name.lower():
+                        pipeline = EEGNet_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                        model_arch = "EEGNet"
+                    elif "shallow" in model_name.lower():
+                        pipeline = ConvNet_Pipeline(arch="shallow", num_classes=4, channels=_n_ch, samples=target_samples)
+                        model_arch = "Shallow ConvNet"
+                    elif "deep" in model_name.lower():
+                        pipeline = ConvNet_Pipeline(arch="deep", num_classes=4, channels=_n_ch, samples=target_samples)
+                        model_arch = "Deep ConvNet"
+                    elif "csp_lda" in model_name.lower() or "csp" in model_name.lower():
+                        pipeline = CSP_Engine(classifier_type="lda", n_components=4)
+                        model_arch = "CSP + LDA"
+                    else:
+                        st.error(f"Unknown architecture for {model_name}")
+                        continue
+                        
+                    try:
+                        pipeline.load(model_path)
+                    except Exception as e:
+                        st.error(f"Error loading {model_name}: {e}")
+                        continue
+                        
                     start_t = time.time()
                     try:
-                        probs = pipeline.predict_proba(X)
-                        probs = _safe_probs(probs, n_classes=4)
-                    except Exception as _e:
-                        print(f"Conformer Inference Error: {repr(_e)}")
-                        st.error(f"Conformer Inference Error: {repr(_e)}")
-                        try:
+                        if hasattr(pipeline, 'predict_proba'):
+                            probs = pipeline.predict_proba(X)
+                            probs = _safe_probs(probs, n_classes=4)
+                        else:
                             preds = pipeline.predict(X)
                             probs = np.zeros((len(X), 4))
                             probs[np.arange(len(X)), np.clip(preds, 0, 3)] = 1.0
-                        except Exception as _e2:
-                            st.error(f"Conformer Predict Error: {_e2}")
-                            probs = np.ones((len(X), 4)) / 4.0
-
-                    latency = (time.time() - start_t) * 1000
-                    results.append(('EEG-Conformer', selected_cnn, probs, latency))
-
-                if selected_mr != 'None':
-                    model_path = os.path.join(model_dir, selected_mr)
-                    from src.minirocket_engine import MiniRocketPipeline
-                    pipeline = MiniRocketPipeline(in_channels=int(X.shape[1]), seq_len=target_samples)
-                    pipeline.load(model_path)
-
-                    start_t = time.time()
-                    try:
-                        probs = pipeline.predict_proba(X)
-                        probs = _safe_probs(probs, n_classes=4)
                     except Exception as _e:
-                        st.error(f"MiniRocket Inference Error: {_e}")
-                        try:
-                            preds = pipeline.predict(X)
-                            probs = np.zeros((len(X), 4))
-                            probs[np.arange(len(X)), np.clip(preds, 0, 3)] = 1.0
-                        except Exception as _e2:
-                            st.error(f"MiniRocket Predict Error: {_e2}")
-                            probs = np.ones((len(X), 4)) / 4.0
-
+                        st.error(f"{model_arch} Inference Error: {_e}")
+                        probs = np.ones((len(X), 4)) / 4.0
+                        
                     latency = (time.time() - start_t) * 1000
-                    results.append(('MiniRocket', selected_mr, probs, latency))
+                    results.append((model_arch, model_name, probs, latency))
 
                 # 4 active motor classes (Rest=-1 excluded from training)
                 if inf_file.name.lower().endswith('.gdf'):
@@ -2141,11 +2165,17 @@ if selected_tab == '🎯 Live Inference':
 
                     for model_arch, model_name, probs, latency in results:
                         arch_color = '#00ff9a' if 'MiniRocket' in model_arch else '#00d4ff'
-                        st.markdown(
-                            f"**{model_arch}** · `{model_name}` &nbsp;|&nbsp; "
-                            f"<span style='color:{arch_color}; font-family:monospace; font-size:0.8rem;'>⚡ {latency:.1f} ms inference</span>",
-                            unsafe_allow_html=True
-                        )
+                        st.markdown(f'''
+                            <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+                                <div>
+                                    <span style="font-size: 1.1rem; font-weight: 700; color: white;">{model_arch}</span> 
+                                    <span style="font-size: 0.8rem; font-weight: 400; color: #888; margin-left: 8px; font-family: monospace;">{model_name}</span>
+                                </div>
+                                <div style="color: {arch_color}; font-family: monospace; font-size: 0.85rem; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;">
+                                    ⚡ {latency:.1f} ms
+                                </div>
+                            </div>
+                        ''', unsafe_allow_html=True)
 
                         # Average probabilities across trials
                         avg_probs = np.mean(probs, axis=0)
