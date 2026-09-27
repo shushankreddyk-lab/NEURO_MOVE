@@ -20,6 +20,9 @@ from binary_parser import load_local_eeg_data
 from preprocessing import apply_car, apply_bandpass_filter, spatial_channel_augmentation, epoch_and_segment
 from minirocket_engine import MiniRocketPipeline
 from advanced_eeg_engine import AdvancedEEGPipeline
+from eegnet_engine import EEGNet_Pipeline
+from convnets_engine import ConvNet_Pipeline
+from csp_engine import CSP_Engine
 
 def map_run_and_marker_to_group(run, task_type, marker_str):
     # Returns the exact integer class label (0 to 3) expected by the UI
@@ -174,7 +177,7 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
     
     return X_all.shape, y_all.shape
 
-def train_models(mode, group_id, data_dir, models_dir, dataset_path="", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
+def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_name="MiniRocket", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
     sub_str = f"subs{sub_start}to{sub_end}"
     
     if "2a" in dataset_path.lower():
@@ -199,76 +202,128 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", epochs=1
     
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     sub_str = f"subs{sub_start}to{sub_end}"
-    
-    # Train MiniRocket (GPU-accelerated)
-    print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
-    mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2])
-    
-    import threading
-    import time
-    stop_timer = False
-    def print_timer():
-        start_t = time.time()
-        estimated_total = 240.0
-        while not stop_timer:
-            elapsed = time.time() - start_t
-            pct = min(99, int((elapsed / estimated_total) * 100))
-            if pct == 99:
-                extra_time = int(elapsed - estimated_total)
-                msg = f"Training MiniRocket... (99%) [Finalizing kernels: +{extra_time}s]"
-            else:
-                msg = f"Training MiniRocket... ({pct}%)"
-            print(json.dumps({"type": "progress", "message": msg}), flush=True)
-            time.sleep(1)
-            
-    timer_thread = threading.Thread(target=print_timer, daemon=True)
-    timer_thread.start()
-    
-    try:
-        mr_pipeline.fit(X_train, y_train)
-    finally:
-        stop_timer = True
-        timer_thread.join(timeout=1.0)
-        
-    y_pred = mr_pipeline.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    
-    mr_pipeline.save(os.path.join(models_dir, f"{model_prefix}_gpu_minirocket_{sub_str}_{timestamp}.pth"))
-    
-    print(json.dumps({
-        "type": "epoch", "epoch": 1, "total_epochs": 1,
-        "train_loss": 0.0, "val_loss": 0.0,
-        "train_acc": float(acc), "val_acc": float(acc)
-    }), flush=True)
-    
-    # Train EEG-Conformer (GPU)
-    print(json.dumps({"type": "progress", "message": "Training EEG-Conformer on GPU..."}), flush=True)
-    print(json.dumps({"type": "reset_chart"}), flush=True)
-    
     num_cls = len(np.unique(y))
-    conformer_pipeline = AdvancedEEGPipeline(
-        num_classes=num_cls,
-        channels=X.shape[1],
-        samples=X.shape[2],
-        epochs=epochs,
-        lr=lr,
-        batch_size=64
-    )
     
-    # Patch epoch-by-epoch logging into the Conformer training loop
-    try:
-        conformer_pipeline.fit(X_train, y_train, X_test, y_test)
-    except Exception as e:
-        print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+    # --- MODEL EXECUTION SWITCH ---
+    if model_name == "MiniRocket":
+        # Train MiniRocket (GPU-accelerated)
+        print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
+        mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2])
+        
+        import threading
+        import time
+        stop_timer = False
+        def print_timer():
+            start_t = time.time()
+            estimated_total = 240.0
+            while not stop_timer:
+                elapsed = time.time() - start_t
+                pct = min(99, int((elapsed / estimated_total) * 100))
+                if pct == 99:
+                    extra_time = int(elapsed - estimated_total)
+                    msg = f"Training MiniRocket... (99%) [Finalizing kernels: +{extra_time}s]"
+                else:
+                    msg = f"Training MiniRocket... ({pct}%)"
+                print(json.dumps({"type": "progress", "message": msg}), flush=True)
+                time.sleep(1)
+                
+        timer_thread = threading.Thread(target=print_timer, daemon=True)
+        timer_thread.start()
+        
+        try:
+            mr_pipeline.fit(X_train, y_train)
+        finally:
+            stop_timer = True
+            timer_thread.join(timeout=1.0)
+            
+        y_pred = mr_pipeline.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
+        
+        mr_pipeline.save(os.path.join(models_dir, f"{model_prefix}_gpu_minirocket_{sub_str}_{timestamp}.pth"))
+        
+        print(json.dumps({
+            "type": "epoch", "epoch": 1, "total_epochs": 1,
+            "train_loss": 0.0, "val_loss": 0.0,
+            "train_acc": float(acc), "val_acc": float(acc)
+        }), flush=True)
 
-    conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_conformer_{sub_str}_{timestamp}.pth"))
+    elif model_name == "CNN-LSTM":
+        # Train CNN-LSTM (Conformer internally in this file)
+        print(json.dumps({"type": "progress", "message": "Training CNN-LSTM Baseline..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
+        
+        conformer_pipeline = AdvancedEEGPipeline(
+            num_classes=num_cls,
+            channels=X.shape[1],
+            samples=X.shape[2],
+            epochs=epochs,
+            lr=lr,
+            batch_size=64
+        )
+        
+        try:
+            conformer_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
     
-    print(json.dumps({"type": "complete", "message": f"GPU Training completed successfully for {model_prefix}!", "mr_acc": float(acc)}), flush=True)
+        conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_lstm_{sub_str}_{timestamp}.pth"))
+
+    elif model_name == "EEGNet":
+        print(json.dumps({"type": "progress", "message": "Training EEGNet..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
+        
+        eegnet_pipeline = EEGNet_Pipeline(
+            num_classes=num_cls,
+            channels=X.shape[1],
+            samples=X.shape[2],
+            epochs=epochs,
+            lr=lr,
+            batch_size=64
+        )
+        
+        try:
+            eegnet_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+    
+        eegnet_pipeline.save(os.path.join(models_dir, f"{model_prefix}_eegnet_{sub_str}_{timestamp}.pth"))
+
+    elif model_name == "Shallow ConvNet":
+        print(json.dumps({"type": "progress", "message": "Training Shallow ConvNet..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
+        shallow_pipeline = ConvNet_Pipeline(arch="shallow", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
+        try:
+            shallow_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+        shallow_pipeline.save(os.path.join(models_dir, f"{model_prefix}_shallow_{sub_str}_{timestamp}.pth"))
+
+    elif model_name == "Deep ConvNet":
+        print(json.dumps({"type": "progress", "message": "Training Deep ConvNet..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
+        deep_pipeline = ConvNet_Pipeline(arch="deep", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
+        try:
+            deep_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+        deep_pipeline.save(os.path.join(models_dir, f"{model_prefix}_deep_{sub_str}_{timestamp}.pth"))
+
+    elif model_name == "CSP + LDA":
+        print(json.dumps({"type": "progress", "message": "Training CSP + LDA..."}), flush=True)
+        csp_pipeline = CSP_Engine(classifier_type="lda", n_components=4)
+        try:
+            csp_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+        csp_pipeline.save(os.path.join(models_dir, f"{model_prefix}_csp_lda_{sub_str}_{timestamp}.pkl"))
+
+    print(json.dumps({"type": "complete", "message": f"Training completed successfully for {model_name} on {model_prefix}!"}), flush=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, required=True, choices=["master", "ovr"])
+    parser.add_argument("--model", type=str, default="MiniRocket", help="The architecture to train.")
     parser.add_argument("--group", type=str, default=None)
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--epochs", type=int, default=10)
@@ -305,6 +360,7 @@ if __name__ == "__main__":
         data_dir=data_dir, 
         models_dir=models_dir,
         dataset_path=args.dataset,
+        model_name=args.model,
         epochs=args.epochs,
         lr=args.lr,
         kernels=args.kernels,

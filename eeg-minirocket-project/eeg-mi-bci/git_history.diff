@@ -1,0 +1,314 @@
+commit 3656872e39a3664d3bfa7934e40619dea2764689
+Author: AI Bot <bot@example.com>
+Date:   Sun Sep 27 12:09:55 2026 +0530
+
+    Update BCI 2a TOC parsing and add project report draft
+
+diff --git a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+index 9cacd4d..29be918 100644
+--- a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
++++ b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+@@ -796,18 +796,30 @@ if selected_tab == '🏗️ Model Architectures':
+ if selected_tab == '💻 Live Training Console':
+     with st.expander('📊 Dataset', expanded=True):
+         st.subheader("Dataset Source Directory")
+-        dataset_path = st.text_input(
+-            "Enter root path to the 109-subject PhysioNet folder:",
+-            value=r"d:\eeg-minirocket-project\physionet"
++        
++        selected_console_dataset = st.radio(
++            "Select the dataset to scan:",
++            ["PhysioNet EEGMMIDB (.edf)", "BCI Competition IV 2a (.gdf)"],
++            horizontal=True
+         )
++        
++        if "BCI" in selected_console_dataset:
++            default_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
++            folder_hint = "Enter root path to the 9-subject BCI 2a folder:"
++        else:
++            default_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\physionet")
++            folder_hint = "Enter root path to the 109-subject PhysioNet folder:"
++            
++        dataset_path = st.text_input(folder_hint, value=default_path)
+ 
+     if st.button("Scan & Generate TOC for Full Dataset"):
+-        with st.spinner("Scanning all 109 subjects... Please wait."):
++        with st.spinner("Scanning subjects... Please wait."):
+             # Calls the bulk crawler backend
+             import sys
+             sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+             from binary_parser import generate_dataset_toc
+-            generate_dataset_toc(dataset_path)
++            dataset_type = "bci" if "BCI" in selected_console_dataset else "physionet"
++            generate_dataset_toc(dataset_path, dataset_type=dataset_type)
+         st.success("Full dataset successfully scanned and categorized!")
+ 
+     st.subheader("Dataset Table of Contents & Signal Classification")
+@@ -830,14 +842,25 @@ if selected_tab == '💻 Live Training Console':
+             st.markdown("### Aggregated Group Summary (Dynamic)")
+             
+             if "Trials_T0" in detailed_df.columns:
++                # Ensure T3 and T4 exist for older CSVs
++                if "Trials_T3" not in detailed_df.columns:
++                    detailed_df["Trials_T3"] = 0
++                    detailed_df["Trials_T4"] = 0
++                    detailed_df["T3"] = ""
++                    detailed_df["T4"] = ""
++
+                 base_summary = detailed_df.groupby(["Run", "Group", "Task_Type"]).agg(
+                     Files_Found=("EDF_File", "count"),
+                     T0_Name=("T0", "first"),
+                     T1_Name=("T1", "first"),
+                     T2_Name=("T2", "first"),
++                    T3_Name=("T3", "first"),
++                    T4_Name=("T4", "first"),
+                     Trials_T0=("Trials_T0", "sum"),
+                     Trials_T1=("Trials_T1", "sum"),
+-                    Trials_T2=("Trials_T2", "sum")
++                    Trials_T2=("Trials_T2", "sum"),
++                    Trials_T3=("Trials_T3", "sum"),
++                    Trials_T4=("Trials_T4", "sum")
+                 ).reset_index()
+                 
+                 class_to_group = {
+@@ -850,7 +873,12 @@ if selected_tab == '💻 Live Training Console':
+                     "Both Fists": "Group 7",
+                     "Both Feet": "Group 8",
+                     "Both Fists MI": "Group 9",
+-                    "Both Feet MI": "Group 10"
++                    "Both Feet MI": "Group 10",
++                    "Rest (768)": "Group BCI-R",
++                    "Left Hand": "Group BCI-L",
++                    "Right Hand": "Group BCI-R",
++                    "Foot": "Group BCI-F",
++                    "Tongue": "Group BCI-T"
+                 }
+ 
+                 melted_rows = []
+@@ -859,6 +887,8 @@ if selected_tab == '💻 Live Training Console':
+                     t0_name = str(row['T0_Name']).strip() if pd.notna(row['T0_Name']) else ""
+                     t1_name = str(row['T1_Name']).strip() if pd.notna(row['T1_Name']) else ""
+                     t2_name = str(row['T2_Name']).strip() if pd.notna(row['T2_Name']) else ""
++                    t3_name = str(row['T3_Name']).strip() if pd.notna(row['T3_Name']) else ""
++                    t4_name = str(row['T4_Name']).strip() if pd.notna(row['T4_Name']) else ""
+                     
+                     if t0_name in class_to_group:
+                         melted_rows.append({"Group_Num": class_to_group[t0_name], "Task_Type": row["Task_Type"], "Marker": "T0", "Class": t0_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T0"]})
+@@ -866,6 +896,10 @@ if selected_tab == '💻 Live Training Console':
+                         melted_rows.append({"Group_Num": class_to_group[t1_name], "Task_Type": row["Task_Type"], "Marker": "T1", "Class": t1_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T1"]})
+                     if t2_name in class_to_group:
+                         melted_rows.append({"Group_Num": class_to_group[t2_name], "Task_Type": row["Task_Type"], "Marker": "T2", "Class": t2_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T2"]})
++                    if t3_name in class_to_group:
++                        melted_rows.append({"Group_Num": class_to_group[t3_name], "Task_Type": row["Task_Type"], "Marker": "T3", "Class": t3_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T3"]})
++                    if t4_name in class_to_group:
++                        melted_rows.append({"Group_Num": class_to_group[t4_name], "Task_Type": row["Task_Type"], "Marker": "T4", "Class": t4_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T4"]})
+                 
+                 summary_df = pd.DataFrame(melted_rows)
+                 
+
+commit a879baa1468a96b02f1592dddf6aa3e1566b18df
+Author: AI Bot <bot@example.com>
+Date:   Sun Sep 27 10:01:22 2026 +0530
+
+    Fix BCI 2a UI class mapping and remove zero padding in loader
+
+diff --git a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+index 70dd25c..9cacd4d 100644
+--- a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
++++ b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+@@ -687,24 +687,46 @@ if selected_tab == '🧠 Overview':
+     <h3 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a7a99;">📌 4 Active Classification Targets</h3>
+     """, unsafe_allow_html=True)
+ 
+-    class_icons = ["✋", "🤚", "👐", "🦶"]
+-    class_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
++    dataset_tab1, dataset_tab2 = st.tabs(["PhysioNet (EDF)", "BCI Comp IV 2a (GDF)"])
+     class_colors = ["#00b4d8", "#0096c7", "#0077b6", "#023e8a"]
+ 
+-    cols = st.columns(4)
+-    for i, col in enumerate(cols):
+-        with col:
+-            st.markdown(f"""
+-            <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+-                        border-radius:12px; padding:14px 8px; text-align:center;
+-                        border-top:2px solid {class_colors[i]};">
+-                <div style="font-size:1.4rem;">{class_icons[i]}</div>
+-                <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
+-                            letter-spacing:0.04em; line-height:1.4;">{class_names[i]}</div>
+-                <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
+-                            margin-top:4px;">CLASS {i}</div>
+-            </div>
+-            """, unsafe_allow_html=True)
++    with dataset_tab1:
++        class_icons = ["✋", "🤚", "👐", "🦶"]
++        class_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
++    
++        cols = st.columns(4)
++        for i, col in enumerate(cols):
++            with col:
++                st.markdown(f"""
++                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
++                            border-radius:12px; padding:14px 8px; text-align:center;
++                            border-top:2px solid {class_colors[i]};">
++                    <div style="font-size:1.4rem;">{class_icons[i]}</div>
++                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
++                                letter-spacing:0.04em; line-height:1.4;">{class_names[i]}</div>
++                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
++                                margin-top:4px;">CLASS {i}</div>
++                </div>
++                """, unsafe_allow_html=True)
++
++    with dataset_tab2:
++        class_icons2 = ["✋", "🤚", "🦶", "👅"]
++        class_names2 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
++        
++        cols2 = st.columns(4)
++        for i, col in enumerate(cols2):
++            with col:
++                st.markdown(f"""
++                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
++                            border-radius:12px; padding:14px 8px; text-align:center;
++                            border-top:2px solid {class_colors[i]};">
++                    <div style="font-size:1.4rem;">{class_icons2[i]}</div>
++                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
++                                letter-spacing:0.04em; line-height:1.4;">{class_names2[i]}</div>
++                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
++                                margin-top:4px;">CLASS {i}</div>
++                </div>
++                """, unsafe_allow_html=True)
+ 
+ # --- TAB 2: MODEL ARCHITECTURES ---
+ if selected_tab == '🏗️ Model Architectures':
+@@ -1835,21 +1857,29 @@ if selected_tab == '🎯 Live Inference':
+                 if len(picked_channels) > 0:
+                     raw.pick_channels(picked_channels)
+                 
+-                raw.apply_function(lambda x: x * 1e6, verbose=False)
+-                if raw.info['sfreq'] != 160.0:
+-                    raw.resample(160.0)
+                 if is_bci2a:
++                    # Filter at native sfreq (250Hz) FIRST!
+                     raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
+-                else:
+-                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+-                
+-                if is_bci2a:
++                    
++                    # Epoching
+                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
++                    
++                    # Resample epochs AFTER epoching
++                    if raw.info['sfreq'] != 160.0:
++                        epochs.resample(160.0)
++                        
++                    # Get data and scale
++                    X = epochs.get_data(copy=True) * 1e6
+                 else:
++                    # Physionet standard preprocessing
++                    raw.apply_function(lambda x: x * 1e6, verbose=False)
++                    if raw.info['sfreq'] != 160.0:
++                        raw.resample(160.0)
++                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
++                    
+                     tmax_adj = 4.1 - (1 / raw.info['sfreq'])
+                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
+-                
+-                X = epochs.get_data(copy=False) 
++                    X = epochs.get_data(copy=False)
+                 
+                 
+                 if X.shape[2] > target_samples:
+
+commit 01c9d943942a9cfd90735ef647638101a6c89c94
+Author: AI Bot <bot@example.com>
+Date:   Sun Sep 27 09:35:59 2026 +0530
+
+    Fix BCI 2a FIR filter alignment
+
+diff --git a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+index d0b35d0..70dd25c 100644
+--- a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
++++ b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+@@ -1835,12 +1835,13 @@ if selected_tab == '🎯 Live Inference':
+                 if len(picked_channels) > 0:
+                     raw.pick_channels(picked_channels)
+                 
+-                # Standard EEG pre-processing
+-                
+                 raw.apply_function(lambda x: x * 1e6, verbose=False)
+                 if raw.info['sfreq'] != 160.0:
+                     raw.resample(160.0)
+-                raw = apply_bandpass_filter(apply_car(raw), 4, 38)
++                if is_bci2a:
++                    raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
++                else:
++                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+                 
+                 if is_bci2a:
+                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
+
+commit fe50149172cf550fa74350f8221e9c4b9c3b8fc4
+Author: AI Bot <bot@example.com>
+Date:   Sun Sep 27 09:29:47 2026 +0530
+
+    Fix hardcoded EDF label
+
+diff --git a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+index 84e3e12..d0b35d0 100644
+--- a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
++++ b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+@@ -2065,7 +2065,8 @@ if selected_tab == '🎯 Live Inference':
+                         st.divider()
+ 
+                 # ===== 3 CHANNEL PAIR WAVEFORMS =====
+-                st.markdown("### 📡 3 Key Motor Channel Pair Waveforms (From EDF)")
++                file_type_str = "GDF" if is_bci2a else "EDF"
++                st.markdown(f"### 📡 3 Key Motor Channel Pair Waveforms (From {file_type_str})")
+                 st.markdown('<div style="color:#5a7a99; font-size:0.8rem; margin-bottom:12px;">Real EEG waveforms from the uploaded file showing activity for three critical electrode pairs during the first trial.</div>', unsafe_allow_html=True)
+ 
+                 _t = np.linspace(0, 4.0, X.shape[2])
+
+commit d0d2e366413e4ec7d010a3612af46e1ebcc9e928
+Author: AI Bot <bot@example.com>
+Date:   Sun Sep 27 09:24:18 2026 +0530
+
+    Fix BCI time window alignment for inference
+
+diff --git a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+index 3da7786..84e3e12 100644
+--- a/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
++++ b/eeg-minirocket-project/eeg-mi-bci/dashboard/app.py
+@@ -1842,8 +1842,11 @@ if selected_tab == '🎯 Live Inference':
+                     raw.resample(160.0)
+                 raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+                 
+-                tmax_adj = 4.1 - (1 / raw.info['sfreq'])
+-                epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
++                if is_bci2a:
++                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
++                else:
++                    tmax_adj = 4.1 - (1 / raw.info['sfreq'])
++                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
+                 
+                 X = epochs.get_data(copy=False) 
+                 
+@@ -1991,13 +1994,12 @@ if selected_tab == '🎯 Live Inference':
+                     results.append(('MiniRocket', selected_mr, probs, latency))
+ 
+                 # 4 active motor classes (Rest=-1 excluded from training)
+-                class_labels_4 = [
+-                    "Left Fist",
+-                    "Right Fist",
+-                    "Both Fists",
+-                    "Both Feet"
+-                ]
+-                class_icons_4 = ["✋", "🤚", "👐", "🦶"]
++                if inf_file.name.lower().endswith('.gdf'):
++                    class_labels_4 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
++                    class_icons_4 = ["✋", "🤚", "🦶", "👅"]
++                else:
++                    class_labels_4 = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
++                    class_icons_4 = ["✋", "🤚", "👐", "🦶"]
+ 
+                 with prob_col:
+                     st.markdown('''
