@@ -35,20 +35,35 @@ Two primary modeling strategies are implemented:
 2.  **CNN-LSTM Hybrid**: For deeper temporal feature learning, a hybrid model utilizes 1D-Convolutional layers to extract spatial representations, followed by Long Short-Term Memory (LSTM) layers to decode the sequential evolution of the brainwaves over the task duration. 
 
 ## 5. Dataset Description
-To ensure the proposed models are robust and generalize well across varying channel configurations and experimental paradigms, the system is validated on two widely recognized public datasets.
+To ensure the proposed MiniRocket and CNN-LSTM models are robust and generalize well across varying channel configurations and experimental paradigms, the system is validated on two widely recognized public datasets. Our framework dynamically adapts to the specific data shapes, sampling rates, and labels of each dataset.
 
 ### 5.1 PhysioNet EEG Motor Movement/Imagery Dataset (EEGMMIDB)
-- **Subjects**: 109 healthy subjects.
-- **Channels**: 64 EEG electrodes (international 10-10 system).
-- **Sampling Rate**: 160 Hz.
-- **Paradigm**: Subjects performed 14 experimental runs comprising baseline (eyes open/closed) and multiple motor imagery/execution tasks (Left/Right Fist, Both Fists, Both Feet).
-- **Format**: European Data Format (`.edf`).
+The PhysioNet dataset is one of the largest publicly available EEG databases for motor imagery, designed to capture complex, multi-task neural responses across a large cohort.
 
-### 5.2 BCI Competition IV Dataset 2a
-- **Subjects**: 9 subjects.
-- **Channels**: 22 EEG electrodes and 3 EOG channels.
-- **Sampling Rate**: 250 Hz.
-- **Paradigm**: A 4-class motor imagery task involving the imagination of movement of the Left Hand, Right Hand, Both Feet, and Tongue. The dataset provides distinct Training and Evaluation sets.
-- **Format**: General Data Format (`.gdf`).
+- **Demographics & Cohort**: 109 healthy volunteer subjects.
+- **Hardware & Sensor Setup**: Data was recorded using the BCI2000 system equipped with 64 EEG electrodes distributed according to the international 10-10 system. 
+- **Sampling Rate & Resolution**: Signals were digitized at 160 Hz.
+- **Experimental Protocol**: Each subject completed 14 separate experimental runs, generating over 1,500 total `.edf` (European Data Format) files across the cohort. The sessions were divided into:
+  - **Baseline Runs (R01, R02)**: One minute of eyes-open and one minute of eyes-closed resting state.
+  - **Task Runs**: Four distinct task sets performed three times each (R03-R14). Subjects were presented with a target on a screen and prompted to perform or imagine a motor task.
+- **Task Classifications**:
+  1. *Motor Execution (Unilateral)*: Opening and closing the left or right fist.
+  2. *Motor Imagery (Unilateral)*: Imagining opening and closing the left or right fist.
+  3. *Motor Execution (Bilateral)*: Opening and closing both fists or both feet.
+  4. *Motor Imagery (Bilateral)*: Imagining opening and closing both fists or both feet.
+- **Integration in NEURO_MOVE**: Our custom binary parser extracts `T0` (Rest), `T1`, and `T2` annotations dynamically. The Live Training Console successfully processes and extracts tens of thousands of individual epochs from this dataset for high-throughput batch training.
 
-The integration of these diverse datasets within the platform proves the architecture's ability to seamlessly adapt to varying input dimensionalities (64 vs. 22 channels) and multi-class classification challenges.
+### 5.2 BCI Competition IV Dataset 2a (GDF)
+The BCI Competition IV 2a dataset is considered a gold standard for evaluating multi-class motor imagery algorithms, posing a significant challenge due to its highly non-stationary nature and limited subject count.
+
+- **Demographics & Cohort**: 9 subjects.
+- **Hardware & Sensor Setup**: Recorded using 22 Ag/AgCl EEG electrodes (sampling the primary motor and sensorimotor cortices) and 3 monopolar EOG channels (to track and filter ocular artifacts).
+- **Sampling Rate & Resolution**: Data was sampled at 250 Hz and bandpass-filtered natively between 0.5 Hz and 100 Hz, with a 50 Hz notch filter applied to suppress power line noise.
+- **Experimental Protocol**: The dataset is explicitly split into two sessions per subject (Training and Evaluation), recorded on different days to test the temporal generalization of algorithms. Each session consisted of 6 runs with 48 trials each (yielding 288 trials per session).
+- **Task Classifications (4-Class MI)**:
+  - Left Hand (Marker `769`)
+  - Right Hand (Marker `770`)
+  - Both Feet (Marker `771`)
+  - Tongue (Marker `772`)
+- **Trial Structure**: A typical trial begins with a fixation cross and an acoustic warning (t = 0 s). A visual cue indicating the specific motor imagery task (left, right, foot, tongue) is presented from t = 2.0 s to t = 3.25 s. Subjects perform the imagined movement until t = 6.0 s.
+- **Integration in NEURO_MOVE**: Our custom `dataset_2a_loader` script specifically targets the critical task window (extending to 4.6 seconds) and employs Common Average Referencing (CAR) alongside 4–38 Hz bandpass filtering to extract powerful ERD/ERS signatures. The framework parses the `.gdf` formats seamlessly, successfully increasing baseline accuracy significantly over random chance using the MiniRocket engine.
