@@ -324,34 +324,59 @@ st.markdown("""
         font-weight: 500 !important;
     }
 
-    /* === PREMIUM MINIMALIST BUTTONS === */
+    /* === 3D GLASSY BUTTONS === */
     .stButton>button {
-        background: transparent !important;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
+        backdrop-filter: blur(12px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
         color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 4px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 12px !important;
         padding: 12px 24px !important;
-        font-weight: 400 !important;
+        font-weight: 500 !important;
         font-family: 'Noto Sans JP', sans-serif !important;
         letter-spacing: 0.1em !important;
-        transition: all 0.3s ease !important;
-        box-shadow: none !important;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
         text-transform: none !important;
+        position: relative;
+        overflow: hidden;
+    }
+    .stButton>button::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        transform: skewX(-25deg);
+        transition: all 0.5s;
+    }
+    .stButton>button:hover::before {
+        left: 150%;
     }
     .stButton>button:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(255, 255, 255, 0.8) !important;
-        transform: translateY(-2px) !important;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1)) !important;
+        transform: perspective(1000px) translateZ(10px) translateY(-4px) !important;
+        box-shadow: 0 12px 40px rgba(0, 212, 255, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+        border-color: rgba(0, 212, 255, 0.5) !important;
+    }
+    .stButton>button:active {
+        transform: perspective(1000px) translateZ(0px) translateY(2px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(0, 0, 0, 0.2) !important;
     }
     
     .stButton>button[kind="primary"] {
-        background: rgba(255, 255, 255, 0.9) !important;
-        color: #030910 !important;
-        border: none !important;
-        font-weight: 500 !important;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(168, 85, 247, 0.3)) !important;
+        border: 1px solid rgba(0, 212, 255, 0.5) !important;
+        border-top: 1px solid rgba(0, 212, 255, 0.8) !important;
+        border-left: 1px solid rgba(0, 212, 255, 0.8) !important;
+        box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+        font-weight: 600 !important;
     }
     .stButton>button[kind="primary"]:hover {
-        background: #ffffff !important;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(168, 85, 247, 0.4)) !important;
+        box-shadow: 0 15px 50px rgba(0, 212, 255, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.5) !important;
     }
 
     /* === 3D STAGE: perspective scene, tilt cards, hologram === */
@@ -558,58 +583,52 @@ def load_image(path):
 if selected_tab == '🧠 Overview':
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # New Detailed Matter Sections (Points 02, 03, 04, 05)
+    # New Detailed Matter Sections from Project Report
     st.markdown("""
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
-        <h3 style="color:#00d4ff; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">02. Understanding of Base Paper</h3>
+        <h3 style="color:#00d4ff; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;"><strong>01. Abstract</strong></h3>
         <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:8px;">
-            <strong>Base Paper:</strong> <em>"Motor imagery EEG signal classification using minimally random convolutional kernel transform and hybrid deep learning"</em> by Hwaidi & Ghanem (NeuroImage 328, 2026).
-        </p>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:8px;">
-            <strong>Key Idea:</strong> The paper systematically compares a deterministic time-series transform pipeline (MiniRocket + ridge classifier) against an end-to-end compact deep learning baseline (13-layer CNN-LSTM). It demonstrates that MiniRocket achieves near state-of-the-art (SOTA) accuracy with significantly fewer trainable parameters and lower CPU latency than deep recurrent hybrids.
+            Brain-Computer Interfaces (BCIs) represent a transformative frontier in human-computer interaction, offering a direct communication pathway between the human brain and external devices by translating neural activity into executable control commands. Among the various non-invasive modalities, Electroencephalography (EEG)-based Motor Imagery (MI) is particularly prominent due to its high temporal resolution, portability, and non-reliance on external stimuli.
         </p>
         <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0;">
-            <strong>Problem Solved:</strong> Classifying Motor Imagery (MI) signals is notoriously difficult because EEG signals exhibit nonstationarity, time-variance, low SNR, and extreme individual diversity. The paper solves this by leveraging MiniRocket's multiscale proportion-of-positive-values (PPV) feature extraction to robustly handle variability without the gradient vanishing issues of LSTMs.
+            This project, titled <strong>NEURO_MOVE</strong>, proposes a highly robust, scalable, and interactive MI-BCI framework. The core innovation lies in the deployment of the MiniRocket (Mini RandOm Convolutional KErnel Transform) architecture alongside CNN-LSTM hybrid models. Our optimized MiniRocket engine achieves extremely rapid convergence by applying thousands of deterministic kernels, maintaining state-of-the-art classification accuracy while reducing training times to mere seconds.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("""
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
-        <h3 style="color:#00ff9a; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">03. Problem Definition</h3>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:8px;">
-            <strong>The Problem:</strong> Creating a highly accurate, computationally lightweight, and reproducible classification pipeline for decoding 4 distinct MI tasks (Left Fist, Right Fist, Both Fists, Both Feet) from raw 64-channel EEG data.
-        </p>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0;">
-            <strong>Relevance:</strong> MI-BCIs are crucial for non-muscular control in post-stroke neurorehabilitation and prosthetics. However, clinical deployments require low-latency inference on embedded hardware. Finding models that are both highly accurate and computationally cheap (like MiniRocket) is essential for moving BCI out of the lab and into bedside applications.
-        </p>
+        <h3 style="color:#00ff9a; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;"><strong>02. Challenges in MI-EEG Decoding</strong></h3>
+        <ul style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0; padding-left:20px; line-height:1.6;">
+            <li><strong>Low Signal-to-Noise Ratio (SNR):</strong> EEG recordings are heavily contaminated by environmental electrical noise (e.g., 50/60 Hz power line interference) and physiological artifacts (e.g., EOG from eye blinks, and EMG from muscle tension).</li>
+            <li><strong>High Dimensionality and Non-Stationarity:</strong> EEG data is highly dimensional (multi-channel, high sampling rate) and notoriously non-stationary. Neural responses vary drastically not only between different subjects (inter-subject variability) but also within the same subject across different recording sessions.</li>
+            <li><strong>Computational Bottlenecks:</strong> Modern Deep Learning architectures designed to handle this complexity demand substantial computational resources, rendering them difficult to deploy in embedded systems or portable BCI hardware that require near-instantaneous feedback.</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("""
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:24px;">
-        <h3 style="color:#a855f7; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">04. Scope of Project</h3>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:8px;">
-            <strong>In-Scope:</strong> 
-            <br>• Utilizing the PhysioNet EEGMMIDB dataset (109 subjects, 64 channels).
-            <br>• Extracting the specific <i>&mu;</i> (8-14 Hz) and <i>&beta;</i> (14-30 Hz) bands which contain the most discriminative Event-Related Desynchronization (ERD) features.
-            <br>• Implementing and validating both the MiniRocket feature pipeline and the 13-layer hybrid CNN-LSTM (Conv1D -> LSTM 100-units -> Dense) baseline.
+        <h3 style="color:#a855f7; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;"><strong>03. Proposed Methodology</strong></h3>
+        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:12px;">
+            The proposed <strong>NEURO_MOVE</strong> framework consists of a highly modular pipeline encompassing data ingestion, robust preprocessing, advanced feature extraction, and interactive classification:
         </p>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0;">
-            <strong>Out-of-Scope:</strong> Advanced cross-modal fusion (e.g., EEG+fNIRS), non-additive electrode-source fusion (Choquet-integral formulations), and closed-loop robotic actuation are deferred to future extensions.
-        </p>
+        <ul style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0; padding-left:20px; line-height:1.6;">
+            <li><strong>Preprocessing and Spatial Filtering:</strong> Signals are strictly filtered between 4 Hz and 38 Hz. A crucial spatial filter, Common Average Reference (CAR), is applied to re-reference the data, removing widespread common-mode noise and sharpening focal activity over the motor cortex.</li>
+            <li><strong>MiniRocket Feature Extraction:</strong> Applies 10,000 deterministic, non-dilated convolutional kernels and extracts the Proportion of Positive Values (PPV). It bypasses traditional gradient-descent optimization for feature extraction, drastically reducing training times to fractions of a second.</li>
+            <li><strong>CNN-LSTM Hybrid Model:</strong> Combines a 1D-Convolutional Neural Network to handle the "spatial picture" of the electrodes, and an LSTM network to decode deeper sequential evolution and temporal dependencies in brainwaves.</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("""
     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:24px; margin-bottom:32px;">
-        <h3 style="color:#f59e0b; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">05. Proposed Solution</h3>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:8px;">
-            <strong>High-Level Idea:</strong> Replicating and scaling the paper's methodology into an interactive dashboard. The core solution applies 10,000 random convolutional kernels via MiniRocket to extract purely PPV features, classified securely by a Ridge regression layer. This is contrasted directly in real-time against a deep CNN-LSTM trained globally to mitigate inter-subject variability.
-        </p>
-        <p style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0;">
-            <strong>Expected Outcome:</strong> Validating that MiniRocket achieves ~98.63% accuracy while exhibiting 13&times; faster inference speeds (0.6ms vs 8.0ms) compared to the CNN-LSTM baseline, successfully establishing a clinical-grade, reproducible pipeline.
-        </p>
+        <h3 style="color:#f59e0b; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;"><strong>04. Project Evolution & Roadmap</strong></h3>
+        <ul style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0; padding-left:20px; line-height:1.6;">
+            <li><strong>Dataset Expansion:</strong> Evolved from standardizing the massive 109-subject PhysioNet EEGMMIDB dataset (64-channel .edf) to integrating the notoriously difficult BCI Competition IV 2a dataset (22-channel .gdf).</li>
+            <li><strong>Multi-Model Benchmarking Suite:</strong> Expanding the platform beyond MiniRocket and CNN-LSTM to systematically include state-of-the-art architectures such as <strong>EEGNet</strong>, <strong>Shallow/Deep ConvNets</strong>, and classical <strong>CSP+LDA</strong> combinations.</li>
+            <li><strong>Ultimate Goal:</strong> A unified platform where a user can seamlessly upload raw EEG, select any modern architecture, and instantly compare decoding performance and training latency in real-time.</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
 
