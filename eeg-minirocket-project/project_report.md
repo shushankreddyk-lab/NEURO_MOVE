@@ -83,13 +83,13 @@ The PhysioNet dataset is one of the largest publicly available EEG databases for
 - **Hardware & Sensor Setup:** Data was recorded using the BCI2000 system equipped with 64 EEG electrodes distributed according to the international 10-10 system. 
 - **Sampling Rate & Resolution:** Signals were digitized at 160 Hz.
 - **Experimental Protocol:** Each subject completed 14 separate experimental runs, generating over 1,500 total `.edf` (European Data Format) files. The sessions were divided into:
-  - *Baseline Runs (R01, R02):* One minute of eyes-open and one minute of eyes-closed resting state.
-  - *Task Runs:* Four distinct task sets performed three times each (R03-R14), prompting subjects to perform or imagine a motor task.
+  - **Baseline Runs (R01, R02):** One minute of eyes-open and one minute of eyes-closed resting state.
+  - **Task Runs:** Four distinct task sets performed three times each (R03-R14), prompting subjects to perform or imagine a motor task.
 - **Task Classifications:**
-  1. Motor Execution (Unilateral): Opening/closing left or right fist.
-  2. Motor Imagery (Unilateral): Imagining opening/closing left or right fist.
-  3. Motor Execution (Bilateral): Opening/closing both fists or both feet.
-  4. Motor Imagery (Bilateral): Imagining opening/closing both fists or both feet.
+  1. **Motor Execution (Unilateral):** Opening/closing left or right fist.
+  2. **Motor Imagery (Unilateral):** Imagining opening/closing left or right fist.
+  3. **Motor Execution (Bilateral):** Opening/closing both fists or both feet.
+  4. **Motor Imagery (Bilateral):** Imagining opening/closing both fists or both feet.
 - **Integration:** The system dynamically extracts `T0` (Rest), `T1`, and `T2` annotations, parsing tens of thousands of epochs for high-throughput batch training.
 
 ### 6.2 BCI Competition IV Dataset 2a (GDF)
