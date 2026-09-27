@@ -2065,7 +2065,8 @@ if selected_tab == '🎯 Live Inference':
                         st.divider()
 
                 # ===== 3 CHANNEL PAIR WAVEFORMS =====
-                st.markdown("### 📡 3 Key Motor Channel Pair Waveforms (From EDF)")
+                file_type_str = "GDF" if is_bci2a else "EDF"
+                st.markdown(f"### 📡 3 Key Motor Channel Pair Waveforms (From {file_type_str})")
                 st.markdown('<div style="color:#5a7a99; font-size:0.8rem; margin-bottom:12px;">Real EEG waveforms from the uploaded file showing activity for three critical electrode pairs during the first trial.</div>', unsafe_allow_html=True)
 
                 _t = np.linspace(0, 4.0, X.shape[2])
