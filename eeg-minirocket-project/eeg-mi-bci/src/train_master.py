@@ -67,6 +67,14 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         if len(X_all) == 0:
             return None, None
             
+        # Target samples matching PhysioNet
+        target_samples = 656
+        if X_all.shape[2] > target_samples:
+            X_all = X_all[:, :, :target_samples]
+        elif X_all.shape[2] < target_samples:
+            pad_width = target_samples - X_all.shape[2]
+            X_all = np.pad(X_all, ((0,0), (0,0), (0,pad_width)), mode='constant')
+            
         fname = f"bci2a_data_{sub_str}.npz"
         np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
         return X_all.shape, y_all.shape
