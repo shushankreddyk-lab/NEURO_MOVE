@@ -1842,8 +1842,11 @@ if selected_tab == '🎯 Live Inference':
                     raw.resample(160.0)
                 raw = apply_bandpass_filter(apply_car(raw), 4, 38)
                 
-                tmax_adj = 4.1 - (1 / raw.info['sfreq'])
-                epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
+                if is_bci2a:
+                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
+                else:
+                    tmax_adj = 4.1 - (1 / raw.info['sfreq'])
+                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
                 
                 X = epochs.get_data(copy=False) 
                 
@@ -1991,13 +1994,12 @@ if selected_tab == '🎯 Live Inference':
                     results.append(('MiniRocket', selected_mr, probs, latency))
 
                 # 4 active motor classes (Rest=-1 excluded from training)
-                class_labels_4 = [
-                    "Left Fist",
-                    "Right Fist",
-                    "Both Fists",
-                    "Both Feet"
-                ]
-                class_icons_4 = ["✋", "🤚", "👐", "🦶"]
+                if inf_file.name.lower().endswith('.gdf'):
+                    class_labels_4 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
+                    class_icons_4 = ["✋", "🤚", "🦶", "👅"]
+                else:
+                    class_labels_4 = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+                    class_icons_4 = ["✋", "🤚", "👐", "🦶"]
 
                 with prob_col:
                     st.markdown('''
