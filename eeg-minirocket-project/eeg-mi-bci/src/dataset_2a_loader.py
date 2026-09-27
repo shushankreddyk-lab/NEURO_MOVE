@@ -7,7 +7,7 @@ _D_PKGS = r"D:\pip_packages"
 if _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
-def load_bci_2a_data(data_dir, subjects, tmin=0.5, tmax=3.5, resample_freq=160.0):
+def load_bci_2a_data(data_dir, subjects, tmin=0.5, tmax=4.6, resample_freq=160.0):
     """
     Loads BCI Competition IV 2a dataset GDF files.
     

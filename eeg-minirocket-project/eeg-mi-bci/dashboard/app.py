@@ -687,24 +687,46 @@ if selected_tab == '🧠 Overview':
     <h3 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a7a99;">📌 4 Active Classification Targets</h3>
     """, unsafe_allow_html=True)
 
-    class_icons = ["✋", "🤚", "👐", "🦶"]
-    class_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+    dataset_tab1, dataset_tab2 = st.tabs(["PhysioNet (EDF)", "BCI Comp IV 2a (GDF)"])
     class_colors = ["#00b4d8", "#0096c7", "#0077b6", "#023e8a"]
 
-    cols = st.columns(4)
-    for i, col in enumerate(cols):
-        with col:
-            st.markdown(f"""
-            <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
-                        border-radius:12px; padding:14px 8px; text-align:center;
-                        border-top:2px solid {class_colors[i]};">
-                <div style="font-size:1.4rem;">{class_icons[i]}</div>
-                <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
-                            letter-spacing:0.04em; line-height:1.4;">{class_names[i]}</div>
-                <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
-                            margin-top:4px;">CLASS {i}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with dataset_tab1:
+        class_icons = ["✋", "🤚", "👐", "🦶"]
+        class_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+    
+        cols = st.columns(4)
+        for i, col in enumerate(cols):
+            with col:
+                st.markdown(f"""
+                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+                            border-radius:12px; padding:14px 8px; text-align:center;
+                            border-top:2px solid {class_colors[i]};">
+                    <div style="font-size:1.4rem;">{class_icons[i]}</div>
+                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
+                                letter-spacing:0.04em; line-height:1.4;">{class_names[i]}</div>
+                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
+                                margin-top:4px;">CLASS {i}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    with dataset_tab2:
+        class_icons2 = ["✋", "🤚", "🦶", "👅"]
+        class_names2 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
+        
+        cols2 = st.columns(4)
+        for i, col in enumerate(cols2):
+            with col:
+                st.markdown(f"""
+                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+                            border-radius:12px; padding:14px 8px; text-align:center;
+                            border-top:2px solid {class_colors[i]};">
+                    <div style="font-size:1.4rem;">{class_icons2[i]}</div>
+                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
+                                letter-spacing:0.04em; line-height:1.4;">{class_names2[i]}</div>
+                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
+                                margin-top:4px;">CLASS {i}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # --- TAB 2: MODEL ARCHITECTURES ---
 if selected_tab == '🏗️ Model Architectures':
@@ -1835,21 +1857,29 @@ if selected_tab == '🎯 Live Inference':
                 if len(picked_channels) > 0:
                     raw.pick_channels(picked_channels)
                 
-                raw.apply_function(lambda x: x * 1e6, verbose=False)
-                if raw.info['sfreq'] != 160.0:
-                    raw.resample(160.0)
                 if is_bci2a:
+                    # Filter at native sfreq (250Hz) FIRST!
                     raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
-                else:
-                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
-                
-                if is_bci2a:
+                    
+                    # Epoching
                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
+                    
+                    # Resample epochs AFTER epoching
+                    if raw.info['sfreq'] != 160.0:
+                        epochs.resample(160.0)
+                        
+                    # Get data and scale
+                    X = epochs.get_data(copy=True) * 1e6
                 else:
+                    # Physionet standard preprocessing
+                    raw.apply_function(lambda x: x * 1e6, verbose=False)
+                    if raw.info['sfreq'] != 160.0:
+                        raw.resample(160.0)
+                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+                    
                     tmax_adj = 4.1 - (1 / raw.info['sfreq'])
                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
-                
-                X = epochs.get_data(copy=False) 
+                    X = epochs.get_data(copy=False)
                 
                 
                 if X.shape[2] > target_samples:
