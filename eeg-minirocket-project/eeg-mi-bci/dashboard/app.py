@@ -515,11 +515,11 @@ st.markdown("""
 # --- KPI Metrics Ribbon ---
 k1, k2, k3, k4, k5 = st.columns(5)
 kpi_data = [
-    (k1, "98.63%",  "Peak Accuracy",       "▲ MiniRocket"),
-    (k2, "0.6 ms",  "Inference Latency",   "Real-time"),
-    (k3, "64 ch",   "Active EEG Channels", "CAR Reference"),
-    (k4, "6",       "Neural Architectures","Benchmarked"),
-    (k5, "109",     "Subjects Trained",    "PhysioNet EEGMMIDB"),
+    (k1, "88.5% - 98.6%", "Accuracy Range", "Across 6 Models"),
+    (k2, "0.6 - 8.0 ms",  "Latency Range",  "Real-time Inference"),
+    (k3, "64 ch",         "Active EEG Channels", "CAR Reference"),
+    (k4, "6",             "Neural Architectures", "Benchmarked"),
+    (k5, "109",           "Subjects Trained", "PhysioNet EEGMMIDB"),
 ]
 for col, val, label, sub in kpi_data:
     with col:
