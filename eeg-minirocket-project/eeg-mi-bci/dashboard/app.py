@@ -1835,12 +1835,13 @@ if selected_tab == '🎯 Live Inference':
                 if len(picked_channels) > 0:
                     raw.pick_channels(picked_channels)
                 
-                # Standard EEG pre-processing
-                
                 raw.apply_function(lambda x: x * 1e6, verbose=False)
                 if raw.info['sfreq'] != 160.0:
                     raw.resample(160.0)
-                raw = apply_bandpass_filter(apply_car(raw), 4, 38)
+                if is_bci2a:
+                    raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
+                else:
+                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
                 
                 if is_bci2a:
                     epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
