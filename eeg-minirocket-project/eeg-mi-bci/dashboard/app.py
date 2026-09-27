@@ -20,13 +20,8 @@ _D_PKGS = r"D:\pip_packages"
 if _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
-import torch
-
 # Ensure src is in path to import modules, prioritizing it over the root src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.minirocket_engine import MiniRocketPipeline
-from src.advanced_eeg_engine import AdvancedEEGPipeline
-from src.preprocessing import preprocess_pipeline
 
 st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
 
