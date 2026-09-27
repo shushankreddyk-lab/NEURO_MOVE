@@ -136,8 +136,9 @@ def load_eegbci_data(subject_id, runs):
     raw, events = load_eegbci_data(1, [4])
     print(raw.info['nchan'], events.shape)
 
-def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\physionet'):
+def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\physionet', dataset_type="physionet"):
     import json
+    import glob
     
     # We define the 5 groups based on run IDs
     group_runs = {
@@ -159,108 +160,173 @@ def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\physionet'):
     
     detailed_toc = []
     
-    for subject_id in range(1, 110):
-        subject_str = f"S{subject_id:03d}"
-        subject_dir = os.path.join(data_dir, subject_str)
-        
-        if not os.path.exists(subject_dir):
-            continue
+    if dataset_type == "physionet":
+        for subject_id in range(1, 110):
+            subject_str = f"S{subject_id:03d}"
+            subject_dir = os.path.join(data_dir, subject_str)
             
-        # Dynamically scan all files instead of using hardcoded run loops
-        for edf_file in glob.glob(os.path.join(subject_dir, "*.edf")):
-            filename = os.path.basename(edf_file)
-            try:
-                raw = mne.io.read_raw_edf(edf_file, preload=False, verbose=False)
-                events, event_dict = mne.events_from_annotations(raw, verbose=False)
+            if not os.path.exists(subject_dir):
+                continue
                 
-                event_counts = {}
-                for evt_name, evt_id in event_dict.items():
-                    event_counts[evt_name] = int(np.sum(events[:, 2] == evt_id))
+            # Dynamically scan all files instead of using hardcoded run loops
+            for edf_file in glob.glob(os.path.join(subject_dir, "*.edf")):
+                filename = os.path.basename(edf_file)
+                try:
+                    raw = mne.io.read_raw_edf(edf_file, preload=False, verbose=False)
+                    events, event_dict = mne.events_from_annotations(raw, verbose=False)
                     
-                event_summary = ", ".join([f"{k}:{v}" for k, v in event_counts.items()])
-                if not event_summary:
-                    event_summary = "No Events"
-                    
-                # Trials are tasks (T1, T2, T3)
-                trials = sum([count for name, count in event_counts.items() if name in ['T1', 'T2', 'T3']])
-                
-                # Dynamic Classification based on actual contents!
-                if trials == 0:
-                    # Baseline data found
-                    g_id = 1
-                    trials = event_counts.get('T0', 15)
-                else:
-                    # Task data found. Use filename as a hint for the specific task group.
-                    run_num_str = filename.replace('.edf', '').replace(subject_str + 'R', '')
-                    if run_num_str.isdigit():
-                        r = int(run_num_str)
-                        if r in [3, 7, 11]: g_id = 2
-                        elif r in [4, 8, 12]: g_id = 3
-                        elif r in [5, 9, 13]: g_id = 4
-                        elif r in [6, 10, 14]: g_id = 5
-                        else: g_id = 2 # default fallback
-                    else:
-                        g_id = 2
+                    event_counts = {}
+                    for evt_name, evt_id in event_dict.items():
+                        event_counts[evt_name] = int(np.sum(events[:, 2] == evt_id))
                         
-                toc_data[str(g_id)]["Trials"] += trials
-                
-                if g_id == 1:
-                    task_type = "Baseline"
-                    t0 = "Eyes Open/Closed"
-                    t1 = ""
-                    t2 = ""
-                elif g_id == 2:
-                    task_type = "Motor Execution - Unilateral Fist"
-                    t0 = "Rest"
-                    t1 = "Left Fist"
-                    t2 = "Right Fist"
-                elif g_id == 3:
-                    task_type = "Motor Imagery - Unilateral Fist"
-                    t0 = "Rest"
-                    t1 = "Left Fist MI"
-                    t2 = "Right Fist MI"
-                elif g_id == 4:
-                    task_type = "Motor Execution - Bilateral Hand/Foot"
-                    t0 = "Rest"
-                    t1 = "Both Fists"
-                    t2 = "Both Feet"
-                elif g_id == 5:
-                    task_type = "Motor Imagery - Bilateral Hand/Foot"
-                    t0 = "Rest"
-                    t1 = "Both Fists MI"
-                    t2 = "Both Feet MI"
-
-                # Parse run number
-                run_num = filename.replace('.edf', '').replace(subject_str + 'R', '')
-                run_num = int(run_num) if run_num.isdigit() else ""
-
-                if subject_id in [88, 89, 92, 100, 104, 106]:
-                    status = "FLAG - KNOWN INCOMPLETE SUBJECT"
-                    quality_flag = "Known inconsistent/incomplete recording"
-                else:
-                    status = "VALID - PROTOCOL CLASSIFIED"
-                    quality_flag = ""
+                    event_summary = ", ".join([f"{k}:{v}" for k, v in event_counts.items()])
+                    if not event_summary:
+                        event_summary = "No Events"
+                        
+                    # Trials are tasks (T1, T2, T3)
+                    trials = sum([count for name, count in event_counts.items() if name in ['T1', 'T2', 'T3']])
                     
-                subgroup_name = f"Group {run_num}" if isinstance(run_num, int) else "Group Unknown"
-
-                detailed_toc.append({
-                    "Subject": subject_str,
-                    "EDF_File": filename,
-                    "Run": run_num,
-                    "Task_Type": task_type,
-                    "T0": t0,
-                    "T1": t1,
-                    "T2": t2,
-                    "Status": status,
-                    "Quality_Flag": quality_flag,
-                    "Group": subgroup_name,
-                    "Trials": trials,
-                    "Trials_T0": event_counts.get('T0', 0),
-                    "Trials_T1": event_counts.get('T1', 0),
-                    "Trials_T2": event_counts.get('T2', 0)
-                })
-            except Exception as e:
-                print(f"Error parsing {edf_file} for TOC: {e}")
+                    # Dynamic Classification based on actual contents!
+                    if trials == 0:
+                        # Baseline data found
+                        g_id = 1
+                        trials = event_counts.get('T0', 15)
+                    else:
+                        # Task data found. Use filename as a hint for the specific task group.
+                        run_num_str = filename.replace('.edf', '').replace(subject_str + 'R', '')
+                        if run_num_str.isdigit():
+                            r = int(run_num_str)
+                            if r in [3, 7, 11]: g_id = 2
+                            elif r in [4, 8, 12]: g_id = 3
+                            elif r in [5, 9, 13]: g_id = 4
+                            elif r in [6, 10, 14]: g_id = 5
+                            else: g_id = 2 # default fallback
+                        else:
+                            g_id = 2
+                            
+                    toc_data[str(g_id)]["Trials"] += trials
+                    
+                    if g_id == 1:
+                        task_type = "Baseline"
+                        t0 = "Eyes Open/Closed"
+                        t1 = ""
+                        t2 = ""
+                    elif g_id == 2:
+                        task_type = "Motor Execution - Unilateral Fist"
+                        t0 = "Rest"
+                        t1 = "Left Fist"
+                        t2 = "Right Fist"
+                    elif g_id == 3:
+                        task_type = "Motor Imagery - Unilateral Fist"
+                        t0 = "Rest"
+                        t1 = "Left Fist MI"
+                        t2 = "Right Fist MI"
+                    elif g_id == 4:
+                        task_type = "Motor Execution - Bilateral Hand/Foot"
+                        t0 = "Rest"
+                        t1 = "Both Fists"
+                        t2 = "Both Feet"
+                    elif g_id == 5:
+                        task_type = "Motor Imagery - Bilateral Hand/Foot"
+                        t0 = "Rest"
+                        t1 = "Both Fists MI"
+                        t2 = "Both Feet MI"
+    
+                    # Parse run number
+                    run_num = filename.replace('.edf', '').replace(subject_str + 'R', '')
+                    run_num = int(run_num) if run_num.isdigit() else ""
+    
+                    if subject_id in [88, 89, 92, 100, 104, 106]:
+                        status = "FLAG - KNOWN INCOMPLETE SUBJECT"
+                        quality_flag = "Known inconsistent/incomplete recording"
+                    else:
+                        status = "VALID - PROTOCOL CLASSIFIED"
+                        quality_flag = ""
+                        
+                    subgroup_name = f"Group {run_num}" if isinstance(run_num, int) else "Group Unknown"
+    
+                    detailed_toc.append({
+                        "Subject": subject_str,
+                        "EDF_File": filename,
+                        "Run": run_num,
+                        "Task_Type": task_type,
+                        "T0": t0,
+                        "T1": t1,
+                        "T2": t2,
+                        "T3": "",
+                        "T4": "",
+                        "Status": status,
+                        "Quality_Flag": quality_flag,
+                        "Group": subgroup_name,
+                        "Trials": trials,
+                        "Trials_T0": event_counts.get('T0', 0),
+                        "Trials_T1": event_counts.get('T1', 0),
+                        "Trials_T2": event_counts.get('T2', 0),
+                        "Trials_T3": 0,
+                        "Trials_T4": 0
+                    })
+                except Exception as e:
+                    print(f"Error parsing {edf_file} for TOC: {e}")
+                    
+    elif dataset_type == "bci":
+        # Process BCI Competition IV 2a
+        for subject_id in range(1, 10):
+            subject_str = f"A{subject_id:02d}"
+            
+            for suffix, set_name in [('T', 'Train'), ('E', 'Evaluate')]:
+                filename = f"{subject_str}{suffix}.gdf"
+                gdf_file = os.path.join(data_dir, filename)
+                
+                if not os.path.exists(gdf_file):
+                    continue
+                    
+                try:
+                    raw = mne.io.read_raw_gdf(gdf_file, preload=False, verbose=False)
+                    events, event_dict = mne.events_from_annotations(raw, verbose=False)
+                    
+                    event_counts = {}
+                    for evt_name, evt_id in event_dict.items():
+                        event_counts[evt_name] = int(np.sum(events[:, 2] == evt_id))
+                    
+                    # BCI 2a classes: 769 (Left), 770 (Right), 771 (Foot), 772 (Tongue)
+                    trials_t1 = event_counts.get('769', 0)
+                    trials_t2 = event_counts.get('770', 0)
+                    trials_t3 = event_counts.get('771', 0)
+                    trials_t4 = event_counts.get('772', 0)
+                    
+                    total_trials = trials_t1 + trials_t2 + trials_t3 + trials_t4
+                    
+                    # E files might have 783 (Unknown) instead
+                    if total_trials == 0:
+                        total_trials = event_counts.get('783', 0)
+                        status = "VALID - EVALUATION (LABELS HIDDEN)"
+                    else:
+                        status = "VALID - PROTOCOL CLASSIFIED"
+                        
+                    toc_data["2"]["Trials"] += total_trials
+                    
+                    detailed_toc.append({
+                        "Subject": subject_str,
+                        "EDF_File": filename,
+                        "Run": set_name,
+                        "Task_Type": "Motor Imagery (4-Class)",
+                        "T0": "Rest (768)",
+                        "T1": "Left Hand",
+                        "T2": "Right Hand",
+                        "T3": "Foot",
+                        "T4": "Tongue",
+                        "Status": status,
+                        "Quality_Flag": "",
+                        "Group": "BCI 2a",
+                        "Trials": total_trials,
+                        "Trials_T0": event_counts.get('768', 0),
+                        "Trials_T1": trials_t1,
+                        "Trials_T2": trials_t2,
+                        "Trials_T3": trials_t3,
+                        "Trials_T4": trials_t4
+                    })
+                except Exception as e:
+                    print(f"Error parsing {gdf_file} for TOC: {e}")
                         
     # Save caches
     artifacts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'artifacts'))

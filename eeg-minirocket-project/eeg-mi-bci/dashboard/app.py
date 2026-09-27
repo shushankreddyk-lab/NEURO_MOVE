@@ -796,18 +796,30 @@ if selected_tab == '🏗️ Model Architectures':
 if selected_tab == '💻 Live Training Console':
     with st.expander('📊 Dataset', expanded=True):
         st.subheader("Dataset Source Directory")
-        dataset_path = st.text_input(
-            "Enter root path to the 109-subject PhysioNet folder:",
-            value=r"d:\eeg-minirocket-project\physionet"
+        
+        selected_console_dataset = st.radio(
+            "Select the dataset to scan:",
+            ["PhysioNet EEGMMIDB (.edf)", "BCI Competition IV 2a (.gdf)"],
+            horizontal=True
         )
+        
+        if "BCI" in selected_console_dataset:
+            default_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
+            folder_hint = "Enter root path to the 9-subject BCI 2a folder:"
+        else:
+            default_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\physionet")
+            folder_hint = "Enter root path to the 109-subject PhysioNet folder:"
+            
+        dataset_path = st.text_input(folder_hint, value=default_path)
 
     if st.button("Scan & Generate TOC for Full Dataset"):
-        with st.spinner("Scanning all 109 subjects... Please wait."):
+        with st.spinner("Scanning subjects... Please wait."):
             # Calls the bulk crawler backend
             import sys
             sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
             from binary_parser import generate_dataset_toc
-            generate_dataset_toc(dataset_path)
+            dataset_type = "bci" if "BCI" in selected_console_dataset else "physionet"
+            generate_dataset_toc(dataset_path, dataset_type=dataset_type)
         st.success("Full dataset successfully scanned and categorized!")
 
     st.subheader("Dataset Table of Contents & Signal Classification")
@@ -830,14 +842,25 @@ if selected_tab == '💻 Live Training Console':
             st.markdown("### Aggregated Group Summary (Dynamic)")
             
             if "Trials_T0" in detailed_df.columns:
+                # Ensure T3 and T4 exist for older CSVs
+                if "Trials_T3" not in detailed_df.columns:
+                    detailed_df["Trials_T3"] = 0
+                    detailed_df["Trials_T4"] = 0
+                    detailed_df["T3"] = ""
+                    detailed_df["T4"] = ""
+
                 base_summary = detailed_df.groupby(["Run", "Group", "Task_Type"]).agg(
                     Files_Found=("EDF_File", "count"),
                     T0_Name=("T0", "first"),
                     T1_Name=("T1", "first"),
                     T2_Name=("T2", "first"),
+                    T3_Name=("T3", "first"),
+                    T4_Name=("T4", "first"),
                     Trials_T0=("Trials_T0", "sum"),
                     Trials_T1=("Trials_T1", "sum"),
-                    Trials_T2=("Trials_T2", "sum")
+                    Trials_T2=("Trials_T2", "sum"),
+                    Trials_T3=("Trials_T3", "sum"),
+                    Trials_T4=("Trials_T4", "sum")
                 ).reset_index()
                 
                 class_to_group = {
@@ -850,7 +873,12 @@ if selected_tab == '💻 Live Training Console':
                     "Both Fists": "Group 7",
                     "Both Feet": "Group 8",
                     "Both Fists MI": "Group 9",
-                    "Both Feet MI": "Group 10"
+                    "Both Feet MI": "Group 10",
+                    "Rest (768)": "Group BCI-R",
+                    "Left Hand": "Group BCI-L",
+                    "Right Hand": "Group BCI-R",
+                    "Foot": "Group BCI-F",
+                    "Tongue": "Group BCI-T"
                 }
 
                 melted_rows = []
@@ -859,6 +887,8 @@ if selected_tab == '💻 Live Training Console':
                     t0_name = str(row['T0_Name']).strip() if pd.notna(row['T0_Name']) else ""
                     t1_name = str(row['T1_Name']).strip() if pd.notna(row['T1_Name']) else ""
                     t2_name = str(row['T2_Name']).strip() if pd.notna(row['T2_Name']) else ""
+                    t3_name = str(row['T3_Name']).strip() if pd.notna(row['T3_Name']) else ""
+                    t4_name = str(row['T4_Name']).strip() if pd.notna(row['T4_Name']) else ""
                     
                     if t0_name in class_to_group:
                         melted_rows.append({"Group_Num": class_to_group[t0_name], "Task_Type": row["Task_Type"], "Marker": "T0", "Class": t0_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T0"]})
@@ -866,6 +896,10 @@ if selected_tab == '💻 Live Training Console':
                         melted_rows.append({"Group_Num": class_to_group[t1_name], "Task_Type": row["Task_Type"], "Marker": "T1", "Class": t1_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T1"]})
                     if t2_name in class_to_group:
                         melted_rows.append({"Group_Num": class_to_group[t2_name], "Task_Type": row["Task_Type"], "Marker": "T2", "Class": t2_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T2"]})
+                    if t3_name in class_to_group:
+                        melted_rows.append({"Group_Num": class_to_group[t3_name], "Task_Type": row["Task_Type"], "Marker": "T3", "Class": t3_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T3"]})
+                    if t4_name in class_to_group:
+                        melted_rows.append({"Group_Num": class_to_group[t4_name], "Task_Type": row["Task_Type"], "Marker": "T4", "Class": t4_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T4"]})
                 
                 summary_df = pd.DataFrame(melted_rows)
                 
