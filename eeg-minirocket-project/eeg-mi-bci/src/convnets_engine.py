@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import numpy as np
+import json
 
 def get_device(prefer="auto"):
     if prefer == "cpu":
@@ -269,6 +270,15 @@ class ConvNet_Pipeline:
             self.history["acc"].append(train_acc)
             self.history["val_loss"].append(val_loss)
             self.history["val_acc"].append(val_acc)
+            
+            print(json.dumps({
+                "type": "epoch",
+                "epoch": epoch + 1,
+                "total_epochs": self.epochs,
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+                "val_acc": val_acc
+            }), flush=True)
                 
             if X_val is not None:
                 best = max(self.history["val_acc"]) if self.history["val_acc"] else val_acc
