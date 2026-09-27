@@ -39,6 +39,9 @@ def load_bci_2a_data(data_dir, subjects, tmin=0.5, tmax=4.6, resample_freq=160.0
             eeg_channels = raw.ch_names[:22]
             raw.pick_channels(eeg_channels)
             
+            # Add Common Average Reference (CAR) to remove common-mode noise
+            raw.set_eeg_reference('average', projection=False)
+            
             # Bandpass filter
             raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
             
