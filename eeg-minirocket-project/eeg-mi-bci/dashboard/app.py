@@ -504,9 +504,8 @@ st.markdown("""
             </div>
             <h1 class="hero-title neon-title">NeuroDecoder MI-BCI</h1>
             <p class="hero-subtitle">
-                A high-performance Brain-Computer Interface engine leveraging <strong style="color:#00d4ff">MiniRocket + Neural Head</strong>
-                and <strong style="color:#a855f7">EEG-Conformer (Spatial-Temporal CNN + Self-Attention Transformer)</strong> for real-time 4-class Motor Imagery &amp; Execution decoding from
-                non-invasive scalp EEG.
+                A high-performance Brain-Computer Interface engine benchmarking <strong style="color:#00d4ff">6 State-of-the-Art Architectures</strong> 
+                (including <strong style="color:#10b981">MiniRocket</strong>, <strong style="color:#a855f7">CNN-LSTM</strong>, <strong style="color:#0ea5e9">EEGNet</strong>, and <strong style="color:#64748b">CSP</strong>) for real-time 4-class Motor Imagery &amp; Execution decoding from non-invasive scalp EEG.
             </p>
         </div>
     </div>
