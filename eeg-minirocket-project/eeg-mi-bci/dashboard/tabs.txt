@@ -1,0 +1,12 @@
+516: if selected_tab == '🧠 Overview':
+669: if selected_tab == '📡 Technical Details':
+733: if selected_tab == '📡 Technical Details':
+834: if selected_tab == '📡 Technical Details':
+1121: if selected_tab == '🚀 Live Training':
+1402: if selected_tab == '📡 Technical Details':
+1456: if selected_tab == '📡 Technical Details':
+1658: if selected_tab == '🎯 Live Inference':
+2043: if selected_tab == '🔍 Accuracy Analysis':
+2126: if selected_tab == '📡 Technical Details':
+2160: if selected_tab == '📡 Technical Details':
+2191: if selected_tab == '📡 Technical Details':

@@ -1,0 +1,21 @@
+516: if selected_tab == '🧠 Overview':
+669: if selected_tab == '📡 Technical Details':
+670:     with st.expander('⚙️ Architectures', expanded=True):
+733: if selected_tab == '📡 Technical Details':
+734:     with st.expander('📊 Dataset', expanded=False):
+834: if selected_tab == '📡 Technical Details':
+835:     with st.expander('🧮 Spectrogram (Legacy)', expanded=False):
+1102:         with st.expander("📋 Full Training Log (Step-by-Step)", expanded=True):
+1121: if selected_tab == '🚀 Live Training':
+1402: if selected_tab == '📡 Technical Details':
+1403:     with st.expander('🔬 Preprocessing', expanded=False):
+1451: if selected_tab == '📡 Technical Details':
+1452:     with st.expander('📈 Signal Analysis', expanded=False):
+1653: if selected_tab == '🎯 Live Inference':
+2038: if selected_tab == '🔍 Accuracy Analysis':
+2121: if selected_tab == '📡 Technical Details':
+2122:     with st.expander('🖥️ Compute', expanded=False):
+2155: if selected_tab == '📡 Technical Details':
+2156:     with st.expander('📚 Benchmarks', expanded=False):
+2186: if selected_tab == '📡 Technical Details':
+2187:     with st.expander('🎓 Conclusions', expanded=False):
