@@ -804,46 +804,94 @@ if selected_tab == '🏗️ Model Architectures':
     <th style="padding: 8px; color:#fff;">Core Mechanism</th>
     <th style="padding: 8px; color:#fff;">Optimization</th>
     <th style="padding: 8px; color:#fff;">Trainable Params</th>
+    <th style="padding: 8px; color:#fff; text-align:center;">Test Acc (Physionet)</th>
   </tr>
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#00d4ff;"><strong>MiniRocket</strong></td>
     <td style="padding: 8px;">10,000 deterministic dilated kernels (PPV)</td>
     <td style="padding: 8px;">Ridge Regression</td>
     <td style="padding: 8px;">0 (Features) / Linear Weights</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">32.0%</td>
   </tr>
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#f43f5e;"><strong>CNN-LSTM</strong></td>
     <td style="padding: 8px;">1D Convs + Temporal Recurrence</td>
     <td style="padding: 8px;">Adam (Backprop)</td>
     <td style="padding: 8px;">~75,000</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">37.0%</td>
   </tr>
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#00ff9a;"><strong>EEGNet</strong></td>
     <td style="padding: 8px;">Depthwise & Separable 2D Convs</td>
     <td style="padding: 8px;">Adam (Backprop)</td>
     <td style="padding: 8px;">~2,500</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">39.0%</td>
   </tr>
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#a855f7;"><strong>Shallow ConvNet</strong></td>
     <td style="padding: 8px;">Log-Variance Bandpower Extraction</td>
     <td style="padding: 8px;">Adam (Backprop)</td>
     <td style="padding: 8px;">~45,000</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold; color:#4ade80;">44.0%</td>
   </tr>
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#f59e0b;"><strong>Deep ConvNet</strong></td>
     <td style="padding: 8px;">Deep Hierarchical Features</td>
     <td style="padding: 8px;">Adam (Backprop)</td>
     <td style="padding: 8px;">~250,000+</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">42.0%</td>
   </tr>
   <tr>
     <td style="padding: 8px; color:#cbd5e1;"><strong>CSP + LDA</strong></td>
     <td style="padding: 8px;">Generalized Eigenvalue Decomposition</td>
     <td style="padding: 8px;">Closed-Form Linear Algebra</td>
     <td style="padding: 8px;">None (Covariance Matrices)</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">~35.0%</td>
   </tr>
 </table>
 </div>
     """, unsafe_allow_html=True)
+    
+    with st.expander('🔍 Detailed PyTorch Layer Architectures (model.summary)', expanded=False):
+        st.markdown("### Deep Learning Layer Breakdowns")
+        
+        @st.cache_data
+        def get_model_strings():
+            from src.cnn_lstm_engine import CNN_LSTM_Network
+            from src.eegnet_engine import EEGNet
+            from src.convnets_engine import ShallowConvNet, DeepConvNet
+            
+            # Using 22 channels (BCI2a format) and 656 samples for the dummy display
+            cnn_lstm_str = str(CNN_LSTM_Network(num_classes=4, channels=22, samples=656))
+            eegnet_str = str(EEGNet(num_classes=4, channels=22, samples=656))
+            shallow_str = str(ShallowConvNet(num_classes=4, channels=22, samples=656))
+            deep_str = str(DeepConvNet(num_classes=4, channels=22, samples=656))
+            
+            return cnn_lstm_str, eegnet_str, shallow_str, deep_str
+            
+        cnn_lstm_str, eegnet_str, shallow_str, deep_str = get_model_strings()
+        
+        row1_col1, row1_col2 = st.columns(2)
+        with row1_col1:
+            st.markdown("#### 🔴 CNN-LSTM")
+            with st.container(height=400, border=True):
+                st.code(cnn_lstm_str, language='text')
+        with row1_col2:
+            st.markdown("#### 🟢 EEGNet")
+            with st.container(height=400, border=True):
+                st.code(eegnet_str, language='text')
+            
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+            
+        row2_col1, row2_col2 = st.columns(2)
+        with row2_col1:
+            st.markdown("#### 🟣 Shallow ConvNet")
+            with st.container(height=400, border=True):
+                st.code(shallow_str, language='text')
+        with row2_col2:
+            st.markdown("#### 🟠 Deep ConvNet")
+            with st.container(height=400, border=True):
+                st.code(deep_str, language='text')
 
 # --- TAB 3: LIVE TRAINING CONSOLE ---
 if selected_tab == '💻 Live Training Console':
