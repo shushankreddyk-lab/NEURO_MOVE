@@ -271,7 +271,20 @@
 
 However, the implementation of our novelty models based on the MiniRocket topological architecture is currently in an ongoing phase. At this stage, the novelty models are not trained properly, yielding sub-optimal accuracies in the range of 25% to 40%, and sometimes resulting in wrong output predictions. This temporary underperformance is attributed to unoptimized kernel dilation distributions, a lack of feature selection on the massive 10,000-dimensional topological vectors, and improper regularization tuning of the Ridge classifier for this specific non-stationary dataset.
 
-Despite these current limitations, the theoretical advantages of MiniRocket—specifically its deterministic nature and circumvention of iterative backpropagation—remain highly promising. Future work will intensely focus on optimizing these topological features, implementing advanced feature pruning, and stabilizing the novelty models to match or exceed the 95% accuracy ceiling established by the current baselines, ultimately aiming for a real-time, energy-efficient BCI deployment.</p>
+
+            <div class="table-caption">Table 5: Summary of Current Model Implementation Status</div>
+            <table>
+                <tr><th>Model Name</th><th>Current Status</th><th>Current Accuracy</th><th>Observations</th></tr>
+                <tr><td>CSP + LDA</td><td>Ready</td><td>70-75%</td><td>Stable baseline, valid topography</td></tr>
+                <tr><td>EEGNet</td><td>Ready</td><td>75-85%</td><td>Efficient, solid convergence</td></tr>
+                <tr><td>Shallow ConvNet</td><td>Ready</td><td>70-80%</td><td>Good band-power extraction</td></tr>
+                <tr><td>Deep ConvNet</td><td>Ready</td><td>75-80%</td><td>Prone to overfitting without heavy dropout</td></tr>
+                <tr><td>CNN-LSTM</td><td>Ready</td><td>75-85%</td><td>Captures temporal dynamics well</td></tr>
+                <tr><td><strong>MiniRocket</strong></td><td><strong>Ongoing</strong></td><td><strong>25-40%</strong></td><td><strong>Sub-optimal kernel dilations; wrong predictions</strong></td></tr>
+            </table>
+
+
+            <p>Despite these current limitations, the theoretical advantages of MiniRocket—specifically its deterministic nature and circumvention of iterative backpropagation—remain highly promising. Future work will intensely focus on optimizing these topological features, implementing advanced feature pruning, and stabilizing the novelty models to match or exceed the 95% accuracy ceiling established by the current baselines, ultimately aiming for a real-time, energy-efficient BCI deployment.</p>
 
             <h2>References</h2>
             <div class="reference-list">
