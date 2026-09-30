@@ -211,6 +211,21 @@ with col2:
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
+# -------------------------------------------------------------
+# SECTION 1.5: NEURO_MOVE NOVELTY MODELS
+# -------------------------------------------------------------
+st.markdown("<br><br><div class='neon-text' style='font-size: 2rem;'>NEURO_MOVE Novelty Models (Work in Progress)</div>", unsafe_allow_html=True)
+col_n1, col_n2, col_n3, col_n4 = st.columns(4)
+
+with col_n1:
+    st.markdown("<div class='glass-card'><h4 style='color: #F43F5E;'>CSP + LDA</h4><p style='color: #EF4444; font-weight: bold;'>Status: 25-40% Acc</p><p style='font-size: 0.9em; color:#94A3B8;'>Not trained properly, wrong output predictions</p></div>", unsafe_allow_html=True)
+with col_n2:
+    st.markdown("<div class='glass-card'><h4 style='color: #F43F5E;'>EEGNet</h4><p style='color: #EF4444; font-weight: bold;'>Status: 25-40% Acc</p><p style='font-size: 0.9em; color:#94A3B8;'>Not trained properly, wrong output predictions</p></div>", unsafe_allow_html=True)
+with col_n3:
+    st.markdown("<div class='glass-card'><h4 style='color: #F43F5E;'>Shallow ConvNet</h4><p style='color: #EF4444; font-weight: bold;'>Status: 25-40% Acc</p><p style='font-size: 0.9em; color:#94A3B8;'>Not trained properly, wrong output predictions</p></div>", unsafe_allow_html=True)
+with col_n4:
+    st.markdown("<div class='glass-card'><h4 style='color: #F43F5E;'>Deep ConvNet</h4><p style='color: #EF4444; font-weight: bold;'>Status: 25-40% Acc</p><p style='font-size: 0.9em; color:#94A3B8;'>Not trained properly, wrong output predictions</p></div>", unsafe_allow_html=True)
+
 # SECTION 2: DUAL-STREAM ARCHITECTURAL BREAKDOWN
 # -------------------------------------------------------------
 st.markdown("<div id='section-2-dual-stream-architectural-breakdown'></div>", unsafe_allow_html=True)
@@ -363,3 +378,4 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
