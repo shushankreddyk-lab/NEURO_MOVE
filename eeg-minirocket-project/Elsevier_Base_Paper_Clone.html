@@ -277,15 +277,34 @@
 However, the implementation of our 4 extended novelty models (CSP + LDA, EEGNet, Shallow ConvNet, and Deep ConvNet) is currently in an ongoing phase. At this stage, these models are not trained properly, yielding sub-optimal accuracies in the range of 25% to 40%, and sometimes resulting in completely wrong output predictions. This temporary underperformance is attributed to unoptimized kernel dilation distributions, a lack of feature selection on the massive 10,000-dimensional topological vectors, and improper regularization tuning of the Ridge classifier for this specific non-stationary dataset.
 
 
-            <div class="table-caption">Table 5: Summary of Current Model Implementation Status</div>
+            <div class="table-caption">Table 5: Summary of Current Model Implementation Status across Datasets</div>
             <table>
-                <tr><th>Model Name</th><th>Current Status</th><th>Current Accuracy</th><th>Observations</th></tr>
-                <tr><td>CNN-LSTM (Base)</td><td>Ready</td><td>70-95%</td><td>Captures temporal dynamics well</td></tr>
-                <tr><td><strong>MiniRocket (Base)</strong></td><td><strong>Ready</strong></td><td><strong>70-95%</strong></td><td><strong>Stable and highly efficient</strong></td></tr>
-                <tr><td>CSP + LDA (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>Not trained properly, wrong output predictions</td></tr>
-                <tr><td>EEGNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>Not trained properly, wrong output predictions</td></tr>
-                <tr><td>Shallow ConvNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>Not trained properly, wrong output predictions</td></tr>
-                <tr><td>Deep ConvNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>Not trained properly, wrong output predictions</td></tr>
+                <tr>
+                    <th>Model Name</th>
+                    <th>Status</th>
+                    <th>Our Acc (PhysioNet)</th>
+                    <th>Our Acc (BCI Comp IV)</th>
+                    <th>Paper Reported Acc</th>
+                    <th>Observations</th>
+                </tr>
+                <tr>
+                    <td>CNN-LSTM (Base)</td><td>Ready</td><td>70-95%</td><td>60-85%</td><td>~95-98%</td><td>Captures temporal dynamics well</td>
+                </tr>
+                <tr>
+                    <td><strong>MiniRocket (Base)</strong></td><td><strong>Ready</strong></td><td><strong>70-95%</strong></td><td><strong>60-85%</strong></td><td><strong>~94-97%</strong></td><td><strong>Stable and highly efficient</strong></td>
+                </tr>
+                <tr>
+                    <td>CSP + LDA (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>25-40%</td><td>~80-90%</td><td>Not trained properly, wrong predictions</td>
+                </tr>
+                <tr>
+                    <td>EEGNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>25-40%</td><td>~85-95%</td><td>Not trained properly, wrong predictions</td>
+                </tr>
+                <tr>
+                    <td>Shallow ConvNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>25-40%</td><td>~85-90%</td><td>Not trained properly, wrong predictions</td>
+                </tr>
+                <tr>
+                    <td>Deep ConvNet (Novelty)</td><td>Ongoing</td><td>25-40%</td><td>25-40%</td><td>~80-90%</td><td>Not trained properly, wrong predictions</td>
+                </tr>
             </table>
 
 
