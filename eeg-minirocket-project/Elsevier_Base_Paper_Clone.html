@@ -150,8 +150,8 @@
             <p><b>Strengths and Limitations:</b> CSP+LDA is incredibly computationally efficient and highly interpretable. However, it assumes that the underlying neurological processes driving MI are stationary and linearly separable, which is demonstrably false in complex datasets. It also ignores the rich temporal dynamics of the signal, relying solely on broad-band spatial variance, and often fails catastrophically during cross-session evaluation due to electrode shifts [13].</p>
             <p><b>Best Features & Advantage to our Project:</b> The best feature of CSP is its mathematically optimal spatial variance maximization. The advantage to our project is that it provides a fast, interpretable linear baseline. By generating clear topographical maps, it verifies that our preprocessed data contains valid motor imagery signatures before we apply complex deep learning.</p>
 
-            <img src="csp_topology_1790700307433.jpg" alt="Fig 3">
-            <div class="figure-caption">Fig. 3. Topographical heat map generated from CSP spatial filters demonstrating spatial electrical activation. A distinct hotspot is visible over the left motor cortex (C3), indicative of right-hand motor imagery.</div>
+            <img src="csp_architecture.png" alt="Fig 3">
+            <div class="figure-caption">Fig. 3. Architecture diagram of the Common Spatial Pattern (CSP) and Linear Discriminant Analysis (LDA) pipeline, illustrating the spatial filtering and classification stages.</div>
 
             <h3>3.3. Model 2: EEGNet (Lightweight CNN)</h3>
             <p>In response to the limitations of linear filters, Lawhern et al. introduced EEGNet, a compact Convolutional Neural Network (CNN) specifically tailored for Brain-Computer Interfaces [14]. EEGNet was designed to bridge the gap between traditional signal processing techniques (like CSP and filter banks) and modern deep learning by enforcing architectural constraints that explicitly mimic known EEG feature extraction paradigms.</p>
