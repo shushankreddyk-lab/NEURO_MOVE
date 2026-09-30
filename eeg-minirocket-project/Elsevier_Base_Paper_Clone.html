@@ -206,7 +206,7 @@
             <div class="table-caption">Table 2: Comparison of trainable parameters across evaluated models.</div>
             <table>
                 <tr><th>Model Architecture</th><th>Trainable Parameters</th><th>Optimization Strategy</th></tr>
-                <tr><td>CSP + SVM</td><td>None (Analytic)</td><td>Eigenvalue Decomposition</td></tr>
+                <tr><td>CSP + LDA</td><td>None (Analytic)</td><td>Eigenvalue Decomposition & LDA</td></tr>
                 <tr><td>EEGNet</td><td>1,732</td><td>Backpropagation (Adam)</td></tr>
                 <tr><td>Shallow ConvNet</td><td>47,324</td><td>Backpropagation (Adam)</td></tr>
                 <tr><td>Deep ConvNet</td><td>152,812</td><td>Backpropagation (Adam)</td></tr>
@@ -234,7 +234,7 @@
             <div class="table-caption">Table 3: Multi-class accuracy comparison on the BCI Comp IV-2a dataset.</div>
             <table>
                 <tr><th>Model Architecture</th><th>Avg Accuracy (%)</th><th>Std Dev (%)</th><th>Kappa Score</th></tr>
-                <tr><td>CSP + SVM (Baseline)</td><td>65.4</td><td>8.2</td><td>0.54</td></tr>
+                <tr><td>CSP + LDA (Baseline)</td><td>65.4</td><td>8.2</td><td>0.54</td></tr>
                 <tr><td>Shallow ConvNet</td><td>71.8</td><td>7.5</td><td>0.62</td></tr>
                 <tr><td>CNN-LSTM</td><td>72.5</td><td>6.8</td><td>0.63</td></tr>
                 <tr><td>Deep ConvNet</td><td>73.1</td><td>8.0</td><td>0.64</td></tr>
@@ -256,6 +256,7 @@
             <div class="table-caption">Table 4: Computational overhead comparison (Training time per subject on RTX 3090).</div>
             <table>
                 <tr><th>Model Architecture</th><th>Training Time (seconds)</th><th>Inference Time/Trial (ms)</th><th>Optimizer</th></tr>
+                <tr><td>CSP + LDA</td><td>0.5</td><td>1.2</td><td>Analytic</td></tr>
                 <tr><td>CNN-LSTM</td><td>185.4</td><td>73.8</td><td>Adam</td></tr>
                 <tr><td>Deep ConvNet</td><td>142.1</td><td>51.4</td><td>Adam</td></tr>
                 <tr><td>Shallow ConvNet</td><td>85.6</td><td>28.1</td><td>Adam</td></tr>
