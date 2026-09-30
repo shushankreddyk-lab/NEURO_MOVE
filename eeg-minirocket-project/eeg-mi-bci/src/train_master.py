@@ -193,9 +193,17 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         print(json.dumps({"type": "error", "message": f"Data not found."}), flush=True)
         return
         
-    loaded = np.load(data_path)
-    X = loaded['X']
-    y = loaded['y']
+    # Prefer pre-saved float32 version if available (avoids 1.33GB float64 allocation)
+    f32_path = data_path.replace('.npz', '_f32.npz')
+    if os.path.exists(f32_path):
+        loaded = np.load(f32_path)
+        X = loaded['X']  # already float32
+        y = np.array(loaded['y'])
+    else:
+        # mmap + cast: avoids holding float64 and float32 in RAM simultaneously
+        loaded = np.load(data_path, mmap_mode='r')
+        X = np.array(loaded['X'], dtype=np.float32)
+        y = np.array(loaded['y'])
     
     test_size = 1.0 - train_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)

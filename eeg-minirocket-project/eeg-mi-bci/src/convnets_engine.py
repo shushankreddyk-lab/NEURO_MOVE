@@ -15,7 +15,7 @@ def get_device(prefer="auto"):
     return torch.device("cpu")
 
 class ShallowConvNet(nn.Module):
-    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.5):
+    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.3):
         super(ShallowConvNet, self).__init__()
         self.channels = channels
         self.num_classes = num_classes
@@ -139,7 +139,7 @@ class DeepConvNet(nn.Module):
 
 class ConvNet_Pipeline:
     def __init__(self, arch="shallow", epochs=100, batch_size=64, lr=1e-3, channels=22, samples=656, num_classes=4,
-                 device="auto", amp=True, patience=12):
+                 device="auto", amp=True, patience=9999):
         self.arch = arch
         self.epochs = epochs
         self.batch_size = batch_size
@@ -155,8 +155,8 @@ class ConvNet_Pipeline:
             self.model = DeepConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
             
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-3)
-        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs))
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=5e-4)
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0
         self.mean = None
@@ -165,10 +165,11 @@ class ConvNet_Pipeline:
         self.channels = channels
 
     def _prepare_data(self, X):
+        X = np.asarray(X, dtype=np.float32)  # force float32 to halve memory
         if X.ndim == 3:
             X = X[:, np.newaxis, :, :]
         elif X.ndim == 2:
-            X = X[:, np.newaxis, 10, 656]
+            X = X[np.newaxis, np.newaxis, :, :]
         return X
 
     def fit(self, X, y, X_val=None, y_val=None, progress_callback=None, incremental=False):
@@ -188,20 +189,20 @@ class ConvNet_Pipeline:
         else:
             self.label_classes_ = np.arange(n_out)
             
-        batch_mean = np.mean(X, axis=(0, 3), keepdims=True)
-        batch_std = np.std(X, axis=(0, 3), keepdims=True) + 1e-8
+        batch_mean = np.mean(X, axis=(0, 3), keepdims=True).astype(np.float32)
+        batch_std = (np.std(X, axis=(0, 3), keepdims=True) + 1e-8).astype(np.float32)
 
         if incremental and self.mean is not None:
             alpha = 0.1
-            m = np.asarray(self.mean, dtype=np.float64).reshape(1, -1, 1, 1)
-            s = np.asarray(self.std, dtype=np.float64).reshape(1, -1, 1, 1)
+            m = np.asarray(self.mean, dtype=np.float32).reshape(1, -1, 1, 1)
+            s = np.asarray(self.std, dtype=np.float32).reshape(1, -1, 1, 1)
             self.mean = (1 - alpha) * m + alpha * batch_mean
             self.std = (1 - alpha) * s + alpha * batch_std
         else:
             self.mean = batch_mean
             self.std = batch_std
             
-        std = np.asarray(self.std, dtype=np.float64)
+        std = np.asarray(self.std, dtype=np.float32)
         std[std < 1e-6] = 1.0
         self.std = std
 
@@ -276,11 +277,13 @@ class ConvNet_Pipeline:
                 "epoch": epoch + 1,
                 "total_epochs": self.epochs,
                 "train_loss": train_loss,
+                "train_acc": train_acc,
                 "val_loss": val_loss,
                 "val_acc": val_acc
             }), flush=True)
                 
-            if X_val is not None:
+            # Early stopping effectively disabled (patience=9999 by default)
+            if X_val is not None and self.patience < 9999:
                 best = max(self.history["val_acc"]) if self.history["val_acc"] else val_acc
                 bad = sum(1 for v in reversed(self.history["val_acc"]) if v < best)
                 if bad >= self.patience:

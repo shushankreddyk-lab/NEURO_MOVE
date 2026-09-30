@@ -42,8 +42,8 @@ class EEG_Conformer(nn.Module):
     3. Fully Connected Classification Module
     """
     def __init__(self, num_classes=4, channels=20, samples=656, 
-                 F1=40, kernLength=64, pool1=8, F2=40, depthMultiplier=2,
-                 drop_prob=0.5, d_model=40, heads=4, tf_layers=3):
+                 F1=64, kernLength=64, pool1=8, F2=64, depthMultiplier=2,
+                 drop_prob=0.3, d_model=80, heads=8, tf_layers=4):
         super().__init__()
         self.in_channels = channels
         self.samples = samples
@@ -82,10 +82,14 @@ class EEG_Conformer(nn.Module):
         # 6. Classification Head
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(d_model * out_len, 256),
+            nn.Linear(d_model * out_len, 512),
+            nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Dropout(drop_prob),
-            nn.Linear(256, num_classes)
+            nn.Linear(512, 128),
+            nn.ELU(),
+            nn.Dropout(drop_prob * 0.5),
+            nn.Linear(128, num_classes)
         )
 
     def forward(self, x):
@@ -178,7 +182,7 @@ class AdvancedEEGPipeline:
         else:
             val_dl = None
             
-        opt = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-3)
+        opt = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=5e-4)
         sched = torch.optim.lr_scheduler.OneCycleLR(
             opt, max_lr=self.lr, steps_per_epoch=len(dl), epochs=self.epochs
         )
@@ -188,7 +192,7 @@ class AdvancedEEGPipeline:
         total = len(yi)
         class_weights = total / (len(self.classes_) * class_counts)
         class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
-        crit = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.1)
+        crit = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
         
         amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda") if amp else None

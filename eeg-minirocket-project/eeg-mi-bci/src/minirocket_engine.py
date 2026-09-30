@@ -80,8 +80,8 @@ class GPUMiniRocketHead(nn.Module):
 
 
 class MiniRocketPipeline:
-    def __init__(self, num_kernels=10000, device="cuda", hidden=512, dropout=0.3,
-                 head_epochs=30, head_lr=1e-3, batch_size=256, in_channels=20, seq_len=656):
+    def __init__(self, num_kernels=10000, device="cuda", hidden=512, dropout=0.15,
+                 head_epochs=150, head_lr=5e-4, batch_size=256, in_channels=20, seq_len=656):
         # Ensure we strictly use GPU if requested
         self.device = get_device()
         print(f"[MiniRocketPipeline] Using device: {self.device}")
@@ -148,9 +148,9 @@ class MiniRocketPipeline:
         ds = torch.utils.data.TensorDataset(Zn, yi)
         dl = torch.utils.data.DataLoader(ds, batch_size=min(self.batch_size, len(ds)), shuffle=True)
         
-        opt = torch.optim.AdamW(self.gpu_head.parameters(), lr=self.head_lr, weight_decay=1e-2)
-        sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, self.head_epochs))
-        crit = nn.CrossEntropyLoss(label_smoothing=0.05)
+        opt = torch.optim.AdamW(self.gpu_head.parameters(), lr=self.head_lr, weight_decay=5e-3)
+        sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, self.head_epochs), eta_min=1e-6)
+        crit = nn.CrossEntropyLoss(label_smoothing=0.01)
         
         amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda") if amp else None

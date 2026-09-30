@@ -14,9 +14,9 @@ class CSP_Engine:
         self.csp = CSP(n_components=self.n_components, reg=None, log=True, norm_trace=False)
         
         if self.classifier_type == "svm":
-            self.clf = SVC(kernel='rbf', C=1.0, gamma='scale', probability=True)
+            self.clf = SVC(kernel='rbf', C=10.0, gamma='scale', probability=True)
         else:
-            self.clf = LDA()
+            self.clf = LDA(solver='lsqr', shrinkage='auto')
             
         self.pipeline = Pipeline([('CSP', self.csp), (self.classifier_type.upper(), self.clf)])
         

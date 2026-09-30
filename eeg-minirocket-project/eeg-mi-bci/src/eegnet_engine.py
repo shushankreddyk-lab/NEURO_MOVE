@@ -16,7 +16,7 @@ def get_device(prefer="auto"):
 
 class EEGNet(nn.Module):
     def __init__(self, num_classes=4, channels=22, samples=656, 
-                 F1=8, D=2, F2=16, kernel_length=64, p_drop=0.25):
+                 F1=16, D=3, F2=48, kernel_length=64, p_drop=0.15):
         super(EEGNet, self).__init__()
         self.F1 = F1
         self.D = D
@@ -79,9 +79,9 @@ class EEGNet(nn.Module):
         return x
 
 class EEGNet_Pipeline:
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3, channels=22, samples=656, num_classes=4,
-                 device="auto", amp=True, patience=12,
-                 F1=8, D=2, F2=16, kernel_length=64, dropout=0.25, label_smoothing=0.0):
+    def __init__(self, epochs=100, batch_size=32, lr=1e-3, channels=22, samples=656, num_classes=4,
+                 device="auto", amp=True, patience=9999,
+                 F1=16, D=3, F2=48, kernel_length=64, dropout=0.15, label_smoothing=0.0):
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -94,8 +94,8 @@ class EEGNet_Pipeline:
             F1=F1, D=D, F2=F2, kernel_length=kernel_length, p_drop=dropout
         ).to(self.device)
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-3)
-        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs))
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=5e-4)
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0
         self.mean = None
@@ -104,10 +104,11 @@ class EEGNet_Pipeline:
         self.channels = channels
 
     def _prepare_data(self, X):
+        X = np.asarray(X, dtype=np.float32)  # force float32 to halve memory
         if X.ndim == 3:
             X = X[:, np.newaxis, :, :]
         elif X.ndim == 2:
-            X = X[:, np.newaxis, 10, 656]
+            X = X[np.newaxis, np.newaxis, :, :]
         return X
 
     def fit(self, X, y, X_val=None, y_val=None, progress_callback=None, incremental=False):
@@ -135,20 +136,20 @@ class EEGNet_Pipeline:
                 class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
         self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device))
         
-        batch_mean = np.mean(X, axis=(0, 3), keepdims=True)
-        batch_std = np.std(X, axis=(0, 3), keepdims=True) + 1e-8
+        batch_mean = np.mean(X, axis=(0, 3), keepdims=True).astype(np.float32)
+        batch_std = (np.std(X, axis=(0, 3), keepdims=True) + 1e-8).astype(np.float32)
 
         if incremental and self.mean is not None:
             alpha = 0.1
-            m = np.asarray(self.mean, dtype=np.float64).reshape(1, -1, 1, 1)
-            s = np.asarray(self.std, dtype=np.float64).reshape(1, -1, 1, 1)
+            m = np.asarray(self.mean, dtype=np.float32).reshape(1, -1, 1, 1)
+            s = np.asarray(self.std, dtype=np.float32).reshape(1, -1, 1, 1)
             self.mean = (1 - alpha) * m + alpha * batch_mean
             self.std = (1 - alpha) * s + alpha * batch_std
         else:
             self.mean = batch_mean
             self.std = batch_std
             
-        std = np.asarray(self.std, dtype=np.float64)
+        std = np.asarray(self.std, dtype=np.float32)
         std[std < 1e-6] = 1.0
         self.std = std
 
@@ -227,11 +228,13 @@ class EEGNet_Pipeline:
                 "epoch": epoch + 1,
                 "total_epochs": self.epochs,
                 "train_loss": train_loss,
+                "train_acc": train_acc,
                 "val_loss": val_loss,
                 "val_acc": val_acc
             }), flush=True)
                 
-            if X_val is not None:
+            # Early stopping effectively disabled (patience=9999 by default)
+            if X_val is not None and self.patience < 9999:
                 best = max(self.history["val_acc"]) if self.history["val_acc"] else val_acc
                 bad = sum(1 for v in reversed(self.history["val_acc"]) if v < best)
                 if bad >= self.patience:
