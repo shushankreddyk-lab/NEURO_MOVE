@@ -2041,6 +2041,8 @@ if selected_tab == '🎯 Live Inference':
                     raw.pick_channels(picked_channels)
                 
                 if is_bci2a:
+                    # Apply Common Average Referencing (CAR) matching training
+                    raw.set_eeg_reference('average', projection=False)
                     # Filter at native sfreq (250Hz) FIRST!
                     raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
                     

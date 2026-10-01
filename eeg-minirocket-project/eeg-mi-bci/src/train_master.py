@@ -89,6 +89,7 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
     
     X_list = []
     y_list = []
+    meta_list = []
     
     msg = f"Extracting data for {'10-Class Master' if mode == 'master' else f'OVR Group {group_id}'}..."
     print(json.dumps({"type": "progress", "message": msg}), flush=True)
@@ -167,8 +168,24 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
                 
                 if X_batch.shape[0] > 0:
                     y_batch = [event_to_label[ev[2]] for ev in epochs.events]
+                    meta_batch = []
+                    for ev_idx, ev in enumerate(epochs.events):
+                        marker_int = ev[2]
+                        lbl = event_to_label[marker_int]
+                        desc_str = mapping.get(marker_int)
+                        marker_str = inv_orig.get(desc_str)
+                        meta_batch.append({
+                            "dataset_id": "PhysionetMI",
+                            "subject_id": sub,
+                            "run_id": run,
+                            "trial_id": ev_idx,
+                            "class_label": lbl,
+                            "marker": marker_str,
+                            "task": task_type
+                        })
                     X_list.append(X_batch)
                     y_list.extend(y_batch)
+                    meta_list.extend(meta_batch)
                 else:
                     print("X_batch was empty!", flush=True)
                         
@@ -183,23 +200,33 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         
     X_all = np.concatenate(X_list, axis=0)
     y_all = np.asarray(y_list, dtype=np.int64)
+    meta_all = np.array(meta_list, dtype=object)
+    
     if X_all.shape[0] != y_all.shape[0]:
         print(f"Error: Mismatched X ({X_all.shape[0]}) and y ({y_all.shape[0]}) sizes.", file=sys.stderr)
         sys.exit(1)
     
-    fname = f"master_data_{sub_str}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}.npz"
-    np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
+    import hashlib
+    config_str = f"{mode}_{group_id}_{sub_str}_v2"
+    hash_key = hashlib.md5(config_str.encode('utf-8')).hexdigest()[:8]
+    fname = f"master_data_{sub_str}_{hash_key}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}_{hash_key}.npz"
+    
+    np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all, meta=meta_all)
     
     return X_all.shape, y_all.shape
 
 def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_name="MiniRocket", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
     sub_str = f"subs{sub_start}to{sub_end}"
     
+    import hashlib
+    
     if "2a" in dataset_path.lower():
         fname = f"bci2a_data_{sub_str}.npz"
         model_prefix = "bci2a"
     else:
-        fname = f"master_data_{sub_str}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}.npz"
+        config_str = f"{mode}_{group_id}_{sub_str}_v2"
+        hash_key = hashlib.md5(config_str.encode('utf-8')).hexdigest()[:8]
+        fname = f"master_data_{sub_str}_{hash_key}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}_{hash_key}.npz"
         model_prefix = "master" if mode == "master" else f"ovr_group{group_id}"
         
     data_path = os.path.join(data_dir, fname)
