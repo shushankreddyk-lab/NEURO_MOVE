@@ -64,6 +64,9 @@ def load_local_eeg_data(subject_id, runs, data_dir=r'd:\eeg-minirocket-project\p
         edf_file = os.path.join(subject_dir, f"{subject_str}{run_str}.edf")
         if not os.path.exists(edf_file):
             print(f"File not found: {edf_file}")
+            raws.append(None)
+            events_list.append(None)
+            event_id_mappings.append(None)
             continue
             
         try:

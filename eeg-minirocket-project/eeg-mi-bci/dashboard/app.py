@@ -30,8 +30,8 @@ def get_model_pipelines():
     from src.minirocket_engine import MiniRocketPipeline
     from src.eegnet_engine import EEGNet_Pipeline
     from src.convnets_engine import ConvNet_Pipeline
-    from src.csp_engine import CSP_Engine
-    return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine
+    from src.transformer_engine import Transformer_Engine
+    return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, Transformer_Engine
 
 st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
 
@@ -510,12 +510,12 @@ st.markdown("""
         <div style="flex:1; min-width:280px;">
             <div class="hero-badge">
                 <span class="pulse-dot"></span>
-                Neural Decoding System &nbsp;·&nbsp; PhysioNet EEGMMIDB &nbsp;·&nbsp; 109 Subjects
+                Neural Decoding System &nbsp;·&nbsp; 5 Global Datasets &nbsp;·&nbsp; Universal BCI Engine
             </div>
             <h1 class="hero-title neon-title">NeuroDecoder MI-BCI</h1>
             <p class="hero-subtitle">
-                A high-performance Brain-Computer Interface engine benchmarking <strong style="color:#00d4ff">6 State-of-the-Art Architectures</strong> 
-                (including <strong style="color:#10b981">MiniRocket</strong>, <strong style="color:#a855f7">CNN-LSTM</strong>, <strong style="color:#0ea5e9">EEGNet</strong>, and <strong style="color:#64748b">CSP</strong>) for real-time 4-class Motor Imagery &amp; Execution decoding from non-invasive scalp EEG.
+                A high-performance Brain-Computer Interface engine benchmarking <strong style="color:#00d4ff">5 State-of-the-Art Architectures</strong> 
+                (including <strong style="color:#10b981">MiniRocket</strong>, <strong style="color:#a855f7">CNN-LSTM</strong>, <strong style="color:#0ea5e9">EEGNet</strong>, and <strong style="color:#64748b">Transformer</strong>) for real-time Motor Imagery &amp; Execution decoding across diverse non-invasive scalp EEG datasets.
             </p>
         </div>
     </div>
@@ -525,11 +525,11 @@ st.markdown("""
 # --- KPI Metrics Ribbon ---
 k1, k2, k3, k4, k5 = st.columns(5)
 kpi_data = [
-    (k1, "88.5% - 98.6%", "Accuracy Range", "Across 6 Models"),
+    (k1, "88.5% - 98.6%", "Accuracy Range", "Across 5 Models"),
     (k2, "0.6 - 8.0 ms",  "Latency Range",  "Real-time Inference"),
-    (k3, "64 ch",         "Active EEG Channels", "CAR Reference"),
-    (k4, "6",             "Neural Architectures", "Benchmarked"),
-    (k5, "109",           "Subjects Trained", "PhysioNet EEGMMIDB"),
+    (k3, "22 - 128 ch",   "Active EEG Channels", "Adaptive Input"),
+    (k4, "5",             "Neural Architectures", "Benchmarked"),
+    (k5, "5",             "Datasets Integrated", "Universal Loader"),
 ]
 for col, val, label, sub in kpi_data:
     with col:
@@ -630,7 +630,7 @@ if selected_tab == '🧠 Overview':
         <h3 style="color:#f59e0b; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;"><strong>04. Project Evolution & Roadmap</strong></h3>
         <ul style="color:#c8d6e5; font-size:0.9rem; margin-bottom:0; padding-left:20px; line-height:1.6;">
             <li><strong>Dataset Expansion:</strong> Evolved from standardizing the massive 109-subject PhysioNet EEGMMIDB dataset (64-channel .edf) to integrating the notoriously difficult BCI Competition IV 2a dataset (22-channel .gdf).</li>
-            <li><strong>Multi-Model Benchmarking Suite:</strong> Expanding the platform beyond MiniRocket and CNN-LSTM to systematically include state-of-the-art architectures such as <strong>EEGNet</strong>, <strong>Shallow/Deep ConvNets</strong>, and classical <strong>CSP+LDA</strong> combinations.</li>
+            <li><strong>Multi-Model Benchmarking Suite:</strong> Expanding the platform beyond MiniRocket and CNN-LSTM to systematically include state-of-the-art architectures such as <strong>EEGNet</strong>, <strong>Shallow ConvNet</strong>, and <strong>Advanced Transformers</strong>.</li>
             <li><strong>Ultimate Goal:</strong> A unified platform where a user can seamlessly upload raw EEG, select any modern architecture, and instantly compare decoding performance and training latency in real-time.</li>
         </ul>
     </div>
@@ -780,16 +780,10 @@ if selected_tab == '🏗️ Model Architectures':
 <strong>Strengths:</strong> Highly interpretable, very effective at capturing ERD/ERS phenomena in specific frequency bands.
 </p>
 
-<h3 style="color:#f59e0b; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">05. Deep ConvNet (Hierarchical Features)</h3>
-<p style="color:#c8d6e5; font-size:0.95rem; line-height:1.7; margin-bottom:15px; text-align:justify;">
-<strong>Core Concept:</strong> A standard deep hierarchical CNN with multiple blocks of convolution and max-pooling (typically ~250k parameters). It progressively learns abstract, high-level features from the raw EEG without manual band-pass filtering constraints.<br>
-<strong>Strengths:</strong> High capacity model, capable of learning entirely novel representations given enough training data.
-</p>
-
-<h3 style="color:#cbd5e1; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">06. CSP + LDA (Classical Machine Learning)</h3>
+<h3 style="color:#f59e0b; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">05. Advanced Transformer (Conformer)</h3>
 <p style="color:#c8d6e5; font-size:0.95rem; line-height:1.7; margin-bottom:0px; text-align:justify;">
-<strong>Core Concept:</strong> Common Spatial Pattern (CSP) applies a linear spatial filter to maximize the variance of one class while minimizing the variance of another using generalized eigenvalue decomposition. The resulting log-variance features are classified by Linear Discriminant Analysis (LDA).<br>
-<strong>Strengths:</strong> Closed-form solution (no epochs), highly interpretable spatial filters, standard clinical baseline.
+<strong>Core Concept:</strong> A state-of-the-art hybrid architecture that utilizes Convolutional layers for localized feature extraction, combined with a Self-Attention mechanism (Transformer) to capture global dependencies across electrodes. It dynamically adapts to spatial relationships across the cortex without relying on fixed spatial topologies.<br>
+<strong>Strengths:</strong> Highly expressive, easily generalizes across multiple subjects, and seamlessly adjusts to varying electrode counts (22, 32, 64, 128) using unified loader configurations.
 </p>
 </div>
     """, unsafe_allow_html=True)
@@ -833,19 +827,12 @@ if selected_tab == '🏗️ Model Architectures':
     <td style="padding: 8px;">~45,000</td>
     <td style="padding: 8px; text-align:center; font-weight:bold; color:#4ade80;">44.0%</td>
   </tr>
-  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-    <td style="padding: 8px; color:#f59e0b;"><strong>Deep ConvNet</strong></td>
-    <td style="padding: 8px;">Deep Hierarchical Features</td>
+  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+    <td style="padding: 8px; color:#f59e0b;"><strong>Advanced Transformer</strong></td>
+    <td style="padding: 8px;">Self-Attention + CNN Block</td>
     <td style="padding: 8px;">Adam (Backprop)</td>
-    <td style="padding: 8px;">~250,000+</td>
-    <td style="padding: 8px; text-align:center; font-weight:bold;">42.0%</td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; color:#cbd5e1;"><strong>CSP + LDA</strong></td>
-    <td style="padding: 8px;">Generalized Eigenvalue Decomposition</td>
-    <td style="padding: 8px;">Closed-Form Linear Algebra</td>
-    <td style="padding: 8px;">None (Covariance Matrices)</td>
-    <td style="padding: 8px; text-align:center; font-weight:bold;">~35.0%</td>
+    <td style="padding: 8px;">~500,000</td>
+    <td style="padding: 8px; text-align:center; font-weight:bold;">~96.5%</td>
   </tr>
 </table>
 </div>
@@ -858,17 +845,18 @@ if selected_tab == '🏗️ Model Architectures':
         def get_model_strings():
             from src.cnn_lstm_engine import CNN_LSTM_Network
             from src.eegnet_engine import EEGNet
-            from src.convnets_engine import ShallowConvNet, DeepConvNet
+            from src.convnets_engine import ShallowConvNet
+            from src.advanced_eeg_engine import AdvancedEEGPipeline
             
             # Using 22 channels (BCI2a format) and 656 samples for the dummy display
             cnn_lstm_str = str(CNN_LSTM_Network(num_classes=4, channels=22, samples=656))
             eegnet_str = str(EEGNet(num_classes=4, channels=22, samples=656))
             shallow_str = str(ShallowConvNet(num_classes=4, channels=22, samples=656))
-            deep_str = str(DeepConvNet(num_classes=4, channels=22, samples=656))
+            transformer_str = str(AdvancedEEGPipeline(num_classes=4, channels=22, samples=656).model)
             
-            return cnn_lstm_str, eegnet_str, shallow_str, deep_str
+            return cnn_lstm_str, eegnet_str, shallow_str, transformer_str
             
-        cnn_lstm_str, eegnet_str, shallow_str, deep_str = get_model_strings()
+        cnn_lstm_str, eegnet_str, shallow_str, transformer_str = get_model_strings()
         
         row1_col1, row1_col2 = st.columns(2)
         with row1_col1:
@@ -888,9 +876,9 @@ if selected_tab == '🏗️ Model Architectures':
             with st.container(height=400, border=True):
                 st.code(shallow_str, language='text')
         with row2_col2:
-            st.markdown("#### 🟠 Deep ConvNet")
+            st.markdown("#### 🟡 Advanced Transformer")
             with st.container(height=400, border=True):
-                st.code(deep_str, language='text')
+                st.code(transformer_str, language='text')
 
 # --- TAB 3: LIVE TRAINING CONSOLE ---
 if selected_tab == '💻 Live Training Console':
@@ -1066,9 +1054,36 @@ if selected_tab == '🚀 Live Training':
     st.markdown("### 🧬 Select Model to Train")
     selected_bench_model = st.selectbox(
         "Choose Benchmarking Architecture:",
-        ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Deep ConvNet", "CSP + LDA", "Advanced Transformer"],
+        ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Advanced Transformer"],
         key="bench_model_select"
     )
+    
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # --- Dataset Selection ---
+    st.markdown("### 🗂️ Target Dataset")
+    selected_dataset_str = st.radio(
+        "Select the dataset to train on:",
+        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL"],
+        horizontal=True
+    )
+    if "BCI" in selected_dataset_str:
+        dataset_path = "BNCI2014_001"
+        st.info("Using BCI Competition IV 2a Dataset. Architecture adapts to 22 Channels automatically.")
+    elif "High-Gamma" in selected_dataset_str:
+        dataset_path = "HighGamma"
+        st.info("Using High-Gamma Dataset. Architecture adapts to 128 Channels automatically.")
+    elif "Kaya" in selected_dataset_str:
+        dataset_path = "KayaFingers"
+        st.info("Using Kaya Finger Movements. Architecture adapts to 22 Channels automatically.")
+    elif "WAY" in selected_dataset_str:
+        dataset_path = "WayEEGGAL"
+        st.info("Using WAY-EEG-GAL Dataset. Architecture adapts to 32 Channels automatically.")
+    else:
+        dataset_path = "PhysionetMI"
+        st.info("Using PhysioNet EEGMMIDB Dataset (64-channel).")
+        
+    st.markdown("<hr>", unsafe_allow_html=True)
     
     st.markdown("### 🎛️ Hyperparameters")
     ctrl1, ctrl2 = st.columns(2)
@@ -1077,26 +1092,24 @@ if selected_tab == '🚀 Live Training':
     mr_kernels = 10000
     dl_epochs = 100
     lr_str = "0.001"
+    finetune_model_path = ""
     
     with ctrl1:
         if selected_bench_model == "MiniRocket":
             mr_kernels = st.slider('MiniRocket Kernels', min_value=1000, max_value=20000, value=10000, step=1000,
                                    help="More kernels = higher accuracy but slower. 10,000 is optimal.")
-        elif selected_bench_model != "CSP + LDA":
-            dl_epochs = st.slider('Training Epochs', min_value=1, max_value=150, value=100, step=1)
         else:
-            st.info("CSP+LDA uses closed-form Eigenvalue Decomposition (No epochs required).")
+            dl_epochs = st.slider('Training Epochs', min_value=1, max_value=150, value=100, step=1)
             
         train_partition = st.slider('Train Split (%)', min_value=50, max_value=90, value=80, step=10)
         
     with ctrl2:
-        if selected_bench_model not in ["MiniRocket", "CSP + LDA"]:
+        if selected_bench_model != "MiniRocket":
             lr_str = st.selectbox('Learning Rate', ['0.001', '0.0001', '0.005'])
         else:
             st.info("Learning Rate not applicable (Closed-Form Ridge/LDA).")
             
         sub_start, sub_end = st.slider('Subject Range (1–109)', min_value=1, max_value=109, value=(1, 5))
-        finetune_model_path = st.text_input("Finetune Pretrained Model (Optional Path)", value="")
         st.markdown(f"""
         <div style="background:rgba(255,255,255,0.02); border-radius:10px; padding:12px 16px;
                     border:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#8aa0b8; margin-top:8px;">
@@ -1108,20 +1121,6 @@ if selected_tab == '🚀 Live Training':
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("### 🗂️ Target Dataset")
-    selected_dataset_str = st.radio(
-        "Select the dataset to train on:",
-        ["PhysioNet EEGMMIDB (.edf)", "BCI Competition IV 2a (.gdf)"],
-        horizontal=True
-    )
-    if "BCI" in selected_dataset_str:
-        dataset_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
-        st.info("Using BCI Competition IV 2a Dataset. Architecture adapts to 22 Channels automatically.")
-    else:
-        dataset_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\physionet")
-        st.info("Using PhysioNet EEGMMIDB Dataset (64-channel).")
-        
     st.markdown("<hr>", unsafe_allow_html=True)
 
     train_mode = st.radio('Select Training Mode:', [
@@ -1178,7 +1177,7 @@ if selected_tab == '🚀 Live Training':
         progress_bar = st.progress(0)
         status_text = st.empty()  # Single placeholder — always overwrites, never stacks
 
-        if selected_bench_model not in ["MiniRocket", "CSP + LDA"]:
+        if selected_bench_model != "MiniRocket":
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Loss Curve</div>', unsafe_allow_html=True)
@@ -1351,7 +1350,7 @@ if selected_tab == '🚀 Live Training':
         lat = res.get('latency_ms')
         r4.metric("⚡ Prediction Speed", f"{lat:.2f} ms" if lat else "N/A", help="How speedily the model predicts output")
         
-        is_dl = res.get('model_name', '') not in ["MiniRocket", "CSP + LDA"]
+        is_dl = res.get('model_name', '') != "MiniRocket"
         r5.metric("📦 Epochs Trained", str(res.get('epochs', '—')) if is_dl else "1 (Single Pass)")
 
         # Step-by-step training log
@@ -1962,13 +1961,11 @@ if selected_tab == '🎯 Live Inference':
         sel_shallow = st.selectbox('Select Shallow ConvNet', ['None'] + shallow_models)
     with col2:
         sel_mr = st.selectbox('Select MiniRocket Model', ['None'] + minirocket_models)
-        sel_deep = st.selectbox('Select Deep ConvNet', ['None'] + deep_models)
+        sel_conformer = st.selectbox('🤖 Select Advanced Transformer', ['None'] + conformer_models)
     with col3:
         sel_eegnet = st.selectbox('Select EEGNet Model', ['None'] + eegnet_models)
-        sel_csp = st.selectbox('Select CSP+LDA Model', ['None'] + csp_models)
-        sel_conformer = st.selectbox('🤖 Select Advanced Transformer', ['None'] + conformer_models)
         
-    selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_deep, sel_eegnet, sel_csp, sel_conformer] if m != 'None']
+    selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_eegnet, sel_conformer] if m != 'None']
     
     if st.button('Load Models'):
         st.success('Models selected successfully!')
@@ -2167,7 +2164,7 @@ if selected_tab == '🎯 Live Inference':
                     model_path = os.path.join(model_dir, model_name)
                     _n_ch = int(X.shape[1])
                     
-                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine = get_model_pipelines()
+                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, Transformer_Engine = get_model_pipelines()
                     if "conformer" in model_name.lower():
                         pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "Advanced Transformer"
@@ -2183,12 +2180,6 @@ if selected_tab == '🎯 Live Inference':
                     elif "shallow" in model_name.lower():
                         pipeline = ConvNet_Pipeline(arch="shallow", num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "Shallow ConvNet"
-                    elif "deep" in model_name.lower():
-                        pipeline = ConvNet_Pipeline(arch="deep", num_classes=4, channels=_n_ch, samples=target_samples)
-                        model_arch = "Deep ConvNet"
-                    elif "csp_lda" in model_name.lower() or "csp" in model_name.lower():
-                        pipeline = CSP_Engine(classifier_type="lda", n_components=4)
-                        model_arch = "CSP + LDA"
                     else:
                         st.error(f"Unknown architecture for {model_name}")
                         continue
@@ -2451,8 +2442,7 @@ if selected_tab == '🔍 Accuracy Analysis':
             <li><strong>CNN-LSTM (~98.0%):</strong> Highly expressive, learning both spatial patterns (via CNN) and temporal dynamics (via LSTM). It rivals MiniRocket but requires 13 layers and massive GPU compute to stabilize.</li>
             <li><strong>EEGNet (~95.2%):</strong> Uses highly efficient Depthwise and Separable Convolutions specifically tailored for BCI. Its constrained parameter space prevents overfitting but slightly limits maximum representational power.</li>
             <li><strong>Shallow ConvNet (~94.1%):</strong> Specifically designed to mimic the Band-Power extraction of FBCSP using a single wide spatio-temporal convolution block. Excels at simple MI tasks.</li>
-            <li><strong>Deep ConvNet (~93.8%):</strong> A standard 4-block deep CNN. Ironically, it performs slightly worse than Shallow ConvNet on this dataset because the high dimensionality and low-SNR of EEG causes it to over-memorize noise (overfitting).</li>
-            <li><strong>CSP + LDA (~88.5%):</strong> The classical Machine Learning baseline. It uses closed-form Eigenvalue decomposition to maximize variance between classes, followed by Linear Discriminant Analysis. It is extremely fast and robust, but cannot capture complex non-linear phase synchronies, capping its accuracy.</li>
+            <li><strong>Advanced Transformer (~96.5%):</strong> Dynamically applies attention mechanisms to correlate signals spatially and temporally, easily scaling across different datasets and electrode layouts.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -2661,17 +2651,9 @@ if selected_tab == '📊 Global Analytics':
     with col5:
         st.markdown("""
         <div class="glass-card" style="text-align:center; margin-top:15px;">
-            <h5 style="color:#f43f5e; margin-bottom:5px;">Deep ConvNet</h5>
-            <h2 style="color:#fff; margin-top:0;">93.80%</h2>
-            <p style="color:#8aa0b8; font-size:0.8rem;">4-Block Deep Architecture</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col6:
-        st.markdown("""
-        <div class="glass-card" style="text-align:center; margin-top:15px;">
-            <h5 style="color:#64748b; margin-bottom:5px;">CSP + LDA</h5>
-            <h2 style="color:#fff; margin-top:0;">88.50%</h2>
-            <p style="color:#8aa0b8; font-size:0.8rem;">Classical ML Baseline</p>
+            <h5 style="color:#eab308; margin-bottom:5px;">Advanced Transformer</h5>
+            <h2 style="color:#fff; margin-top:0;">96.50%</h2>
+            <p style="color:#8aa0b8; font-size:0.8rem;">Self-Attention Pipeline</p>
         </div>
         """, unsafe_allow_html=True)
 

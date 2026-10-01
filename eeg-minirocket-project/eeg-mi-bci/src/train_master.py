@@ -22,7 +22,7 @@ from minirocket_engine import MiniRocketPipeline
 from advanced_eeg_engine import AdvancedEEGPipeline
 from eegnet_engine import EEGNet_Pipeline
 from convnets_engine import ConvNet_Pipeline
-from csp_engine import CSP_Engine
+
 
 def map_run_and_marker_to_group(run, task_type, marker_str):
     # Returns the exact integer class label (0 to 3) expected by the UI
@@ -104,6 +104,8 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
             raws, events_list, mappings = load_local_eeg_data(sub, runs, data_dir=dataset_path)
             for i, raw in enumerate(raws):
                 run = runs[i]
+                if raw is None:
+                    continue
                 events = events_list[i]
                 mapping = mappings[i]
                 
@@ -180,7 +182,10 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         return None, None
         
     X_all = np.concatenate(X_list, axis=0)
-    y_all = np.concatenate(y_list, axis=0)
+    y_all = np.asarray(y_list, dtype=np.int64)
+    if X_all.shape[0] != y_all.shape[0]:
+        print(f"Error: Mismatched X ({X_all.shape[0]}) and y ({y_all.shape[0]}) sizes.", file=sys.stderr)
+        sys.exit(1)
     
     fname = f"master_data_{sub_str}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}.npz"
     np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
@@ -295,6 +300,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             cnn_lstm_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+            sys.exit(1)
     
         cnn_lstm_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_lstm_{sub_str}_{timestamp}.pth"))
 
@@ -318,6 +324,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             conformer_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+            sys.exit(1)
     
         conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_conformer_{sub_str}_{timestamp}.pth"))
 
@@ -340,6 +347,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             eegnet_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+            sys.exit(1)
     
         eegnet_pipeline.save(os.path.join(models_dir, f"{model_prefix}_eegnet_{sub_str}_{timestamp}.pth"))
 
@@ -353,6 +361,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             shallow_pipeline.fit(X_train, y_train, X_test, y_test)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+            sys.exit(1)
         shallow_pipeline.save(os.path.join(models_dir, f"{model_prefix}_shallow_{sub_str}_{timestamp}.pth"))
 
     # Removed Deep ConvNet and CSP+LDA as requested
@@ -364,7 +373,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         import time
         pipeline_to_eval = None
         if model_name == "MiniRocket": pipeline_to_eval = mr_pipeline
-        elif model_name == "CNN-LSTM": pipeline_to_eval = conformer_pipeline
+        elif model_name == "CNN-LSTM": pipeline_to_eval = cnn_lstm_pipeline
+        elif model_name == "Advanced Transformer": pipeline_to_eval = conformer_pipeline
         elif model_name == "EEGNet": pipeline_to_eval = eegnet_pipeline
         elif model_name == "Shallow ConvNet": pipeline_to_eval = shallow_pipeline
         
@@ -418,11 +428,33 @@ if __name__ == "__main__":
     data_path = os.path.join(data_dir, fname)
     
     if not os.path.exists(data_path):
-        shapeX, shapeY = extract_and_save_data(args.mode, args.group, data_dir, args.dataset, sub_start=args.sub_start, sub_end=args.sub_end)
-        if shapeX is None:
-            print(json.dumps({"type": "error", "message": "No data extracted."}), flush=True)
-            sys.exit(1)
+        unified_datasets = ["BNCI2014_001", "PhysionetMI", "HighGamma", "KayaFingers", "WayEEGGAL"]
+        
+        # Strip trailing slash or path elements if user passed a path instead of an ID
+        ds_id = args.dataset
+        for name in unified_datasets:
+            if name.lower() in args.dataset.lower():
+                ds_id = name
+                break
+                
+        if ds_id in unified_datasets:
+            sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+            from dataset_loader_all import load_dataset
+            print(json.dumps({"type": "progress", "message": f"Extracting {ds_id} data using unified loader..."}), flush=True)
             
+            try:
+                X_train, y_train, X_test, y_test = load_dataset(ds_id, subject_id=args.sub_start)
+                X_all = np.concatenate([X_train, X_test], axis=0)
+                y_all = np.concatenate([y_train, y_test], axis=0)
+                np.savez_compressed(data_path, X=X_all, y=y_all)
+            except Exception as e:
+                print(json.dumps({"type": "error", "message": f"Failed to extract {ds_id}: {str(e)}"}), flush=True)
+                sys.exit(1)
+        else:
+            shapeX, shapeY = extract_and_save_data(args.mode, args.group, data_dir, args.dataset, sub_start=args.sub_start, sub_end=args.sub_end)
+            if shapeX is None:
+                print(json.dumps({"type": "error", "message": "No data extracted."}), flush=True)
+                sys.exit(1)
     train_models(
         mode=args.mode, 
         group_id=args.group, 
