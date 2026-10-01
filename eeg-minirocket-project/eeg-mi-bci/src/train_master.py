@@ -247,8 +247,29 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         X = np.array(loaded['X'], dtype=np.float32)
         y = np.array(loaded['y'])
     
-    test_size = 1.0 - train_split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    # PREVENT TEMPORAL LEAKAGE: Chronological Stratified Split
+    # Instead of randomly shuffling all epochs (which causes adjacent epoch leakage),
+    # we take the first `train_split` of each class temporally for training, and the rest for testing.
+    X_train, X_test, y_train, y_test = [], [], [], []
+    for cls in np.unique(y):
+        idx = np.where(y == cls)[0]
+        split = int(len(idx) * train_split)
+        X_train.append(X[idx[:split]])
+        y_train.append(y[idx[:split]])
+        X_test.append(X[idx[split:]])
+        y_test.append(y[idx[split:]])
+        
+    X_train = np.concatenate(X_train, axis=0)
+    y_train = np.concatenate(y_train, axis=0)
+    X_test = np.concatenate(X_test, axis=0)
+    y_test = np.concatenate(y_test, axis=0)
+    
+    # Shuffle internally for model training stability
+    train_idx = np.random.permutation(len(X_train))
+    X_train, y_train = X_train[train_idx], y_train[train_idx]
+    
+    test_idx = np.random.permutation(len(X_test))
+    X_test, y_test = X_test[test_idx], y_test[test_idx]
     
     try:
         from dataset_2a_loader import augment_data
@@ -266,7 +287,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     if model_name == "MiniRocket":
         # Train MiniRocket (GPU-accelerated)
         print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
-        mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2])
+        mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2], head_epochs=epochs, head_lr=lr)
         
         import threading
         import time
