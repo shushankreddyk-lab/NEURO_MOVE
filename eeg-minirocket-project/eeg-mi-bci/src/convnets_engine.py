@@ -310,9 +310,14 @@ class ConvNet_Pipeline:
         self.model.eval()
         X = self._prepare_data(X)
         if self.mean is not None:
-            X = (X - self.mean) / self.std
+            m = self.mean.cpu().numpy() if hasattr(self.mean, 'cpu') else self.mean
+            s = self.std.cpu().numpy() if hasattr(self.std, 'cpu') else self.std
+            X = (X - m) / s
         with torch.no_grad():
-            X_t = torch.tensor(X, dtype=torch.float32).to(self.device)
+            if isinstance(X, torch.Tensor):
+                X_t = X.clone().detach().to(torch.float32).to(self.device)
+            else:
+                X_t = torch.tensor(X, dtype=torch.float32).to(self.device)
             outputs = self.model(X_t)
             probs = torch.nn.functional.softmax(outputs, dim=1)
         return probs.cpu().numpy()

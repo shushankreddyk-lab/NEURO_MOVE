@@ -345,8 +345,39 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
         csp_pipeline.save(os.path.join(models_dir, f"{model_prefix}_csp_lda_{sub_str}_{timestamp}.pkl"))
 
-    print(json.dumps({"type": "complete", "message": f"Training completed successfully for {model_name} on {model_prefix}!"}), flush=True)
-
+    # Compute final metrics for the completion message
+    final_acc = 0.0
+    latency_ms = 0.0
+    try:
+        import time
+        from sklearn.metrics import accuracy_score
+        pipeline_to_eval = None
+        if model_name == "MiniRocket": pipeline_to_eval = mr_pipeline
+        elif model_name == "CNN-LSTM": pipeline_to_eval = conformer_pipeline
+        elif model_name == "EEGNet": pipeline_to_eval = eegnet_pipeline
+        elif model_name == "Shallow ConvNet": pipeline_to_eval = shallow_pipeline
+        elif model_name == "Deep ConvNet": pipeline_to_eval = deep_pipeline
+        elif model_name == "CSP + LDA": pipeline_to_eval = csp_pipeline
+        
+        if pipeline_to_eval:
+            # Measure latency on 1 sample to simulate real-time BCI latency
+            start_t = time.time()
+            _ = pipeline_to_eval.predict(X_test[:1])
+            end_t = time.time()
+            latency_ms = (end_t - start_t) * 1000.0
+            
+            # Measure final validation accuracy
+            y_pred_all = pipeline_to_eval.predict(X_test)
+            final_acc = float(accuracy_score(y_test, y_pred_all))
+    except Exception as e:
+        print(f"Error calculating metrics: {e}", file=sys.stderr)
+        
+    print(json.dumps({
+        "type": "complete", 
+        "message": f"Training completed successfully for {model_name} on {model_prefix}!",
+        "final_val_acc": final_acc,
+        "latency_ms": latency_ms
+    }), flush=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

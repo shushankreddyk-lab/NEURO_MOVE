@@ -81,7 +81,7 @@ class GPUMiniRocketHead(nn.Module):
 
 class MiniRocketPipeline:
     def __init__(self, num_kernels=10000, device="cuda", hidden=512, dropout=0.15,
-                 head_epochs=150, head_lr=5e-4, batch_size=256, in_channels=20, seq_len=656):
+                 head_epochs=30, head_lr=5e-4, batch_size=256, in_channels=20, seq_len=656):
         # Ensure we strictly use GPU if requested
         self.device = get_device()
         print(f"[MiniRocketPipeline] Using device: {self.device}")
@@ -188,6 +188,17 @@ class MiniRocketPipeline:
         self.gpu_head.eval()
         X_t = torch.tensor(X, dtype=torch.float32)
         
+        # Safely handle legacy numpy arrays or PyTorch tensors
+        m = self.feat_mean
+        s = self.feat_std
+        if not hasattr(m, 'to'):
+            m = torch.tensor(m, dtype=torch.float32)
+        if not hasattr(s, 'to'):
+            s = torch.tensor(s, dtype=torch.float32)
+            
+        mu = m.to(self.device)
+        sd = s.to(self.device)
+        
         probs = []
         ppv_batch = 64  # reduced batch on GPU to avoid OOM
         with torch.no_grad():
@@ -198,8 +209,6 @@ class MiniRocketPipeline:
                 out = self.extractor(bx)
                 
                 # Normalize
-                mu = self.feat_mean.to(self.device)
-                sd = self.feat_std.to(self.device)
                 zn = (out - mu) / sd
                 
                 # Predict
@@ -227,11 +236,11 @@ class MiniRocketPipeline:
 
     def load(self, filepath):
         state = torch.load(filepath, map_location=self.device, weights_only=False)
-        self.num_kernels = state['num_kernels']
-        self.hidden = state['hidden']
-        self.dropout = state['dropout']
-        self.in_channels = state['in_channels']
-        self.seq_len = state['seq_len']
+        self.num_kernels = state.get('num_kernels', 10000)
+        self.hidden = state.get('hidden', 512)
+        self.dropout = state.get('dropout', 0.15)
+        self.in_channels = state.get('in_channels', 20)
+        self.seq_len = state.get('seq_len', 656)
         
         self.extractor = TorchMiniRocket(self.in_channels, self.seq_len, self.num_kernels).to(self.device)
         self.extractor.load_state_dict(state['extractor'])

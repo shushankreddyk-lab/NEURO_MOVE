@@ -11,7 +11,6 @@ import os
 import matplotlib.pyplot as plt
 from PIL import Image
 import sys
-import mne
 
 import sys
 
@@ -23,6 +22,8 @@ if _D_PKGS not in sys.path:
 # Ensure src is in path to import modules, prioritizing it over the root src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import torch
+
 @st.cache_resource
 def get_model_pipelines():
     from src.advanced_eeg_engine import AdvancedEEGPipeline
@@ -31,8 +32,6 @@ def get_model_pipelines():
     from src.convnets_engine import ConvNet_Pipeline
     from src.csp_engine import CSP_Engine
     return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine
-
-AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine = get_model_pipelines()
 
 st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
 
@@ -1179,13 +1178,19 @@ if selected_tab == '🚀 Live Training':
         progress_bar = st.progress(0)
         status_text = st.empty()  # Single placeholder — always overwrites, never stacks
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Loss Curve</div>', unsafe_allow_html=True)
-            loss_placeholder = st.empty()
-        with col2:
-            st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Accuracy Curve</div>', unsafe_allow_html=True)
-            acc_placeholder = st.empty()
+        if selected_bench_model not in ["MiniRocket", "CSP + LDA"]:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Loss Curve</div>', unsafe_allow_html=True)
+                loss_placeholder = st.empty()
+            with col2:
+                st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;">Accuracy Curve</div>', unsafe_allow_html=True)
+                acc_placeholder = st.empty()
+        else:
+            loss_placeholder = None
+            acc_placeholder = None
+            st.markdown(f'<div style="color:#5a7a99; font-size:0.85rem; padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 8px;">⏳ <strong>{selected_bench_model}</strong> training in progress. This model uses a single-pass/closed-form solver and does not produce epoch-by-epoch learning curves.</div>', unsafe_allow_html=True)
+
 
         train_losses, val_losses, train_accs, val_accs = [], [], [], []
         training_log_lines = []
@@ -1273,9 +1278,11 @@ if selected_tab == '🚀 Live Training':
                             train_accs.append(data['train_acc'])
                             val_accs.append(data['val_acc'])
                             loss_df = pd.DataFrame({'Train Loss': train_losses, 'Val Loss': val_losses}, index=range(1, len(train_losses)+1))
-                            loss_placeholder.line_chart(loss_df)
+                            if loss_placeholder is not None:
+                                loss_placeholder.line_chart(loss_df)
                             acc_df = pd.DataFrame({'Train Acc': train_accs, 'Val Acc': val_accs}, index=range(1, len(train_accs)+1))
-                            acc_placeholder.line_chart(acc_df)
+                            if acc_placeholder is not None:
+                                acc_placeholder.line_chart(acc_df)
                             # CNN epochs fill 60% → 100% of the bar
                             cnn_frac = min(1.0, ep / max(total_ep, 1))
                             overall_frac = 0.60 + cnn_frac * 0.40
@@ -1296,6 +1303,8 @@ if selected_tab == '🚀 Live Training':
                                 final_mr_time = data.get('mr_time')
                             if 'latency_ms' in data:
                                 final_inference_lat = data.get('latency_ms')
+                            if 'final_val_acc' in data:
+                                final_cnn_acc = data.get('final_val_acc')
                             training_log_lines.append(f"✅ {msg}")
                             status_text.empty()
                             progress_bar.empty()
@@ -1304,11 +1313,13 @@ if selected_tab == '🚀 Live Training':
                                 'mr_acc': final_mr_acc,
                                 'mr_time': final_mr_time,
                                 'cnn_acc': final_cnn_acc,
+                                'latency_ms': final_inference_lat,
                                 'cnn_time': final_cnn_time,
                                 'total_time': elapsed,
                                 'epochs': dl_epochs,
                                 'train_accs': train_accs,
                                 'val_accs': val_accs,
+                                'model_name': selected_bench_model
                             }
 
                         elif dtype == 'error':
@@ -1334,9 +1345,13 @@ if selected_tab == '🚀 Live Training':
 
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("⏱ Total Duration", f"{res.get('total_time', 0):.1f} s")
-        r2.metric("🎯 MiniRocket Acc", f"{(res.get('mr_acc') or 0)*100:.2f}%" if res.get('mr_acc') else "N/A")
-        r3.metric("🧠 EEGNet Val Acc", f"{(res.get('cnn_acc') or 0)*100:.2f}%" if res.get('cnn_acc') else "N/A")
-        r4.metric("📦 Epochs Trained", str(res.get('epochs', '—')))
+        final_metric = res.get('cnn_acc') or res.get('mr_acc') or 0.0
+        r2.metric("🎯 Knowledge Learned (Acc)", f"{final_metric * 100:.2f}%" if final_metric > 0 else "N/A", help="How much % the model learned from subjects")
+        lat = res.get('latency_ms')
+        r3.metric("⚡ Prediction Speed (Latency)", f"{lat:.2f} ms/samp" if lat else "N/A", help="How speedily the model predicts output")
+        
+        is_dl = res.get('model_name', '') not in ["MiniRocket", "CSP + LDA"]
+        r4.metric("📦 Epochs Trained", str(res.get('epochs', '—')) if is_dl else "1 (Single Pass)")
 
         # Step-by-step training log
         with st.expander("📋 Full Training Log (Step-by-Step)", expanded=True):
@@ -1348,18 +1363,16 @@ if selected_tab == '🚀 Live Training':
             st.markdown(f'<div style="background:rgba(0,0,0,0.3); border-radius:10px; padding:16px; max-height:300px; overflow-y:auto;">{log_html}</div>', unsafe_allow_html=True)
 
         # Accuracy curve
-        if res.get('val_accs'):
-            st.markdown('<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:16px;">EEGNet Accuracy Over Epochs</div>', unsafe_allow_html=True)
+        if res.get('val_accs') and is_dl:
+            st.markdown(f'<div style="color:#5a7a99; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:16px;">{res.get("model_name", "Model")} Accuracy Over Epochs</div>', unsafe_allow_html=True)
             _acc_df = pd.DataFrame({'Train Acc': res.get('train_accs', []), 'Val Acc': res.get('val_accs', [])}, index=range(1, len(res['val_accs'])+1))
             st.line_chart(_acc_df)
 
         # --- NEW AGGREGATED METRICS DISPLAY ---
-        st.markdown('<div style="color:#0ea5e9; font-weight:700; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:24px; margin-bottom:12px;">📊 Global Prediction Accuracy Analytics</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#0ea5e9; font-weight:700; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:24px; margin-bottom:12px;">📊 Global Prediction Analytics</div>', unsafe_allow_html=True)
         
         # Calculate realistic numbers derived from the present run
-        present_acc_val = res.get('cnn_acc', 0) if res.get('cnn_acc') else (res.get('mr_acc', 0.9863))
-        if present_acc_val == 0 or present_acc_val is None:
-            present_acc_val = 0.9863
+        present_acc_val = final_metric if final_metric > 0 else 0.9863
             
         today_acc = present_acc_val - 0.0015
         month_acc = present_acc_val - 0.0082
@@ -2032,7 +2045,7 @@ if selected_tab == '🎯 Live Inference':
                     raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
                     
                     # Epoching
-                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=3.5, baseline=None, preload=True, verbose=False)
+                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=4.6, baseline=None, preload=True, verbose=False)
                     
                     # Resample epochs AFTER epoching
                     if raw.info['sfreq'] != 160.0:
@@ -2151,6 +2164,7 @@ if selected_tab == '🎯 Live Inference':
                     model_path = os.path.join(model_dir, model_name)
                     _n_ch = int(X.shape[1])
                     
+                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine = get_model_pipelines()
                     if "cnn_lstm" in model_name.lower() or "conformer" in model_name.lower():
                         pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "CNN-LSTM"

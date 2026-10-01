@@ -230,20 +230,25 @@ class AdvancedEEGPipeline:
                 self.model.eval()
                 correct = 0
                 total_val = 0
+                val_loss_sum = 0.0
                 with torch.no_grad():
                     for bx, by in val_dl:
                         bx, by = bx.to(self.device), by.to(self.device)
-                        preds = self.model(bx).argmax(dim=1)
+                        logits = self.model(bx)
+                        loss = crit(logits, by)
+                        val_loss_sum += loss.item() * bx.size(0)
+                        preds = logits.argmax(dim=1)
                         correct += (preds == by).sum().item()
                         total_val += by.size(0)
                 val_acc = correct / total_val
+                avg_val_loss = val_loss_sum / total_val if total_val > 0 else 0.0
                 avg_train_loss = total_loss / len(dl)
                 print(json.dumps({
                     "type": "epoch", 
                     "epoch": epoch + 1, 
                     "total_epochs": self.epochs,
                     "train_loss": avg_train_loss, 
-                    "val_loss": 0.0,
+                    "val_loss": avg_val_loss,
                     "train_acc": train_acc, 
                     "val_acc": val_acc
                 }), flush=True)
@@ -258,7 +263,21 @@ class AdvancedEEGPipeline:
     def predict_proba(self, X):
         self.model.eval()
         X_t = torch.tensor(X, dtype=torch.float32)
-        X_t = (X_t - self.feat_mean.cpu()) / self.feat_std.cpu()
+        
+        # Safely handle legacy numpy arrays or PyTorch tensors
+        m = self.feat_mean
+        s = self.feat_std
+        if hasattr(m, 'cpu'):
+            m = m.cpu()
+        else:
+            m = torch.tensor(m, dtype=torch.float32)
+            
+        if hasattr(s, 'cpu'):
+            s = s.cpu()
+        else:
+            s = torch.tensor(s, dtype=torch.float32)
+            
+        X_t = (X_t - m) / s
         
         probs = []
         with torch.no_grad():
@@ -288,9 +307,35 @@ class AdvancedEEGPipeline:
         self.num_classes = state['num_classes']
         self.channels = state['channels']
         self.samples = state['samples']
+        self.feat_mean = state.get('feat_mean', None)
+        self.feat_std = state.get('feat_std', None)
         
         self.model = EEG_Conformer(self.num_classes, self.channels, self.samples).to(self.device)
-        self.model.load_state_dict(state['model'])
+        try:
+            self.model.load_state_dict(state['model'])
+        except RuntimeError as e:
+            if "size mismatch" in str(e) or "Missing key" in str(e) or "Unexpected key" in str(e):
+                print("[AdvancedEEGPipeline] Modern model load failed. Falling back to legacy architecture...", flush=True)
+                # Initialize legacy architecture
+                self.model = EEG_Conformer(
+                    self.num_classes, self.channels, self.samples,
+                    F1=40, kernLength=64, pool1=8, F2=40, depthMultiplier=2,
+                    drop_prob=0.5, d_model=40, heads=4, tf_layers=3
+                )
+                # Revert to legacy FC
+                out_len = self.samples // 8
+                self.model.fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(40 * out_len, 256),
+                    nn.ELU(),
+                    nn.Dropout(0.5),
+                    nn.Linear(256, self.num_classes)
+                )
+                self.model = self.model.to(self.device)
+                self.model.load_state_dict(state['model'], strict=False)
+                print("[AdvancedEEGPipeline] Legacy architecture loaded successfully.", flush=True)
+            else:
+                raise e
         
         self.feat_mean = state['feat_mean']
         self.feat_std = state['feat_std']
