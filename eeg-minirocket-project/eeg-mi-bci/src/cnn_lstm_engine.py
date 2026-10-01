@@ -167,7 +167,12 @@ class CNN_LSTM_Pipeline:
             lut = {c: i for i, c in enumerate(uniq)}
             y = np.array([lut[v] for v in y], dtype=np.int64)
             if y_val is not None:
-                y_val = np.array([lut.get(v, 0) for v in np.asarray(y_val)], dtype=np.int64)
+                new_y_val = []
+                for v in np.asarray(y_val):
+                    if v not in lut:
+                        raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
+                    new_y_val.append(lut[v])
+                y_val = np.array(new_y_val, dtype=np.int64)
             n_out = len(uniq)
         else:
             self.label_classes_ = np.arange(n_out)
@@ -269,15 +274,28 @@ class CNN_LSTM_Pipeline:
                 pass
             # early stopping on val accuracy
             if X_val is not None:
-                best = max(self.history["val_acc"]) if self.history["val_acc"] else val_acc
-                bad = sum(1 for v in reversed(self.history["val_acc"]) if v < best)
-                if bad >= self.patience:
+                if not hasattr(self, 'best_val_acc'):
+                    self.best_val_acc = -1.0
+                    self.best_state_dict = None
+                    self.patience_counter = 0
+                
+                if val_acc > self.best_val_acc:
+                    self.best_val_acc = val_acc
+                    self.best_state_dict = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
+                    self.patience_counter = 0
+                else:
+                    self.patience_counter += 1
+                
+                if self.patience_counter >= self.patience:
                     if progress_callback:
                         progress_callback(epoch + 1, train_loss, train_acc, val_loss, val_acc)
                     break
 
             if progress_callback:
                 progress_callback(epoch + 1, train_loss, train_acc, val_loss, val_acc)
+
+        if hasattr(self, 'best_state_dict') and self.best_state_dict is not None:
+            self.model.load_state_dict(self.best_state_dict)
 
         self.training_time = time.time() - start_time
         return self

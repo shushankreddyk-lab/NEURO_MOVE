@@ -1,11 +1,11 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "eeg-mi-bci")))
 
-from src.data_loader import generate_synthetic_eeg, PHYSIONET_CLASSES
-from src.preprocessing import preprocess_eeg_dataset
-from src.minirocket_pipeline import MiniRocketPipeline
-from src.cnn_lstm_model import CNNLSTMPipeline
+from src.minirocket_engine import MiniRocketPipeline
+from src.cnn_lstm_engine import CNN_LSTM_Pipeline
+from src.dataset_loader_all import load_dataset
+from src.preprocessing import apply_bandpass_filter, apply_car
 import numpy as np
 import time
 

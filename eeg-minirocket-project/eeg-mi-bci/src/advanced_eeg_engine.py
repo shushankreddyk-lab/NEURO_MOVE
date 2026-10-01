@@ -176,7 +176,10 @@ class AdvancedEEGPipeline:
         if X_val is not None and y_val is not None:
             X_v = torch.tensor(X_val, dtype=torch.float32)
             X_v = (X_v - self.feat_mean) / self.feat_std
-            y_v = torch.tensor([lut[v] for v in y_val], dtype=torch.long)
+            try:
+                y_v = torch.tensor([lut[v] for v in y_val], dtype=torch.long)
+            except KeyError as e:
+                raise ValueError(f"Unknown validation label: {e.args[0]}. Must be one of {list(lut.keys())}")
             val_ds = torch.utils.data.TensorDataset(X_v, y_v)
             val_dl = torch.utils.data.DataLoader(val_ds, batch_size=self.batch_size, shuffle=False)
         else:

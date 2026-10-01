@@ -118,6 +118,9 @@ def load_local_eeg_data(subject_id, runs, data_dir=r'd:\eeg-minirocket-project\p
             
         except Exception as e:
             print(f"Error processing {edf_file}: {e}")
+            raws.append(None)
+            events_list.append(None)
+            event_id_mappings.append(None)
             
     return raws, events_list, event_id_mappings
 
@@ -127,12 +130,22 @@ def load_eegbci_data(subject_id, runs):
     Concatenates multiple runs into a single raw object.
     """
     raws, evs, maps = load_local_eeg_data(subject_id, runs)
-    if not raws:
-        return None, None
-    if len(raws) == 1:
-        return raws[0], evs[0]
     
-    raw = mne.concatenate_raws(raws, verbose=False)
+    # Filter out None placeholders
+    valid_raws = []
+    for r in raws:
+        if r is not None:
+            valid_raws.append(r)
+            
+    if not valid_raws:
+        return None, None
+    if len(valid_raws) == 1:
+        # If there's only one, we can't concatenate, just return it (assuming events align)
+        # Note: If there's only one valid raw, we should find its corresponding event
+        valid_evs = [evs[i] for i in range(len(raws)) if raws[i] is not None]
+        return valid_raws[0], valid_evs[0]
+    
+    raw = mne.concatenate_raws(valid_raws, verbose=False)
     events, _ = mne.events_from_annotations(raw, verbose=False)
     return raw, events
 

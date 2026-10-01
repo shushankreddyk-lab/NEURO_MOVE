@@ -181,7 +181,10 @@ class MiniRocketPipeline:
         return self
 
     def predict(self, X):
-        return np.argmax(self.predict_proba(X), axis=1)
+        idx = np.argmax(self.predict_proba(X), axis=1)
+        if hasattr(self, 'classes_') and self.classes_ is not None:
+            return self.classes_[idx]
+        return idx
 
     def predict_proba(self, X):
         self.extractor.eval()
@@ -219,6 +222,11 @@ class MiniRocketPipeline:
         return np.vstack(probs)
     
     def save(self, filepath):
+        if not hasattr(self, 'channel_names') or self.channel_names is None:
+            raise ValueError("channel_names is mandatory for saving the model.")
+        if not hasattr(self, 'sfreq') or self.sfreq is None:
+            raise ValueError("sfreq is mandatory for saving the model.")
+            
         state = {
             'extractor': self.extractor.state_dict(),
             'gpu_head': self.gpu_head.state_dict(),
@@ -231,8 +239,8 @@ class MiniRocketPipeline:
             'dropout': self.dropout,
             'in_channels': self.in_channels,
             'seq_len': self.seq_len,
-            'channel_names': getattr(self, 'channel_names', None),
-            'sfreq': getattr(self, 'sfreq', 160.0),
+            'channel_names': self.channel_names,
+            'sfreq': self.sfreq,
             'label_classes': getattr(self, 'classes_', None),
         }
         torch.save(state, filepath)
@@ -244,6 +252,11 @@ class MiniRocketPipeline:
         self.dropout = state.get('dropout', 0.15)
         self.in_channels = state.get('in_channels', 20)
         self.seq_len = state.get('seq_len', 656)
+        
+        self.channel_names = state.get('channel_names')
+        self.sfreq = state.get('sfreq')
+        if self.channel_names is None or self.sfreq is None:
+            raise ValueError(f"Model {filepath} is missing mandatory metadata (sfreq/channel_names).")
         
         self.extractor = TorchMiniRocket(self.in_channels, self.seq_len, self.num_kernels).to(self.device)
         self.extractor.load_state_dict(state['extractor'])

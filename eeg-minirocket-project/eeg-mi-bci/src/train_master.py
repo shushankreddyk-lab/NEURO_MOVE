@@ -23,6 +23,19 @@ from advanced_eeg_engine import AdvancedEEGPipeline
 from eegnet_engine import EEGNet_Pipeline
 from convnets_engine import ConvNet_Pipeline
 
+def get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir):
+    import hashlib
+    import os
+    sub_str = f"subs{sub_start}to{sub_end}"
+    dataset_name = "bci2a" if "2a" in dataset_path.lower() else "physionet"
+    
+    # Include dataset identity and preprocessing settings (e.g. v3)
+    config_str = f"{mode}_{group_id}_{sub_str}_{dataset_name}_v3"
+    hash_key = hashlib.md5(config_str.encode('utf-8')).hexdigest()[:8]
+    
+    fname = f"data_{dataset_name}_{sub_str}_{hash_key}.npz"
+    return os.path.join(data_dir, fname)
+
 
 def map_run_and_marker_to_group(run, task_type, marker_str):
     # Returns the exact integer class label (0 to 3) expected by the UI
@@ -74,12 +87,12 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         target_samples = 656
         if X_all.shape[2] > target_samples:
             X_all = X_all[:, :, :target_samples]
-        elif X_all.shape[2] < target_samples:
+        if X_all.shape[2] < target_samples:
             pad_width = target_samples - X_all.shape[2]
             X_all = np.pad(X_all, ((0,0), (0,0), (0,pad_width)), mode='constant')
             
-        fname = f"bci2a_data_{sub_str}.npz"
-        np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all)
+        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+        np.savez_compressed(data_path, X=X_all, y=y_all)
         return X_all.shape, y_all.shape
 
     # Existing Physionet logic below
@@ -206,34 +219,20 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         print(f"Error: Mismatched X ({X_all.shape[0]}) and y ({y_all.shape[0]}) sizes.", file=sys.stderr)
         sys.exit(1)
     
-    import hashlib
-    config_str = f"{mode}_{group_id}_{sub_str}_v2"
-    hash_key = hashlib.md5(config_str.encode('utf-8')).hexdigest()[:8]
-    fname = f"master_data_{sub_str}_{hash_key}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}_{hash_key}.npz"
-    
-    np.savez_compressed(os.path.join(output_dir, fname), X=X_all, y=y_all, meta=meta_all)
+    data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+    np.savez_compressed(data_path, X=X_all, y=y_all, meta=meta_all)
     
     return X_all.shape, y_all.shape
 
 def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_name="MiniRocket", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
     sub_str = f"subs{sub_start}to{sub_end}"
     
-    import hashlib
-    
-    if "2a" in dataset_path.lower():
-        fname = f"bci2a_data_{sub_str}.npz"
-        model_prefix = "bci2a"
-    else:
-        config_str = f"{mode}_{group_id}_{sub_str}_v2"
-        hash_key = hashlib.md5(config_str.encode('utf-8')).hexdigest()[:8]
-        fname = f"master_data_{sub_str}_{hash_key}.npz" if mode == "master" else f"ovr_group{group_id}_data_{sub_str}_{hash_key}.npz"
-        model_prefix = "master" if mode == "master" else f"ovr_group{group_id}"
-        
-    data_path = os.path.join(data_dir, fname)
+    data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir)
+    model_prefix = "bci2a" if "2a" in dataset_path.lower() else ("master" if mode == "master" else f"ovr_group{group_id}")
     
     if not os.path.exists(data_path):
-        print(json.dumps({"type": "error", "message": f"Data not found."}), flush=True)
-        return
+        raise FileNotFoundError(f"Data not found at {data_path}. Please extract features first.")
+        
         
     # Prefer pre-saved float32 version if available (avoids 1.33GB float64 allocation)
     f32_path = data_path.replace('.npz', '_f32.npz')
@@ -248,25 +247,86 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         y = np.array(loaded['y'])
     
     # PREVENT TEMPORAL LEAKAGE: Chronological Stratified Split
-    # Instead of randomly shuffling all epochs (which causes adjacent epoch leakage),
-    # we take the first `train_split` of each class temporally for training, and the rest for testing.
-    X_train, X_test, y_train, y_test = [], [], [], []
-    for cls in np.unique(y):
-        idx = np.where(y == cls)[0]
-        split = int(len(idx) * train_split)
-        X_train.append(X[idx[:split]])
-        y_train.append(y[idx[:split]])
-        X_test.append(X[idx[split:]])
-        y_test.append(y[idx[split:]])
+    meta = loaded.get('meta')
+    
+    X_train, y_train, X_val, y_val, X_test, y_test = [], [], [], [], [], []
+    
+    if meta is not None and meta.ndim > 0 and len(meta) == len(y):
+        print(json.dumps({"type": "info", "message": "Using metadata-driven strict run partitioning..."}), flush=True)
+        for subject_id in np.unique([m['subject_id'] for m in meta]):
+            sub_mask = np.array([m['subject_id'] == subject_id for m in meta])
+            sub_X = X[sub_mask]
+            sub_y = y[sub_mask]
+            sub_meta = meta[sub_mask]
+            
+            sub_runs = np.unique([m['run_id'] for m in sub_meta])
+            sub_runs = np.sort(sub_runs)
+            
+            if len(sub_runs) >= 3:
+                test_runs = [sub_runs[-1]]
+                val_runs = [sub_runs[-2]]
+                train_runs = sub_runs[:-2]
+            elif len(sub_runs) == 2:
+                test_runs = [sub_runs[-1]]
+                val_runs = [] 
+                train_runs = [sub_runs[0]]
+            else:
+                train_runs = sub_runs
+                val_runs, test_runs = [], []
+                
+            for i, m in enumerate(sub_meta):
+                if m['run_id'] in test_runs:
+                    X_test.append(sub_X[i])
+                    y_test.append(sub_y[i])
+                elif m['run_id'] in val_runs:
+                    X_val.append(sub_X[i])
+                    y_val.append(sub_y[i])
+                else:
+                    X_train.append(sub_X[i])
+                    y_train.append(sub_y[i])
+    else:
+        print(json.dumps({"type": "info", "message": "No metadata found. Using temporal 80/10/10 slice..."}), flush=True)
+        for cls in np.unique(y):
+            idx = np.where(y == cls)[0]
+            val_split = int(len(idx) * 0.8)
+            test_split = int(len(idx) * 0.9)
+            X_train.append(X[idx[:val_split]])
+            y_train.append(y[idx[:val_split]])
+            X_val.append(X[idx[val_split:test_split]])
+            y_val.append(y[idx[val_split:test_split]])
+            X_test.append(X[idx[test_split:]])
+            y_test.append(y[idx[test_split:]])
+
+    X_train = np.concatenate(X_train, axis=0) if X_train else np.empty((0, *X.shape[1:]))
+    y_train = np.concatenate(y_train, axis=0) if y_train else np.empty((0,))
+    X_val = np.concatenate(X_val, axis=0) if X_val else np.empty((0, *X.shape[1:]))
+    y_val = np.concatenate(y_val, axis=0) if y_val else np.empty((0,))
+    X_test = np.concatenate(X_test, axis=0) if X_test else np.empty((0, *X.shape[1:]))
+    y_test = np.concatenate(y_test, axis=0) if y_test else np.empty((0,))
+    
+    if len(X_val) == 0 and len(X_train) > 0:
+        new_X_train, new_y_train, new_X_val, new_y_val = [], [], [], []
+        for cls in np.unique(y_train):
+            idx = np.where(y_train == cls)[0]
+            split = int(len(idx) * 0.8)
+            new_X_train.append(X_train[idx[:split]])
+            new_y_train.append(y_train[idx[:split]])
+            new_X_val.append(X_train[idx[split:]])
+            new_y_val.append(y_train[idx[split:]])
+        X_train = np.concatenate(new_X_train, axis=0)
+        y_train = np.concatenate(new_y_train, axis=0)
+        X_val = np.concatenate(new_X_val, axis=0)
+        y_val = np.concatenate(new_y_val, axis=0)
         
-    X_train = np.concatenate(X_train, axis=0)
-    y_train = np.concatenate(y_train, axis=0)
-    X_test = np.concatenate(X_test, axis=0)
-    y_test = np.concatenate(y_test, axis=0)
+    if len(X_test) == 0:
+        X_test, y_test = X_val.copy(), y_val.copy()
     
     # Shuffle internally for model training stability
     train_idx = np.random.permutation(len(X_train))
     X_train, y_train = X_train[train_idx], y_train[train_idx]
+    
+    val_idx = np.random.permutation(len(X_val))
+    X_val, y_val = X_val[val_idx], y_val[val_idx]
     
     test_idx = np.random.permutation(len(X_test))
     X_test, y_test = X_test[test_idx], y_test[test_idx]
@@ -288,45 +348,18 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         # Train MiniRocket (GPU-accelerated)
         print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
         mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2], head_epochs=epochs, head_lr=lr)
-        
-        import threading
-        import time
-        stop_timer = False
-        def print_timer():
-            start_t = time.time()
-            estimated_total = 240.0
-            while not stop_timer:
-                elapsed = time.time() - start_t
-                pct = min(99, int((elapsed / estimated_total) * 100))
-                if pct == 99:
-                    extra_time = int(elapsed - estimated_total)
-                    msg = f"Training MiniRocket... (99%) [Finalizing kernels: +{extra_time}s]"
-                else:
-                    msg = f"Training MiniRocket... ({pct}%)"
-                print(json.dumps({"type": "progress", "message": msg}), flush=True)
-                time.sleep(1)
-                
-        timer_thread = threading.Thread(target=print_timer, daemon=True)
-        timer_thread.start()
+        mr_pipeline.sfreq = 160.0
+        mr_pipeline.channel_names = [f"EEG_{i}" for i in range(X.shape[1])]
         
         try:
             if args.finetune_model:
                 mr_pipeline.load(args.finetune_model)
             mr_pipeline.fit(X_train, y_train)
-        finally:
-            stop_timer = True
-            timer_thread.join(timeout=1.0)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+            sys.exit(1)
             
-        y_pred = mr_pipeline.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        
         mr_pipeline.save(os.path.join(models_dir, f"{model_prefix}_gpu_minirocket_{sub_str}_{timestamp}.pth"))
-        
-        print(json.dumps({
-            "type": "epoch", "epoch": 1, "total_epochs": 1,
-            "train_loss": 0.0, "val_loss": 0.0,
-            "train_acc": float(acc), "val_acc": float(acc)
-        }), flush=True)
 
     elif model_name == "CNN-LSTM":
         # Train CNN-LSTM
@@ -345,7 +378,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 cnn_lstm_pipeline.load(args.finetune_model)
-            cnn_lstm_pipeline.fit(X_train, y_train, X_test, y_test)
+            cnn_lstm_pipeline.fit(X_train, y_train, X_val, y_val)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -369,7 +402,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 conformer_pipeline.load(args.finetune_model)
-            conformer_pipeline.fit(X_train, y_train, X_test, y_test)
+            conformer_pipeline.fit(X_train, y_train, X_val, y_val)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -392,7 +425,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 eegnet_pipeline.load(args.finetune_model)
-            eegnet_pipeline.fit(X_train, y_train, X_test, y_test)
+            eegnet_pipeline.fit(X_train, y_train, X_val, y_val)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -406,7 +439,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 shallow_pipeline.load(args.finetune_model)
-            shallow_pipeline.fit(X_train, y_train, X_test, y_test)
+            shallow_pipeline.fit(X_train, y_train, X_val, y_val)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -416,6 +449,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
 
     # Compute final metrics for the completion message
     final_acc = 0.0
+    val_acc = 0.0
     latency_ms = 0.0
     try:
         import time
@@ -436,6 +470,21 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             # Measure final validation accuracy
             y_pred_all = pipeline_to_eval.predict(X_test)
             final_acc = float(accuracy_score(y_test, y_pred_all))
+            
+            y_pred_val = pipeline_to_eval.predict(X_val)
+            val_acc = float(accuracy_score(y_val, y_pred_val))
+            
+            if model_name == "MiniRocket":
+                y_pred_train = pipeline_to_eval.predict(X_train)
+                train_acc = float(accuracy_score(y_train, y_pred_train))
+                print(json.dumps({
+                    "type": "chart_update",
+                    "epoch": epochs,
+                    "train_loss": 0.0,
+                    "train_acc": train_acc,
+                    "val_loss": 0.0,
+                    "val_acc": val_acc
+                }), flush=True)
     except Exception as e:
         print(f"Error calculating metrics: {e}", file=sys.stderr)
         
@@ -468,12 +517,7 @@ if __name__ == "__main__":
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
     
-    sub_str = f"subs{args.sub_start}to{args.sub_end}"
-    if "2a" in args.dataset.lower():
-        fname = f"bci2a_data_{sub_str}.npz"
-    else:
-        fname = f"master_data_{sub_str}.npz" if args.mode == "master" else f"ovr_group{args.group}_data_{sub_str}.npz"
-    data_path = os.path.join(data_dir, fname)
+    data_path = get_cache_path(args.mode, args.group, args.dataset, args.sub_start, args.sub_end, data_dir)
     
     if not os.path.exists(data_path):
         unified_datasets = ["BNCI2014_001", "PhysionetMI", "HighGamma", "KayaFingers", "WayEEGGAL"]

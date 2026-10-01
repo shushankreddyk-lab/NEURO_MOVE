@@ -120,7 +120,12 @@ class ConvNet_Pipeline:
             lut = {c: i for i, c in enumerate(uniq)}
             y = np.array([lut[v] for v in y], dtype=np.int64)
             if y_val is not None:
-                y_val = np.array([lut.get(v, 0) for v in np.asarray(y_val)], dtype=np.int64)
+                new_y_val = []
+                for v in np.asarray(y_val):
+                    if v not in lut:
+                        raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
+                    new_y_val.append(lut[v])
+                y_val = np.array(new_y_val, dtype=np.int64)
             n_out = len(uniq)
         else:
             self.label_classes_ = np.arange(n_out)

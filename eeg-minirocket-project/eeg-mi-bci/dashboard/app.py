@@ -679,12 +679,12 @@ if selected_tab == '🧠 Overview':
         <div class="glass-card">
             <h3 style="color:#a855f7; margin-top:0; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em;">🏆 Model Performance</h3>
             <div style="margin-bottom:20px; padding:14px; background:rgba(0,200,255,0.04); border-radius:10px; border:1px solid rgba(0,200,255,0.12);">
-                <div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:#5a7a99; margin-bottom:6px;">Proposed — MiniRocket + Ridge</div>
+                <div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:#5a7a99; margin-bottom:6px;">Proposed — MiniRocket + MLP</div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color:#00d4ff; font-weight:800; font-size:1.6rem; font-family:'JetBrains Mono',monospace;">98.63%</span>
                     <div style="text-align:right;">
                         <div style="color:#8aa0b8; font-size:0.78rem;">10,000 dilated kernels · L=9</div>
-                        <div style="color:#8aa0b8; font-size:0.78rem;">PPV pooling · Ridge linear solve</div>
+                        <div style="color:#8aa0b8; font-size:0.78rem;">PPV pooling · MLP Classifier</div>
                         <div style="color:#00ff9a; font-size:0.72rem; margin-top:3px;">⚡ 0.6 ms latency · ~40k params</div>
                     </div>
                 </div>
@@ -759,7 +759,7 @@ if selected_tab == '🏗️ Model Architectures':
 <h3 style="color:#00d4ff; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">01. MiniRocket (Fast & Deterministic)</h3>
 <p style="color:#c8d6e5; font-size:0.95rem; line-height:1.7; margin-bottom:15px; text-align:justify;">
 <strong>Core Concept:</strong> MiniRocket utilizes 10,000 minimally random, dilated convolutional kernels to extract Proportion of Positive Values (PPV). It bypasses gradient descent for feature extraction, allowing it to transform non-stationary EEG data into linearly separable features instantly.<br>
-<strong>Strengths:</strong> Microsecond inference latency, deterministic features, extremely fast training (via Ridge regression).
+<strong>Strengths:</strong> Microsecond inference latency, deterministic features, extremely fast training.
 </p>
 
 <h3 style="color:#f43f5e; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:0;">02. CNN-LSTM (Deep Spatio-Temporal Hybrid)</h3>
@@ -802,7 +802,7 @@ if selected_tab == '🏗️ Model Architectures':
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td style="padding: 8px; color:#00d4ff;"><strong>MiniRocket</strong></td>
     <td style="padding: 8px;">10,000 deterministic dilated kernels (PPV)</td>
-    <td style="padding: 8px;">Ridge Regression</td>
+    <td style="padding: 8px;">MLP Classifier</td>
     <td style="padding: 8px;">0 (Features) / Linear Weights</td>
     <td style="padding: 8px; text-align:center; font-weight:bold;">32.0%</td>
   </tr>
@@ -1104,10 +1104,7 @@ if selected_tab == '🚀 Live Training':
         train_partition = st.slider('Train Split (%)', min_value=50, max_value=90, value=80, step=10)
         
     with ctrl2:
-        if selected_bench_model != "MiniRocket":
             lr_str = st.selectbox('Learning Rate', ['0.001', '0.0001', '0.005'])
-        else:
-            st.info("Learning Rate not applicable (Closed-Form Ridge/LDA).")
             
         sub_start, sub_end = st.slider('Subject Range (1–109)', min_value=1, max_value=109, value=(1, 5))
         st.markdown(f"""
@@ -1188,7 +1185,7 @@ if selected_tab == '🚀 Live Training':
         else:
             loss_placeholder = None
             acc_placeholder = None
-            st.markdown(f'<div style="color:#5a7a99; font-size:0.85rem; padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 8px;">⏳ <strong>{selected_bench_model}</strong> training in progress. This model uses a single-pass/closed-form solver and does not produce epoch-by-epoch learning curves.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:#5a7a99; font-size:0.85rem; padding: 20px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 8px;">⏳ <strong>{selected_bench_model}</strong> training in progress.</div>', unsafe_allow_html=True)
 
 
         train_losses, val_losses, train_accs, val_accs = [], [], [], []
@@ -1436,7 +1433,7 @@ if selected_tab == '📊 Training Process':
         # Parse the filename
         arch_type = "Unknown Architecture"
         if "minirocket" in selected_faculty_model.lower():
-            arch_type = "MiniRocket (Instant Ridge Classifier mapped over 10,000 random convolutional features)"
+            arch_type = "MiniRocket (MLP Classifier mapped over 10,000 random convolutional features)"
         elif "conformer" in selected_faculty_model.lower():
             arch_type = "EEG-Conformer (Deep CNN for local temporal features + Transformer for global spatial attention)"
         elif "cnn" in selected_faculty_model.lower():
@@ -1462,7 +1459,7 @@ if selected_tab == '📊 Training Process':
                 <li><strong style="color:#10b981;">Preprocessing (How):</strong> 4-38Hz Bandpass filter + Common Average Referencing (CAR) + Z-score normalization per channel to eliminate skull noise.</li>
             </ul>
             <p style="color:#c8d6e5; font-size:0.95rem; margin-top:10px; text-align:justify;">
-            <strong>How it was trained:</strong> The model processed 4.0-second raw EEG epochs. It learned to map the Event-Related Desynchronization (ERD) amplitudes in the &mu; (8-12Hz) and &beta; (13-30Hz) bands to the 4 motor classes (Left Hand, Right Hand, Both Feet, Tongue). For neural networks (Conformer/CNN), the AdamW optimizer was used over multiple epochs. For MiniRocket, Ridge Regression computed the exact global minimum algebraically without backpropagation.
+            <strong>How it was trained:</strong> The model processed 4.0-second raw EEG epochs. It learned to map the Event-Related Desynchronization (ERD) amplitudes in the &mu; (8-12Hz) and &beta; (13-30Hz) bands to the 4 motor classes (Left Hand, Right Hand, Both Feet, Tongue). For neural networks (Conformer/CNN), the AdamW optimizer was used over multiple epochs. For MiniRocket, an MLP Classifier learns the mapping from the extracted convolutional features using gradient descent.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1495,8 +1492,8 @@ MiniRocket avoids backpropagation entirely. Instead, it instantly initializes <s
 </p>
 
 <p style="color:#c8d6e5; font-size:0.95rem; line-height:1.7; margin-bottom:15px; text-align:justify;">
-<strong>Step 4: Ridge Regression Classifier</strong><br>
-A Ridge Regression model (Linear Regression with L2 regularization) receives the <code>[Batch, 10000]</code> matrix and solves a closed-form matrix algebra equation. This mathematically guarantees the globally optimal weights in a fraction of a second, outputting a <code>[Batch, 4]</code> vector of intent probabilities instantly without epochs or gradients.
+<strong>Step 4: MLP Classifier</strong><br>
+An MLP Classifier receives the <code>[Batch, 10000]</code> matrix and learns the optimal mapping using gradient descent, outputting a <code>[Batch, 4]</code> vector of intent probabilities.
 </p>
 
 <h4 style="color:#a855f7; margin-top:20px; font-size:1.05rem;">Model Training Parameters</h4>
@@ -1511,7 +1508,7 @@ A Ridge Regression model (Linear Regression with L2 regularization) receives the
     <td style="padding:10px; font-weight:bold;">Kernel Lengths</td><td style="padding:10px;">7, 9, 11</td><td style="padding:10px;">Temporal receptive fields</td>
   </tr>
   <tr style="border-bottom: 1px solid #334155;">
-    <td style="padding:10px; font-weight:bold;">Classifier</td><td style="padding:10px;">Ridge Regression</td><td style="padding:10px;">L2 regularized linear model</td>
+    <td style="padding:10px; font-weight:bold;">Classifier</td><td style="padding:10px;">MLP Classifier</td><td style="padding:10px;">Multi-layer Perceptron</td>
   </tr>
   <tr style="border-bottom: 1px solid #334155;">
     <td style="padding:10px; font-weight:bold;">Feature Extraction</td><td style="padding:10px;">PPV</td><td style="padding:10px;">Proportion of Positive Values</td>
@@ -1530,7 +1527,7 @@ A Ridge Regression model (Linear Regression with L2 regularization) receives the
             C --> D[Z-Score Normalization]
             D --> E[10,000 Dilated Kernels]
             E --> F[PPV Feature Extraction]
-            F --> G[Ridge Regression Fit]
+            F --> G[MLP Classifier Fit]
             G --> H[Global Model Compiled]
             style A fill:#1e293b,stroke:#334155,color:#fff
             style H fill:#10b981,stroke:#059669,color:#fff
@@ -1968,10 +1965,53 @@ if selected_tab == '🎯 Live Inference':
     selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_eegnet, sel_conformer] if m != 'None']
     
     if st.button('Load Models'):
-        st.success('Models selected successfully!')
+        with st.spinner('Loading model checkpoints...'):
+            st.session_state.loaded_models = {}
+            from src.advanced_eeg_engine import AdvancedEEGPipeline
+            from src.minirocket_engine import MiniRocketPipeline
+            from src.eegnet_engine import EEGNet_Pipeline
+            from src.convnets_engine import ConvNet_Pipeline
+            from src.cnn_lstm_engine import CNN_LSTM_Pipeline
+            import re
+            
+            for model_name in selected_models:
+                model_path = os.path.join(model_dir, model_name)
+                # Attempt to extract channel count from filename if present (e.g., _64ch_ or _22ch_)
+                ch_match = re.search(r'_(\d+)ch_', model_name)
+                _n_ch = int(ch_match.group(1)) if ch_match else (22 if 'bci2a' in model_name.lower() else 64)
+                target_samples = 656
+                
+                try:
+                    if "conformer" in model_name.lower():
+                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                    elif "cnn_lstm" in model_name.lower():
+                        pipeline = CNN_LSTM_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                    elif "minirocket" in model_name.lower():
+                        pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples)
+                    elif "eegnet" in model_name.lower():
+                        pipeline = EEGNet_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                    elif "shallow" in model_name.lower():
+                        pipeline = ConvNet_Pipeline(arch="shallow", num_classes=4, channels=_n_ch, samples=target_samples)
+                    else:
+                        continue
+                    
+                    pipeline.load(model_path)
+                    st.session_state.loaded_models[model_name] = pipeline
+                except Exception as e:
+                    st.error(f"Error loading {model_name}: {e}")
+                    
+        num_loaded = len(st.session_state.get("loaded_models", {}))
+        if num_loaded > 0:
+            st.success(f'{num_loaded} Models loaded successfully!')
+        else:
+            st.warning('No models were successfully loaded.')
         
     st.markdown('### 2. Predict on EEG Record')
     inf_file = st.file_uploader('Upload EEG File (EDF or GDF)', type=['edf', 'gdf'], key='inf_file')
+    
+    # Allow user to configure uncertainty
+    uncertainty_threshold = st.slider("Uncertainty Rejection Threshold (%)", min_value=25, max_value=99, value=60, step=5)
+
     target_event = st.selectbox('Select Target Event to Predict', ['T1 (Left Fist / Both Fists - PhysioNet)', 'T2 (Right Fist / Both Feet - PhysioNet)', '769 (Left Hand - BCI)', '770 (Right Hand - BCI)', '771 (Both Feet - BCI)', '772 (Tongue - BCI)'])
 
     # START PREDICTING button — always visible, validates inside
@@ -1997,11 +2037,12 @@ if selected_tab == '🎯 Live Inference':
                 import collections
                 import plotly.graph_objects as go
                 
-                temp_path = os.path.join(os.path.dirname(__file__), '..', 'artifacts', f"temp_inf.{inf_file.name.split('.')[-1]}")
+                import uuid
+                temp_filename = f"temp_inf_{uuid.uuid4().hex}.{inf_file.name.split('.')[-1]}"
+                temp_path = os.path.join(os.path.dirname(__file__), '..', 'artifacts', temp_filename)
                 os.makedirs(os.path.dirname(temp_path), exist_ok=True)
                 with open(temp_path, 'wb') as f:
                     f.write(inf_file.getbuffer())
-                
                 if inf_file.name.lower().endswith('.gdf'):
                     raw = mne.io.read_raw_gdf(temp_path, preload=True, verbose=False)
                 else:
@@ -2025,105 +2066,146 @@ if selected_tab == '🎯 Live Inference':
                 from src.binary_parser import normalize_channel_names
                 raw.rename_channels(normalize_channel_names(raw.ch_names))
                 
-                # IMPORTANT: Model was trained on exactly these channels!
-                is_bci2a = any('bci2a' in m.lower() for m in selected_models if m != 'None')
-
-                if is_bci2a:
-                    picked_channels = raw.ch_names[:22]
-                    target_samples = 656
-                else:
-                    target_channels = ['FC3', 'FC4', 'C3', 'C4', 'CP3', 'CP4', 'C1', 'C2', 'C5', 'C6', 'CZ', 'FCZ', 'CPZ', 'F3', 'F4', 'P3', 'P4', 'O1', 'O2', 'OZ']
-                    target_samples = 656
-                    available_channels = raw.ch_names
-                    picked_channels = [ch for ch in target_channels if ch in available_channels]
-                
-                if len(picked_channels) > 0:
-                    raw.pick_channels(picked_channels)
-                
-                if is_bci2a:
-                    # Apply Common Average Referencing (CAR) matching training
-                    raw.set_eeg_reference('average', projection=False)
-                    # Filter at native sfreq (250Hz) FIRST!
-                    raw.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
-                    
-                    # Epoching
-                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0.5, tmax=4.6, baseline=None, preload=True, verbose=False)
-                    
-                    # Resample epochs AFTER epoching
-                    if raw.info['sfreq'] != 160.0:
-                        epochs.resample(160.0)
-                        
-                    # Get data and scale
-                    X = epochs.get_data(copy=True) * 1e6
-                else:
-                    # Physionet standard preprocessing (match training data scaling)
-                    raw.apply_function(lambda x: x * 1e6, verbose=False)
-                    if raw.info['sfreq'] != 160.0:
-                        raw.resample(160.0)
-                    raw = apply_bandpass_filter(apply_car(raw), 4, 38)
-                    
-                    tmax_adj = 4.1 - (1 / raw.info['sfreq'])
-                    epochs = mne.Epochs(raw, np.array(target_events), event_id=target_event_id, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
-                    X = epochs.get_data(copy=False)
-                
-                
-                if X.shape[2] > target_samples:
-                    X = X[:, :, :target_samples]
-                elif X.shape[2] < target_samples:
-                    pad_width = target_samples - X.shape[2]
-                    X = np.pad(X, ((0,0), (0,0), (0,pad_width)), mode='constant')
-                
-                if X.shape[0] == 0:
-                    st.error("No valid epochs could be extracted.")
-                    st.stop()
-                
-                if len([m for m in selected_models if m != 'None']) == 0:
+                # 1. INDEPENDENT MODEL PREPROCESSING
+                valid_models = [m for m in selected_models if m != 'None']
+                if len(valid_models) == 0:
                     st.error('Please select at least one model above.')
+                    st.stop()
+                    
+                model_Xs = {}
+                model_class_labels = {}
+                
+                model_expected_channels = {}
+                
+                # Check for models that are loaded
+                for model_name in valid_models:
+                    if 'loaded_models' not in st.session_state or model_name not in st.session_state.loaded_models:
+                        st.error(f"Please click 'Load Models' first. {model_name} is not loaded.")
+                        continue
+                        
+                    pipeline = st.session_state.loaded_models[model_name]
+                    
+                    expected_channels = getattr(pipeline, 'channel_names', None)
+                    target_samples = getattr(pipeline, 'seq_len', getattr(pipeline, 'samples', 656))
+                    sfreq = getattr(pipeline, 'sfreq', 160.0)
+                    model_classes = getattr(pipeline, 'label_classes', getattr(pipeline, 'classes_', None))
+                    
+                    if expected_channels is None:
+                        # Fallback if checkpoint doesn't specify channels
+                        is_bci2a = 'bci2a' in model_name.lower()
+                        if is_bci2a:
+                            expected_channels = raw.ch_names[:22]
+                        else:
+                            expected_channels = ['FC3', 'FC4', 'C3', 'C4', 'CP3', 'CP4', 'C1', 'C2', 'C5', 'C6', 'CZ', 'FCZ', 'CPZ', 'F3', 'F4', 'P3', 'P4', 'O1', 'O2', 'OZ']
+                            
+                    model_expected_channels[model_name] = expected_channels
+                    missing_ch = [ch for ch in expected_channels if ch not in raw.ch_names]
+                    if len(missing_ch) > 0:
+                        st.error(f"Compatibility Error: Input data is missing required channels for {model_name}: {missing_ch}")
+                        continue
+                        
+                    raw_copy = raw.copy()
+                    raw_copy.reorder_channels(expected_channels)
+                    
+                    # Preprocessing via Checkpoint Spec or fallback
+                    dataset = getattr(pipeline, 'dataset', None)
+                    tmin = getattr(pipeline, 'tmin', None)
+                    tmax = getattr(pipeline, 'tmax', None)
+                    is_gdf = inf_file.name.lower().endswith('.gdf')
+                    
+                    if dataset == 'BCI2a' or (dataset is None and is_gdf):
+                        tmin = tmin if tmin is not None else 0.5
+                        tmax = tmax if tmax is not None else 4.6
+                        raw_copy.set_eeg_reference('average', projection=False)
+                        raw_copy.filter(4., 38., fir_design='firwin', skip_by_annotation='edge', verbose=False)
+                        epochs = mne.Epochs(raw_copy, np.array(target_events), event_id=target_event_id, tmin=tmin, tmax=tmax, baseline=None, preload=True, verbose=False)
+                        if raw_copy.info['sfreq'] != sfreq:
+                            epochs.resample(sfreq)
+                        X_model = epochs.get_data(copy=True) * 1e6
+                    else:
+                        tmin = tmin if tmin is not None else 0.0
+                        tmax = tmax if tmax is not None else (target_samples / sfreq)
+                        raw_copy.apply_function(lambda x: x * 1e6, verbose=False)
+                        raw_copy = apply_bandpass_filter(apply_car(raw_copy), 4, 38)
+                        epochs = mne.Epochs(raw_copy, np.array(target_events), event_id=target_event_id, tmin=tmin, tmax=tmax, baseline=None, preload=True, verbose=False)
+                        if epochs.info['sfreq'] != sfreq:
+                            epochs.resample(sfreq)
+                        X_model = epochs.get_data(copy=False)
+                        
+                    if X_model.shape[2] > target_samples:
+                        X_model = X_model[:, :, :target_samples]
+                    elif X_model.shape[2] < target_samples:
+                        pad_width = target_samples - X_model.shape[2]
+                        X_model = np.pad(X_model, ((0,0), (0,0), (0,pad_width)), mode='constant')
+                        
+                    if X_model.shape[0] == 0:
+                        st.error(f"No valid epochs extracted for {model_name}.")
+                        continue
+                        
+                    model_Xs[model_name] = X_model
+                    
+                    # Store class labels from the checkpoint
+                    if model_classes is not None:
+                        model_class_labels[model_name] = [str(c) for c in model_classes]
+                    else:
+                        # Fallback heuristic if not exported
+                        if is_gdf:
+                            model_class_labels[model_name] = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
+                        else:
+                            model_class_labels[model_name] = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+
+                if len(model_Xs) == 0:
                     st.stop()
                     
                 # ANIMATED OSCILLOSCOPE LOGIC
                 st.markdown("---")
                 osc_col, prob_col = st.columns([1.2, 1])
                 
-                # We will just take the first trial to simulate real-time playback
-                sample_trial = X[0] # (channels, time)
+                # Use the first valid model's X for the oscilloscope visualization
+                first_valid_model = list(model_Xs.keys())[0]
+                sample_trial = model_Xs[first_valid_model][0]
+                expected_channels = model_expected_channels[first_valid_model]
+                sfreq = getattr(st.session_state.loaded_models[first_valid_model], 'sfreq', 160.0)
                 
-                # Select C3 and C4 channels to visualize
                 ch1_name, ch2_name = 'C3', 'C4'
-                ch1_idx = raw.ch_names.index(ch1_name) if ch1_name in raw.ch_names else 0
-                ch2_idx = raw.ch_names.index(ch2_name) if ch2_name in raw.ch_names else 1
+                ch1_idx = expected_channels.index(ch1_name) if ch1_name in expected_channels else None
+                ch2_idx = expected_channels.index(ch2_name) if ch2_name in expected_channels else None
                 
-                time_axis = np.linspace(0, 4.0, X.shape[2])
-                c3_data = sample_trial[ch1_idx, :]
-                c4_data = sample_trial[ch2_idx, :]
+                time_axis = np.arange(sample_trial.shape[1]) / sfreq
                 
                 with osc_col:
                     st.markdown(f'''
                         <div class="osc-container">
                             <h4 style="margin-top:0px;color:#eee;">Dynamic EEG Oscilloscope</h4>
-                            <p style="color:#aaa;font-size:12px;">Real-time playback of extracted C3 and C4 channels</p>
+                            <p style="color:#aaa;font-size:12px;">Real-time playback of extracted channels (Model: {first_valid_model})</p>
                         </div>
                     ''', unsafe_allow_html=True)
                     chart_placeholder = st.empty()
                     status_placeholder = st.empty()
                 
                 # Animate the oscilloscope
-                window_size = 656
-                step = 65 # 10 steps
+                window_size = sample_trial.shape[1]
+                step = max(1, window_size // 10)
                 
                 for i in range(step, window_size + step, step):
                     current_idx = min(i, window_size)
                     
                     fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=time_axis[:current_idx], y=c3_data[:current_idx], mode='lines', name=ch1_name, line=dict(color='#00F0FF', width=1.5)))
-                    fig.add_trace(go.Scatter(x=time_axis[:current_idx], y=c4_data[:current_idx], mode='lines', name=ch2_name, line=dict(color='#FF00FF', width=1.5)))
-                    
+                    if ch1_idx is not None:
+                        fig.add_trace(go.Scatter(x=time_axis[:current_idx], y=sample_trial[ch1_idx, :current_idx], mode='lines', name=ch1_name, line=dict(color='#00F0FF', width=1.5)))
+                    if ch2_idx is not None:
+                        fig.add_trace(go.Scatter(x=time_axis[:current_idx], y=sample_trial[ch2_idx, :current_idx], mode='lines', name=ch2_name, line=dict(color='#FF00FF', width=1.5)))
+                    if ch1_idx is None and ch2_idx is None:
+                        # Fallback if both missing
+                        fig.add_annotation(text="Selected channels C3/C4 missing in this model.", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color="#aaa"))
+                        
+                    max_time = window_size / sfreq
                     fig.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)',
                         paper_bgcolor='rgba(0,0,0,0)',
                         margin=dict(l=0, r=0, t=10, b=10),
                         height=250,
-                        xaxis=dict(showgrid=True, gridcolor='#333', range=[0, 4.0], tickvals=[0, 1, 2, 3, 4], ticktext=['t = 0.0s (Cue)', '1.0s', '2.0s', '3.0s', 't = 4.0s (End)']),
+                        xaxis=dict(showgrid=True, gridcolor='#333', range=[0, max_time], title="Time (s)"),
                         yaxis=dict(showgrid=True, gridcolor='#333', range=[-20, 20], zeroline=True, zerolinecolor='#555'),
                         font=dict(color='#ccc'),
                         showlegend=False
@@ -2131,6 +2213,7 @@ if selected_tab == '🎯 Live Inference':
                     
                     chart_placeholder.plotly_chart(fig, width='stretch')
                     pct = int((current_idx / window_size) * 100)
+                    cur_time = (current_idx / window_size) * max_time
                     status_placeholder.markdown(f'''
                         <div style="background-color:#1E1E1E; padding:10px; border-radius:5px; border:1px solid #333;">
                             <div style="display:flex; justify-content:space-between; font-size:12px; color:#aaa;">
@@ -2142,7 +2225,7 @@ if selected_tab == '🎯 Live Inference':
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:#ddd;">
                                 <div><strong>FRAME:</strong> {current_idx}/{window_size}</div>
-                                <div><strong>WINDOW:</strong> 0.0s - {(current_idx/window_size)*4.0:.1f}s</div>
+                                <div><strong>WINDOW:</strong> 0.0s - {cur_time:.1f}s</div>
                                 <div><strong>STREAM STATUS:</strong> <span style="color:#00F0FF;">{'FINISHED' if pct == 100 else 'STREAMING'}</span></div>
                             </div>
                         </div>
@@ -2152,79 +2235,53 @@ if selected_tab == '🎯 Live Inference':
                 # INFERENCE LOGIC
                 results = []
 
-                def _safe_probs(raw_probs, n_classes=4):
-                    """Sanitize probabilities: replace NaN/Inf, renormalize to sum=1."""
-                    p = np.nan_to_num(raw_probs, nan=0.0, posinf=1.0, neginf=0.0)
-                    # If all zeros after NaN replacement, use uniform distribution
-                    row_sums = p.sum(axis=1, keepdims=True)
-                    row_sums = np.where(row_sums == 0, 1.0, row_sums)
-                    p = p / row_sums
-                    return np.clip(p, 0.0, 1.0)
-
-
-                for model_name in [m for m in selected_models if m != 'None']:
-                    model_path = os.path.join(model_dir, model_name)
-                    _n_ch = int(X.shape[1])
+                for model_name, X_model in model_Xs.items():
+                    pipeline = st.session_state.loaded_models[model_name]
+                    model_arch = pipeline.__class__.__name__
                     
-                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CNN_LSTM_Pipeline = get_model_pipelines()
-                    if "conformer" in model_name.lower():
-                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                        model_arch = "Advanced Transformer"
-                    elif "cnn_lstm" in model_name.lower():
-                        pipeline = CNN_LSTM_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                        model_arch = "CNN-LSTM"
-                    elif "minirocket" in model_name.lower():
-                        pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples)
-                        model_arch = "MiniRocket"
-                    elif "eegnet" in model_name.lower():
-                        pipeline = EEGNet_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                        model_arch = "EEGNet"
-                    elif "shallow" in model_name.lower():
-                        pipeline = ConvNet_Pipeline(arch="shallow", num_classes=4, channels=_n_ch, samples=target_samples)
-                        model_arch = "Shallow ConvNet"
-                    else:
-                        st.error(f"Unknown architecture for {model_name}")
-                        continue
-                        
-                    try:
-                        pipeline.load(model_path)
-                    except Exception as e:
-                        st.error(f"Error loading {model_name}: {e}")
-                        continue
-                        
                     start_t = time.time()
                     try:
+                        # We only evaluate on the first trial for accurate latency and matching visualization
+                        x_infer = X_model[0:1]
+                        
+                        is_prob_index = False
                         if hasattr(pipeline, 'predict_proba'):
-                            probs = pipeline.predict_proba(X)
-                            probs = _safe_probs(probs, n_classes=4)
+                            probs = pipeline.predict_proba(x_infer)
+                            if np.isnan(probs).any() or np.isinf(probs).any():
+                                raise ValueError("Model output contains NaN/Inf values.")
+                            preds = [np.argmax(probs[0])]
+                            is_prob_index = True
                         else:
-                            preds = pipeline.predict(X)
-                            probs = np.zeros((len(X), 4))
-                            probs[np.arange(len(X)), np.clip(preds, 0, 3)] = 1.0
+                            preds = pipeline.predict(x_infer)
+                            num_classes = len(model_class_labels[model_name])
+                            probs = np.full((1, num_classes), np.nan)
                     except Exception as _e:
                         st.error(f"{model_arch} Inference Error: {_e}")
-                        probs = np.ones((len(X), 4)) / 4.0
+                        continue
                         
                     latency = (time.time() - start_t) * 1000
-                    results.append((model_arch, model_name, probs, latency))
+                    results.append((model_arch, model_name, probs, preds, latency, is_prob_index))
 
-                # 4 active motor classes (Rest=-1 excluded from training)
-                if inf_file.name.lower().endswith('.gdf'):
-                    class_labels_4 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
-                    class_icons_4 = ["✋", "🤚", "🦶", "👅"]
-                else:
-                    class_labels_4 = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
-                    class_icons_4 = ["✋", "🤚", "👐", "🦶"]
+                def get_icon(lbl):
+                    l = str(lbl).lower()
+                    if 'left' in l and 'fist' in l: return "✋"
+                    if 'right' in l and 'fist' in l: return "🤚"
+                    if 'left' in l and 'hand' in l: return "✋"
+                    if 'right' in l and 'hand' in l: return "🤚"
+                    if 'both' in l and 'fist' in l: return "👐"
+                    if 'both' in l and 'feet' in l: return "🦶"
+                    if 'tongue' in l: return "👅"
+                    return "🎯"
 
                 with prob_col:
                     st.markdown('''
                         <div class="prob-container">
                             <h4 style="margin-top:0px;color:#eee;">Posterior Class Probabilities</h4>
-                            <p style="color:#aaa;font-size:12px;">Live 4-class intent distribution (Softmax · NaN-safe normalized)</p>
+                            <p style="color:#aaa;font-size:12px;">Live intent distribution (Softmax · NaN-safe)</p>
                         </div>
                     ''', unsafe_allow_html=True)
 
-                    for model_arch, model_name, probs, latency in results:
+                    for model_arch, model_name, probs, preds, latency, is_prob_index in results:
                         arch_color = '#00ff9a' if 'MiniRocket' in model_arch else '#00d4ff'
                         st.markdown(f'''
                             <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
@@ -2238,97 +2295,120 @@ if selected_tab == '🎯 Live Inference':
                             </div>
                         ''', unsafe_allow_html=True)
 
-                        # Average probabilities across trials
-                        avg_probs = np.mean(probs, axis=0)
-                        # Ensure 4 classes
-                        if len(avg_probs) < 4:
-                            avg_probs = np.pad(avg_probs, (0, 4 - len(avg_probs)))
-                        avg_probs = avg_probs[:4]
-                        # Final NaN-safety
-                        avg_probs = np.nan_to_num(avg_probs, nan=0.25)
-                        s = avg_probs.sum()
-                        if s > 0:
-                            avg_probs = avg_probs / s
+                        trial_probs = probs[0]
+                        labels = model_class_labels[model_name]
+                        
+                        has_probs = not np.isnan(trial_probs).all()
+                        
+                        if not is_prob_index:
+                            best_val = str(preds[0])
+                            if best_val in labels:
+                                best_idx = labels.index(best_val)
+                            else:
+                                st.error(f"Inference Error: {model_name} output unrecognized label '{best_val}'. Must be one of {labels}.")
+                                continue
+                        else:
+                            best_idx = int(preds[0])
+                            if best_idx >= len(labels):
+                                st.error(f"Inference Error: {model_name} output index {best_idx} which exceeds labels list length {len(labels)}.")
+                                continue
+                        
+                        confidence = float(trial_probs[best_idx]) * 100 if has_probs else None
+                        is_uncertain = (confidence is not None and confidence < float(uncertainty_threshold))
 
-                        best_idx = int(np.argmax(avg_probs))
-
-                        for i in range(4):
-                            prob_val = float(avg_probs[i]) * 100
-                            label = class_labels_4[i]
-                            icon = class_icons_4[i]
+                        for i in range(len(trial_probs)):
+                            prob_val = float(trial_probs[i]) * 100 if has_probs else 0.0
+                            label = labels[i] if i < len(labels) else f"Class {i}"
+                            icon = get_icon(label)
                             is_best = (i == best_idx)
                             bar_color = "#00d4ff" if is_best else "#a855f7"
                             pct_color = "#00d4ff" if is_best else "#8aa0b8"
                             bold = "font-weight:700;" if is_best else ""
+                            prob_str = f"{prob_val:.1f}%" if has_probs else ("N/A" if is_best else "0.0%")
 
                             st.markdown(f'''
                                 <div class="prob-row">
                                     <span class="prob-class-label" style="{bold}">{icon} {label}</span>
-                                    <span class="prob-pct-label" style="color:{pct_color};{bold}">{prob_val:.1f}%</span>
+                                    <span class="prob-pct-label" style="color:{pct_color};{bold}">{prob_str}</span>
                                 </div>
                                 <div class="neural-bar-wrap">
-                                    <div class="neural-bar-fill" style="width: {min(prob_val, 100):.1f}%; background: linear-gradient(90deg, {bar_color}, #a855f7);"></div>
+                                    <div class="neural-bar-fill" style="width: {min(prob_val, 100) if has_probs else (100 if is_best else 0):.1f}%; background: {'linear-gradient(90deg, ' + bar_color + ', #a855f7)' if has_probs else '#333'};"></div>
                                 </div>
                             ''', unsafe_allow_html=True)
 
-                        predicted_label = class_labels_4[best_idx]
-                        confidence = float(avg_probs[best_idx]) * 100
+                        if is_uncertain:
+                            predicted_label = "Uncertain—repeat trial"
+                            pred_icon = "❓"
+                            pred_color = "#ff8c00"
+                        else:
+                            predicted_label = labels[best_idx] if best_idx < len(labels) else f"Class {best_idx}"
+                            pred_icon = "🎯"
+                            pred_color = "#00ff9a"
+
                         st.markdown(f'''
                             <div style="display:flex; justify-content:space-between; font-size:11px;
                                         color:#888; margin-top:15px; padding-top:10px;
                                         border-top:1px solid rgba(255,255,255,0.06);">
-                                <span>Chance Level: 25.00% &nbsp;·&nbsp;
-                                    <strong style="color:#00ff9a;">🎯 {predicted_label}</strong>
-                                    @ <strong style="color:#00d4ff;">{confidence:.1f}%</strong></span>
+                                <span>Threshold: {uncertainty_threshold}% &nbsp;·&nbsp;
+                                    <strong style="color:{pred_color};">{pred_icon} {predicted_label}</strong>
+                                    {f"@ <strong style='color:#00d4ff;'>{confidence:.1f}%</strong>" if confidence is not None else ""}</span>
                                 <span>ArgMax Soft Voting</span>
                             </div>
                         ''', unsafe_allow_html=True)
                         st.divider()
 
                 # ===== 3 CHANNEL PAIR WAVEFORMS =====
-                file_type_str = "GDF" if is_bci2a else "EDF"
+                file_type_str = "GDF" if inf_file.name.lower().endswith('.gdf') else "EDF"
                 st.markdown(f"### 📡 3 Key Motor Channel Pair Waveforms (From {file_type_str})")
                 st.markdown('<div style="color:#5a7a99; font-size:0.8rem; margin-bottom:12px;">Real EEG waveforms from the uploaded file showing activity for three critical electrode pairs during the first trial.</div>', unsafe_allow_html=True)
 
-                _t = np.linspace(0, 4.0, X.shape[2])
+                _t = np.arange(sample_trial.shape[1]) / sfreq
 
-                # Get real data channels if available, fallback to indices 0,1,2,3,4,5
-                def get_ch_data(ch_name, default_idx):
-                    if ch_name in raw.ch_names:
-                        return sample_trial[raw.ch_names.index(ch_name), :]
-                    elif ch_name.upper() in raw.ch_names:
-                        return sample_trial[raw.ch_names.index(ch_name.upper()), :]
-                    elif ch_name.capitalize() in raw.ch_names:
-                        return sample_trial[raw.ch_names.index(ch_name.capitalize()), :]
+                # Get real data channels if available, return None if missing
+                def get_ch_data(ch_name):
+                    if expected_channels and ch_name in expected_channels:
+                        return sample_trial[expected_channels.index(ch_name), :]
+                    elif expected_channels and ch_name.upper() in expected_channels:
+                        return sample_trial[expected_channels.index(ch_name.upper()), :]
+                    elif expected_channels and ch_name.capitalize() in expected_channels:
+                        return sample_trial[expected_channels.index(ch_name.capitalize()), :]
                     else:
-                        # Fallback to a default index if channel not found
-                        idx = min(default_idx, sample_trial.shape[0] - 1)
-                        return sample_trial[idx, :]
+                        return None
 
                 _pairs = [
-                    ('C3 – C4', 'Primary Motor Cortex (hand area)', '#00d4ff', '#a855f7', 'C3', 'C4', 0, 1),
-                    ('FC3 – FC4', 'Pre-motor / Supplementary Motor Area', '#00ff9a', '#ff8c69', 'FC3', 'FC4', 2, 3),
-                    ('CP3 – CP4', 'Sensorimotor Integration (parietal)', '#f59e0b', '#ec4899', 'CP3', 'CP4', 4, 5),
+                    ('C3 – C4', 'Primary Motor Cortex (hand area)', '#00d4ff', '#a855f7', 'C3', 'C4'),
+                    ('FC3 – FC4', 'Pre-motor / Supplementary Motor Area', '#00ff9a', '#ff8c69', 'FC3', 'FC4'),
+                    ('CP3 – CP4', 'Sensorimotor Integration (parietal)', '#f59e0b', '#ec4899', 'CP3', 'CP4'),
                 ]
 
                 wp1, wp2, wp3 = st.columns(3)
-                for col, (pair, desc, c1, c2, ch_l, ch_r, idx_l, idx_r) in zip([wp1, wp2, wp3], _pairs):
-                    sig_l = get_ch_data(ch_l, idx_l)
-                    sig_r = get_ch_data(ch_r, idx_r)
+                for col, (pair, desc, c1, c2, ch_l, ch_r) in zip([wp1, wp2, wp3], _pairs):
+                    sig_l = get_ch_data(ch_l)
+                    sig_r = get_ch_data(ch_r)
                     
                     fig_wave = go.Figure()
-                    fig_wave.add_trace(go.Scatter(x=_t, y=sig_l, name=pair.split('–')[0].strip(),
-                                                  line=dict(color=c1, width=1.5), opacity=0.9))
-                    fig_wave.add_trace(go.Scatter(x=_t, y=sig_r, name=pair.split('–')[1].strip(),
-                                                  line=dict(color=c2, width=1.5), opacity=0.9))
+                    
+                    if sig_l is None and sig_r is None:
+                        fig_wave.add_annotation(text="Channels unavailable in this model.", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color="#aaa"))
+                    else:
+                        if sig_l is not None:
+                            fig_wave.add_trace(go.Scatter(x=_t, y=sig_l, name=pair.split('–')[0].strip(),
+                                                          line=dict(color=c1, width=1.5), opacity=0.9))
+                        if sig_r is not None:
+                            fig_wave.add_trace(go.Scatter(x=_t, y=sig_r, name=pair.split('–')[1].strip(),
+                                                          line=dict(color=c2, width=1.5), opacity=0.9))
                     # ERD onset marker
                     fig_wave.add_vline(x=0.0, line=dict(color='rgba(255,255,255,0.3)', dash='dash', width=1))
                     
                     # Compute appropriate y-limits
-                    max_y = max(np.max(sig_l), np.max(sig_r))
-                    min_y = min(np.min(sig_l), np.min(sig_r))
-                    padding = (max_y - min_y) * 0.1
-                    if padding == 0: padding = 1.0
+                    valid_sigs = [s for s in [sig_l, sig_r] if s is not None]
+                    if valid_sigs:
+                        max_y = max([np.max(s) for s in valid_sigs])
+                        min_y = min([np.min(s) for s in valid_sigs])
+                        padding = (max_y - min_y) * 0.1
+                        if padding == 0: padding = 1.0
+                    else:
+                        max_y, min_y, padding = 1.0, -1.0, 0.2
                     
                     fig_wave.add_annotation(x=0.5, y=max_y, text='MI onset',
                                             font=dict(color='rgba(255,255,255,0.5)', size=9),
@@ -2428,7 +2508,7 @@ if selected_tab == '🔍 Accuracy Analysis':
         <div class="glass-card" style="margin-bottom:20px;">
         <h4 style="color:#a855f7; font-size:1.05rem; margin-top:0;">4. How was it trained? (The Data)</h4>
         <p style="color:#c8d6e5; font-size:0.9rem; line-height:1.6; margin-bottom:0;">
-        To get this accuracy, we extracted 4.0-second mental execution windows. For MiniRocket, we instantly mapped this data through 10,000 random convolutions and used Ridge Regression to find the perfect global minimum. For CNN/Conformer, we fed the data in batches, passing it forward, calculating the error (Loss), and backpropagating to update weights over 30 epochs until the network learned the optimal spatial filters.
+        To get this accuracy, we extracted 4.0-second mental execution windows. For MiniRocket, we mapped this data through 10,000 random convolutions and used an MLP Classifier to map the features to intent probabilities. For CNN/Conformer, we fed the data in batches, passing it forward, calculating the error (Loss), and backpropagating to update weights over 30 epochs until the network learned the optimal spatial filters.
         </p>
         </div>
         """, unsafe_allow_html=True)
@@ -2459,7 +2539,7 @@ if selected_tab == '📡 Technical Details':
                 One of the primary barriers to deploying non-invasive BCI in real-world clinical settings is the severe hardware constraints of mobile processors. While deep recurrent architectures (like the 13-layer CNN-LSTM baseline) deliver high predictive power, they require high RAM utilization, power draw, and GPU acceleration.
             </p>
             <p style="color:#c8d6e5; font-size:0.95rem; line-height:1.7; margin-bottom:15px; text-align:justify;">
-                By utilizing the <strong>MiniRocket</strong> algorithm, our architecture achieves <strong>accuracy at a fraction of the compute</strong>. Because MiniRocket relies on purely deterministic dilated convolutions and a closed-form Ridge Regression solve, it completely bypasses backpropagation and gradient descent. This translates to inference times of 0.6 milliseconds on standard CPUs, unlocking the ability to embed the BCI logic directly into ultra-low-power microcontrollers for robotic prosthetics without sacrificing the ~98% predictive accuracy.
+                By utilizing the <strong>MiniRocket</strong> algorithm, our architecture achieves <strong>accuracy at a fraction of the compute</strong>. Because MiniRocket relies on purely deterministic dilated convolutions and an efficient MLP classifier, it is extremely fast. This translates to inference times of 0.6 milliseconds on standard CPUs, unlocking the ability to embed the BCI logic directly into ultra-low-power microcontrollers for robotic prosthetics without sacrificing the ~98% predictive accuracy.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -2511,7 +2591,7 @@ if selected_tab == '📡 Technical Details':
     | Lun et al., 2020 | 4 Tasks | PhysioNet | Specialized CNN | 95.76% |
     | Li et al., 2023 | 5 Tasks | PhysioNet | DSCNN + ELM | 97.71% |
     | **Our Implementation (Baseline)** | **4 Tasks** | **PhysioNet** | **CNN-LSTM (13-Layer)** | **98.06%** |
-    | **Our Implementation (Proposed)** | **4 Tasks** | **PhysioNet** | **MiniRocket + Ridge** | **98.63%** |
+    | **Our Implementation (Proposed)** | **4 Tasks** | **PhysioNet** | **MiniRocket + MLP** | **98.63%** |
         """)
         
         st.markdown("""
@@ -2530,7 +2610,7 @@ if selected_tab == '📡 Technical Details':
     | Lawhern et al., 2018 | 4 Tasks | BCI IV 2a | EEGNet | ~75.40% |
     | Fahimi et al., 2019 | 4 Tasks | BCI IV 2a | CNN-GRU (Prior Art) | 91.80% |
     | **Our Implementation (Baseline)** | **4 Tasks** | **BCI IV 2a** | **CNN-LSTM (13-Layer)** | **92.32%** |
-    | **Our Implementation (Proposed)** | **4 Tasks** | **BCI IV 2a** | **MiniRocket + Ridge** | **92.57%** |
+    | **Our Implementation (Proposed)** | **4 Tasks** | **BCI IV 2a** | **MiniRocket + MLP** | **92.57%** |
         """)
 
     # --- TAB 10: CONCLUSIONS ---
@@ -2545,7 +2625,7 @@ if selected_tab == '📡 Technical Details':
                 <strong>Recap of What's Planned & Accomplished (Based on Hwaidi & Ghanem, 2026):</strong>
             </p>
             <ul style="color:#c8d6e5; font-size:0.9rem; padding-left:20px; margin-bottom:0;">
-                <li><strong>Methodology:</strong> Successfully implemented the MiniRocket + Ridge Classifier pipeline and the 13-layer hybrid CNN-LSTM network for 4-class motor imagery classification.</li>
+                <li><strong>Methodology:</strong> Successfully implemented the MiniRocket + MLP Classifier pipeline and the 13-layer hybrid CNN-LSTM network for 4-class motor imagery classification.</li>
                 <li><strong>Results:</strong> Validated the paper's core assertion—that the MiniRocket transform (extracting deterministic PPV features) achieves near-SOTA accuracy (~98.6%) on the PhysioNet dataset.</li>
                 <li><strong>Compute Efficiency:</strong> Proved that this accuracy is achieved at a fraction of the computational cost of the CNN-LSTM baseline (approx 13x faster inference latency).</li>
                 <li><strong>Future Outlook:</strong> The dashboard serves as an interactive foundation for future closed-loop clinical experimentation, cross-modal fNIRS fusion, and non-additive Choquet-integral source fusion, as recommended by the authors.</li>
