@@ -16,7 +16,7 @@ def get_device(prefer="auto"):
 
 class EEGNet(nn.Module):
     def __init__(self, num_classes=4, channels=22, samples=656, 
-                 F1=16, D=3, F2=48, kernel_length=64, p_drop=0.15):
+                 F1=32, D=2, F2=64, kernel_length=64, p_drop=0.25):
         super(EEGNet, self).__init__()
         self.F1 = F1
         self.D = D
@@ -31,7 +31,7 @@ class EEGNet(nn.Module):
         # Depthwise Conv
         self.depthwise = nn.Conv2d(self.F1, self.F1 * self.D, (channels, 1), groups=self.F1, bias=False)
         self.batchnorm2 = nn.BatchNorm2d(self.F1 * self.D)
-        self.elu1 = nn.ELU()
+        self.elu1 = nn.GELU()
         self.pool1 = nn.AvgPool2d((1, 4))
         self.dropout1 = nn.Dropout(p_drop)
 
@@ -41,9 +41,13 @@ class EEGNet(nn.Module):
                                         padding='same', groups=self.F1 * self.D, bias=False)
         self.sep_conv_point = nn.Conv2d(self.F1 * self.D, self.F2, (1, 1), bias=False)
         self.batchnorm3 = nn.BatchNorm2d(self.F2)
-        self.elu2 = nn.ELU()
+        self.elu2 = nn.GELU()
         self.pool2 = nn.AvgPool2d((1, 8))
         self.dropout2 = nn.Dropout(p_drop)
+
+        # Self-Attention (Transformer) Block
+        encoder_layer = nn.TransformerEncoderLayer(d_model=self.F2, nhead=4, dim_feedforward=self.F2*2, batch_first=True, dropout=p_drop)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
         # Classifier
         # Output shape after pool2: (F2, 1, samples // 32)
@@ -73,6 +77,14 @@ class EEGNet(nn.Module):
         x = self.pool2(x)
         x = self.dropout2(x)
 
+        # Transformer Injection
+        # x shape: (batch, F2, 1, time)
+        x = x.squeeze(2)         # (batch, F2, time)
+        x = x.permute(0, 2, 1)   # (batch, time, F2)
+        x = self.transformer(x)  # Self-Attention
+        x = x.permute(0, 2, 1)   # (batch, F2, time)
+        x = x.unsqueeze(2)       # (batch, F2, 1, time)
+
         # Classifier
         x = self.flatten(x)
         x = self.fc(x)
@@ -81,7 +93,7 @@ class EEGNet(nn.Module):
 class EEGNet_Pipeline:
     def __init__(self, epochs=100, batch_size=32, lr=1e-3, channels=22, samples=656, num_classes=4,
                  device="auto", amp=True, patience=9999,
-                 F1=16, D=3, F2=48, kernel_length=64, dropout=0.15, label_smoothing=0.0):
+                 F1=32, D=2, F2=64, kernel_length=64, dropout=0.0, label_smoothing=0.0):
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -94,7 +106,7 @@ class EEGNet_Pipeline:
             F1=F1, D=D, F2=F2, kernel_length=kernel_length, p_drop=dropout
         ).to(self.device)
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=5e-4)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.0)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0

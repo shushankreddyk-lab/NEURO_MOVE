@@ -15,19 +15,23 @@ def get_device(prefer="auto"):
     return torch.device("cpu")
 
 class ShallowConvNet(nn.Module):
-    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.3):
+    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.0):
         super(ShallowConvNet, self).__init__()
         self.channels = channels
         self.num_classes = num_classes
         
         # Temporal convolution
-        self.conv_time = nn.Conv2d(1, 40, (1, 25), bias=False)
+        self.conv_time = nn.Conv2d(1, 60, (1, 25), bias=False)
         # Spatial convolution
-        self.conv_spat = nn.Conv2d(40, 40, (channels, 1), bias=False)
-        self.batchnorm1 = nn.BatchNorm2d(40)
+        self.conv_spat = nn.Conv2d(60, 60, (channels, 1), bias=False)
+        self.batchnorm1 = nn.BatchNorm2d(60)
         
         self.pool = nn.AvgPool2d((1, 75), stride=(1, 15))
         self.dropout = nn.Dropout(drop_prob)
+        
+        # Self-Attention (Transformer) Block
+        encoder_layer = nn.TransformerEncoderLayer(d_model=60, nhead=4, dim_feedforward=120, batch_first=True, dropout=drop_prob)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
         
         # calculate dummy shape for fc
         dummy = torch.randn(1, 1, channels, samples)
@@ -38,6 +42,10 @@ class ShallowConvNet(nn.Module):
         dummy = self.pool(dummy)
         dummy = torch.log(torch.clamp(dummy, min=1e-6))
         dummy = self.dropout(dummy)
+        
+        dummy = dummy.squeeze(2).permute(0, 2, 1)
+        dummy = self.transformer(dummy)
+        dummy = dummy.permute(0, 2, 1).unsqueeze(2)
         
         out_dim = dummy.view(-1).shape[0]
         self.fc = nn.Linear(out_dim, num_classes)
@@ -57,14 +65,19 @@ class ShallowConvNet(nn.Module):
         
         # Activation: log
         x = torch.log(torch.clamp(x, min=1e-6))
-        
         x = self.dropout(x)
+        
+        # Transformer Injection
+        x = x.squeeze(2).permute(0, 2, 1)   # (batch, time, 60)
+        x = self.transformer(x)             # Self-Attention
+        x = x.permute(0, 2, 1).unsqueeze(2) # (batch, 60, 1, time)
+        
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
 
 class DeepConvNet(nn.Module):
-    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.5):
+    def __init__(self, channels=22, samples=656, num_classes=4, drop_prob=0.0):
         super(DeepConvNet, self).__init__()
         self.channels = channels
         self.num_classes = num_classes
@@ -94,12 +107,20 @@ class DeepConvNet(nn.Module):
         self.pool4 = nn.MaxPool2d((1, 3), stride=(1, 3))
         self.drop4 = nn.Dropout(drop_prob)
         
+        # Self-Attention (Transformer) Block
+        encoder_layer = nn.TransformerEncoderLayer(d_model=200, nhead=4, dim_feedforward=400, batch_first=True, dropout=drop_prob)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        
         # calculate dummy shape for fc
         dummy = torch.randn(1, 1, channels, samples)
         dummy = self.pool1(self.bn1(self.conv_spat(self.conv_time(dummy))))
         dummy = self.pool2(self.bn2(self.conv2(dummy)))
         dummy = self.pool3(self.bn3(self.conv3(dummy)))
         dummy = self.pool4(self.bn4(self.conv4(dummy)))
+        
+        dummy = dummy.squeeze(2).permute(0, 2, 1)
+        dummy = self.transformer(dummy)
+        dummy = dummy.permute(0, 2, 1).unsqueeze(2)
         
         out_dim = dummy.view(-1).shape[0]
         self.fc = nn.Linear(out_dim, num_classes)
@@ -111,27 +132,32 @@ class DeepConvNet(nn.Module):
         x = self.conv_time(x)
         x = self.conv_spat(x)
         x = self.bn1(x)
-        x = nn.functional.elu(x)
+        x = nn.functional.gelu(x)
         x = self.pool1(x)
         x = self.drop1(x)
         
         x = self.conv2(x)
         x = self.bn2(x)
-        x = nn.functional.elu(x)
+        x = nn.functional.gelu(x)
         x = self.pool2(x)
         x = self.drop2(x)
         
         x = self.conv3(x)
         x = self.bn3(x)
-        x = nn.functional.elu(x)
+        x = nn.functional.gelu(x)
         x = self.pool3(x)
         x = self.drop3(x)
         
         x = self.conv4(x)
         x = self.bn4(x)
-        x = nn.functional.elu(x)
+        x = nn.functional.gelu(x)
         x = self.pool4(x)
         x = self.drop4(x)
+        
+        # Transformer Injection
+        x = x.squeeze(2).permute(0, 2, 1)   # (batch, time, 200)
+        x = self.transformer(x)             # Self-Attention
+        x = x.permute(0, 2, 1).unsqueeze(2) # (batch, 200, 1, time)
         
         x = x.view(x.size(0), -1)
         x = self.fc(x)
@@ -139,7 +165,7 @@ class DeepConvNet(nn.Module):
 
 class ConvNet_Pipeline:
     def __init__(self, arch="shallow", epochs=100, batch_size=64, lr=1e-3, channels=22, samples=656, num_classes=4,
-                 device="auto", amp=True, patience=9999):
+                 device="auto", amp=True, patience=9999, label_smoothing=0.0):
         self.arch = arch
         self.epochs = epochs
         self.batch_size = batch_size
@@ -154,8 +180,8 @@ class ConvNet_Pipeline:
         else:
             self.model = DeepConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
             
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=5e-4)
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.0)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0

@@ -1066,7 +1066,7 @@ if selected_tab == '🚀 Live Training':
     st.markdown("### 🧬 Select Model to Train")
     selected_bench_model = st.selectbox(
         "Choose Benchmarking Architecture:",
-        ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Deep ConvNet", "CSP + LDA"],
+        ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Deep ConvNet", "CSP + LDA", "Advanced Transformer"],
         key="bench_model_select"
     )
     
@@ -1948,7 +1948,8 @@ if selected_tab == '🎯 Live Inference':
     models = glob.glob(os.path.join(model_dir, '*.pkl')) + glob.glob(os.path.join(model_dir, '*.pth'))
     
     model_options = [os.path.relpath(p, model_dir) for p in models]
-    conformer_models = [m for m in model_options if 'conformer' in m.lower() or 'cnn_lstm' in m.lower()]
+    conformer_models = [m for m in model_options if 'conformer' in m.lower()]
+    cnn_lstm_models  = [m for m in model_options if 'cnn_lstm' in m.lower()]
     minirocket_models = [m for m in model_options if 'minirocket' in m.lower()]
     eegnet_models = [m for m in model_options if 'eegnet' in m.lower()]
     shallow_models = [m for m in model_options if 'shallow' in m.lower()]
@@ -1957,7 +1958,7 @@ if selected_tab == '🎯 Live Inference':
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        sel_cnn = st.selectbox('Select CNN-LSTM Model', ['None'] + conformer_models)
+        sel_cnn = st.selectbox('Select CNN-LSTM Model', ['None'] + cnn_lstm_models)
         sel_shallow = st.selectbox('Select Shallow ConvNet', ['None'] + shallow_models)
     with col2:
         sel_mr = st.selectbox('Select MiniRocket Model', ['None'] + minirocket_models)
@@ -1965,8 +1966,9 @@ if selected_tab == '🎯 Live Inference':
     with col3:
         sel_eegnet = st.selectbox('Select EEGNet Model', ['None'] + eegnet_models)
         sel_csp = st.selectbox('Select CSP+LDA Model', ['None'] + csp_models)
+        sel_conformer = st.selectbox('🤖 Select Advanced Transformer', ['None'] + conformer_models)
         
-    selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_deep, sel_eegnet, sel_csp] if m != 'None']
+    selected_models = [m for m in [sel_cnn, sel_shallow, sel_mr, sel_deep, sel_eegnet, sel_csp, sel_conformer] if m != 'None']
     
     if st.button('Load Models'):
         st.success('Models selected successfully!')
@@ -2166,7 +2168,10 @@ if selected_tab == '🎯 Live Inference':
                     _n_ch = int(X.shape[1])
                     
                     AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CSP_Engine = get_model_pipelines()
-                    if "cnn_lstm" in model_name.lower() or "conformer" in model_name.lower():
+                    if "conformer" in model_name.lower():
+                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                        model_arch = "Advanced Transformer"
+                    elif "cnn_lstm" in model_name.lower():
                         pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "CNN-LSTM"
                     elif "minirocket" in model_name.lower():

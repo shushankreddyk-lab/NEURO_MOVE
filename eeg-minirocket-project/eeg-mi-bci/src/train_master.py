@@ -276,8 +276,31 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         }), flush=True)
 
     elif model_name == "CNN-LSTM":
-        # Train CNN-LSTM (Conformer internally in this file)
+        # Train CNN-LSTM
         print(json.dumps({"type": "progress", "message": "Training CNN-LSTM Baseline..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
+        
+        cnn_lstm_pipeline = CNN_LSTM_Pipeline(
+            num_classes=num_cls,
+            channels=X.shape[1],
+            samples=X.shape[2],
+            epochs=epochs,
+            lr=lr,
+            batch_size=64
+        )
+        
+        try:
+            if args.finetune_model:
+                cnn_lstm_pipeline.load(args.finetune_model)
+            cnn_lstm_pipeline.fit(X_train, y_train, X_test, y_test)
+        except Exception as e:
+            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
+    
+        cnn_lstm_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_lstm_{sub_str}_{timestamp}.pth"))
+
+    elif model_name == "Advanced Transformer":
+        # Train Pure Transformer (Conformer)
+        print(json.dumps({"type": "progress", "message": "Training Advanced Transformer (Conformer)..."}), flush=True)
         print(json.dumps({"type": "reset_chart"}), flush=True)
         
         conformer_pipeline = AdvancedEEGPipeline(
@@ -296,7 +319,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
     
-        conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_lstm_{sub_str}_{timestamp}.pth"))
+        conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_conformer_{sub_str}_{timestamp}.pth"))
 
     elif model_name == "EEGNet":
         print(json.dumps({"type": "progress", "message": "Training EEGNet..."}), flush=True)

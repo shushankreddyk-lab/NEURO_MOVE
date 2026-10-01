@@ -10,8 +10,7 @@ class CSP_Engine:
     def __init__(self, classifier_type="svm", n_components=4):
         self.classifier_type = classifier_type.lower()
         self.n_components = n_components
-        
-        self.csp = CSP(n_components=self.n_components, reg=None, log=True, norm_trace=False)
+        self.csp = CSP(n_components=self.n_components, reg='ledoit_wolf', log=True, norm_trace=False)
         
         if self.classifier_type == "svm":
             self.clf = SVC(kernel='rbf', C=10.0, gamma='scale', probability=True)
