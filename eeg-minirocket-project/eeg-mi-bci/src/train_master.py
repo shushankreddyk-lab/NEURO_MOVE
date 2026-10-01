@@ -120,6 +120,10 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
                 orig_mapping = get_label_mapping(run)
                 inv_orig = {v: k for k, v in orig_mapping.items()}
                 
+                valid_events = []
+                valid_event_ids = {} 
+                event_to_label = {} 
+
                 for ev in events:
                     if len(ev) == 0: continue
                     onset, duration, marker_int = ev
@@ -134,31 +138,37 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
                     if target_group == -1:
                         continue
                     
-                    # Epoching manually for this event
-                    import mne
-                    tmax_adj = 4.1 - (1 / raw.info['sfreq'])
-                    epochs = mne.Epochs(raw, np.array([ev]), event_id={marker_str: marker_int}, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
-                    X_batch = epochs.get_data(copy=False)
-                    
-                    target_samples = 656
-                    if X_batch.shape[2] > target_samples:
-                        X_batch = X_batch[:, :, :target_samples]
-                    elif X_batch.shape[2] < target_samples:
-                        pad_width = target_samples - X_batch.shape[2]
-                        X_batch = np.pad(X_batch, ((0,0), (0,0), (0,pad_width)), mode='constant')
-                    
-                    if X_batch.shape[0] > 0:
-                        # If OVR, label is 1 if target_group == group_id else 0
-                        if mode == "ovr":
-                            lbl = 1 if str(target_group) == str(group_id) else 0
-                        else:
-                            lbl = target_group # 0 to 9 directly
-                            
-                        X_list.append(X_batch)
-                        y_list.append([lbl] * len(X_batch))
-                        pass # Removed excessive print
+                    if mode == "ovr":
+                        lbl = 1 if str(target_group) == str(group_id) else 0
                     else:
-                        print("X_batch was empty!", flush=True)
+                        lbl = target_group # 0 to 9 directly
+                        
+                    valid_events.append(ev)
+                    valid_event_ids[str(marker_int)] = marker_int
+                    event_to_label[marker_int] = lbl
+                    
+                if not valid_events:
+                    continue
+                    
+                # Epoching manually for ALL valid events at once (drastically faster)
+                import mne
+                tmax_adj = 4.1 - (1 / raw.info['sfreq'])
+                epochs = mne.Epochs(raw, np.array(valid_events), event_id=valid_event_ids, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
+                X_batch = epochs.get_data(copy=False)
+                
+                target_samples = 656
+                if X_batch.shape[2] > target_samples:
+                    X_batch = X_batch[:, :, :target_samples]
+                elif X_batch.shape[2] < target_samples:
+                    pad_width = target_samples - X_batch.shape[2]
+                    X_batch = np.pad(X_batch, ((0,0), (0,0), (0,pad_width)), mode='constant')
+                
+                if X_batch.shape[0] > 0:
+                    y_batch = [event_to_label[ev[2]] for ev in epochs.events]
+                    X_list.append(X_batch)
+                    y_list.extend(y_batch)
+                else:
+                    print("X_batch was empty!", flush=True)
                         
             del raws
             gc.collect()
