@@ -30,8 +30,8 @@ def get_model_pipelines():
     from src.minirocket_engine import MiniRocketPipeline
     from src.eegnet_engine import EEGNet_Pipeline
     from src.convnets_engine import ConvNet_Pipeline
-    from src.transformer_engine import Transformer_Engine
-    return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, Transformer_Engine
+    from src.cnn_lstm_engine import CNN_LSTM_Pipeline
+    return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CNN_LSTM_Pipeline
 
 st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
 
@@ -2166,12 +2166,12 @@ if selected_tab == '🎯 Live Inference':
                     model_path = os.path.join(model_dir, model_name)
                     _n_ch = int(X.shape[1])
                     
-                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, Transformer_Engine = get_model_pipelines()
+                    AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CNN_LSTM_Pipeline = get_model_pipelines()
                     if "conformer" in model_name.lower():
                         pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "Advanced Transformer"
                     elif "cnn_lstm" in model_name.lower():
-                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
+                        pipeline = CNN_LSTM_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
                         model_arch = "CNN-LSTM"
                     elif "minirocket" in model_name.lower():
                         pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples)
