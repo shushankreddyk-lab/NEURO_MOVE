@@ -1287,7 +1287,7 @@ if selected_tab == '🚀 Live Training':
                             cnn_frac = min(1.0, ep / max(total_ep, 1))
                             overall_frac = 0.60 + cnn_frac * 0.40
                             progress_bar.progress(min(1.0, overall_frac))
-                            log_line = f"Epoch {ep}/{total_ep} — Train Acc: {data['train_acc']:.4f} | Val Acc: {data['val_acc']:.4f} | Loss: {data['train_loss']:.4f}"
+                            log_line = f"Epoch {ep}/{total_ep} — Train Acc (% trained): {data['train_acc']*100:.2f}% | Val Acc: {data['val_acc']*100:.2f}% | Loss: {data['train_loss']:.4f}"
                             status_text.markdown(f'<div style="color:#00d4ff; font-size:0.85rem; font-family:monospace;">{log_line}</div>', unsafe_allow_html=True)
                             training_log_lines.append(log_line)
                             if val_accs:
@@ -1343,15 +1343,16 @@ if selected_tab == '🚀 Live Training':
         </div>
         """, unsafe_allow_html=True)
 
-        r1, r2, r3, r4 = st.columns(4)
+        r1, r2, r3, r4, r5 = st.columns(5)
         r1.metric("⏱ Total Duration", f"{res.get('total_time', 0):.1f} s")
         final_metric = res.get('cnn_acc') or res.get('mr_acc') or 0.0
-        r2.metric("🎯 Knowledge Learned (Acc)", f"{final_metric * 100:.2f}%" if final_metric > 0 else "N/A", help="How much % the model learned from subjects")
+        r2.metric("🎯 Training Accuracy", f"{final_metric:.4f}" if final_metric > 0 else "N/A", help="Final validation/test accuracy score")
+        r3.metric("🧠 % of Model Learned", f"{final_metric * 100:.2f}%" if final_metric > 0 else "N/A", help="How much % the model learned from subjects")
         lat = res.get('latency_ms')
-        r3.metric("⚡ Prediction Speed (Latency)", f"{lat:.2f} ms/samp" if lat else "N/A", help="How speedily the model predicts output")
+        r4.metric("⚡ Prediction Speed", f"{lat:.2f} ms" if lat else "N/A", help="How speedily the model predicts output")
         
         is_dl = res.get('model_name', '') not in ["MiniRocket", "CSP + LDA"]
-        r4.metric("📦 Epochs Trained", str(res.get('epochs', '—')) if is_dl else "1 (Single Pass)")
+        r5.metric("📦 Epochs Trained", str(res.get('epochs', '—')) if is_dl else "1 (Single Pass)")
 
         # Step-by-step training log
         with st.expander("📋 Full Training Log (Step-by-Step)", expanded=True):
