@@ -230,7 +230,10 @@ class MiniRocketPipeline:
             'hidden': self.hidden,
             'dropout': self.dropout,
             'in_channels': self.in_channels,
-            'seq_len': self.seq_len
+            'seq_len': self.seq_len,
+            'channel_names': getattr(self, 'channel_names', None),
+            'sfreq': getattr(self, 'sfreq', 160.0),
+            'label_classes': getattr(self, 'classes_', None),
         }
         torch.save(state, filepath)
 

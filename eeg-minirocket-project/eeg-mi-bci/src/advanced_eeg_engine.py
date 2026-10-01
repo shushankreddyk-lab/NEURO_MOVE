@@ -298,6 +298,9 @@ class AdvancedEEGPipeline:
             'training_time': self.training_time,
             'num_classes': self.num_classes,
             'channels': self.channels,
+            'channel_names': getattr(self, 'channel_names', None),
+            'sfreq': getattr(self, 'sfreq', 160.0),
+            'label_classes': getattr(self, 'label_classes_', None),
             'samples': self.samples
         }
         torch.save(state, filepath)

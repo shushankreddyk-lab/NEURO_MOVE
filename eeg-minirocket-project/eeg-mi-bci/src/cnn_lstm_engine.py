@@ -332,6 +332,8 @@ class CNN_LSTM_Pipeline:
             'lr': self.lr,
             'label_classes': getattr(self, 'label_classes_', None),
             'channels': self.model.conv1.in_channels,
+            'channel_names': getattr(self, 'channel_names', None),
+            'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.fc3.out_features,
             'arch': 'multiscale-bilstm-transformer',
             'model_cfg': {

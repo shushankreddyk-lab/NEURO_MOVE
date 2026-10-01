@@ -268,6 +268,8 @@ class ConvNet_Pipeline:
             'lr': self.lr,
             'label_classes': getattr(self, 'label_classes_', None),
             'channels': self.model.channels,
+            'channel_names': getattr(self, 'channel_names', None),
+            'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.num_classes,
             'arch': self.arch,
         }
