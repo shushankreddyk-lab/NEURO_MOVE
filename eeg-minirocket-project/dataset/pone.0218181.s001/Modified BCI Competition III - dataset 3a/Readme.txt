@@ -1,0 +1,3 @@
+This database is a modification of the original database BCI Competition III - dataset 3a. In this modification a new  class has been created for the cases in which no imaginary movement is intended, (NC: Non-intentional Control).  The instances have been added considering the EEG signals of the initial time previous to each of the imaginary movement trials already included in the original database.
+
+The database has already been pre-processed, so it is ready for feature selection, training and test set paritioning and classification. The datasets for the three subjects of this modified database are in .arff format ready for being used with Weka software.

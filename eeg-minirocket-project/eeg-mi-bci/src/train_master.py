@@ -355,28 +355,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
         shallow_pipeline.save(os.path.join(models_dir, f"{model_prefix}_shallow_{sub_str}_{timestamp}.pth"))
 
-    elif model_name == "Deep ConvNet":
-        print(json.dumps({"type": "progress", "message": "Training Deep ConvNet..."}), flush=True)
-        print(json.dumps({"type": "reset_chart"}), flush=True)
-        deep_pipeline = ConvNet_Pipeline(arch="deep", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
-        try:
-            if args.finetune_model:
-                deep_pipeline.load(args.finetune_model)
-            deep_pipeline.fit(X_train, y_train, X_test, y_test)
-        except Exception as e:
-            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
-        deep_pipeline.save(os.path.join(models_dir, f"{model_prefix}_deep_{sub_str}_{timestamp}.pth"))
-
-    elif model_name == "CSP + LDA":
-        print(json.dumps({"type": "progress", "message": "Training CSP + LDA..."}), flush=True)
-        csp_pipeline = CSP_Engine(classifier_type="lda", n_components=4)
-        try:
-            if args.finetune_model:
-                csp_pipeline.load(args.finetune_model)
-            csp_pipeline.fit(X_train, y_train, X_test, y_test)
-        except Exception as e:
-            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
-        csp_pipeline.save(os.path.join(models_dir, f"{model_prefix}_csp_lda_{sub_str}_{timestamp}.pkl"))
+    # Removed Deep ConvNet and CSP+LDA as requested
 
     # Compute final metrics for the completion message
     final_acc = 0.0
@@ -388,8 +367,6 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         elif model_name == "CNN-LSTM": pipeline_to_eval = conformer_pipeline
         elif model_name == "EEGNet": pipeline_to_eval = eegnet_pipeline
         elif model_name == "Shallow ConvNet": pipeline_to_eval = shallow_pipeline
-        elif model_name == "Deep ConvNet": pipeline_to_eval = deep_pipeline
-        elif model_name == "CSP + LDA": pipeline_to_eval = csp_pipeline
         
         if pipeline_to_eval:
             # Measure latency on 1 sample to simulate real-time BCI latency

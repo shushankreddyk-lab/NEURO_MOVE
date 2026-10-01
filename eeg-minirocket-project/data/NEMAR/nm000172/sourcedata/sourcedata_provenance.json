@@ -1,0 +1,184 @@
+{
+ "dataset": "nm000172",
+ "moabb_class": "Schirrmeister2017",
+ "moabb_version_used": "1.5.0",
+ "retrieved": "2026-08-11",
+ "retrieved_by": "moabb.datasets.Schirrmeister2017.data_path()",
+ "upstream_cache_root": "/expanse/lustre/scratch/bpinto/temp_project/sourcedata_staging/mne_data/MNE-schirrmeister2017-data",
+ "license": "CC-BY-4.0",
+ "doi": "10.1002/hbm.23730",
+ "naming": "upstream_filenames_restored",
+ "n_files": 28,
+ "total_bytes": 13752309450,
+ "files": [
+  {
+   "file": "test/1.edf",
+   "bytes": 164297236,
+   "sha256": "4236dc284f5e70f3964a160d5883ec3c72de91f837811ba4f27669eafef40025",
+   "subject": "1"
+  },
+  {
+   "file": "test/10.edf",
+   "bytes": 163764780,
+   "sha256": "58a0bbeed85744d65b3225ffeda1fe4f09eb1b867e2a09c983bb9f36acb9ce75",
+   "subject": "10"
+  },
+  {
+   "file": "test/11.edf",
+   "bytes": 162699868,
+   "sha256": "8f2f8bb5d5193a3a4b32e3e9e47835af3c2adb034d5174da8c07513fb65f07f2",
+   "subject": "11"
+  },
+  {
+   "file": "test/12.edf",
+   "bytes": 164563464,
+   "sha256": "773ebf4bd112e7567220bc61cc6a1333a692bbcf27e04c1ceaf28af7dd5e63ca",
+   "subject": "12"
+  },
+  {
+   "file": "test/13.edf",
+   "bytes": 161901184,
+   "sha256": "3058e5b5a2202ffcf6e27ac2539802590f7a3877758480b0a1e2f7760506c68c",
+   "subject": "13"
+  },
+  {
+   "file": "test/14.edf",
+   "bytes": 162167412,
+   "sha256": "c3d117d74133105cbc34f67cb73dc1dc178a17fa899046b1b4e66f781351c1e3",
+   "subject": "14"
+  },
+  {
+   "file": "test/2.edf",
+   "bytes": 163631666,
+   "sha256": "14da5f36c7523e5c7e79e7f58b530504eeabc9533535c86336008805ea8c35b4",
+   "subject": "2"
+  },
+  {
+   "file": "test/3.edf",
+   "bytes": 162300526,
+   "sha256": "81faada4bbc39b98d1b20ca4be0448f8f72ca9e37e18d7c65686c284e8224fd4",
+   "subject": "3"
+  },
+  {
+   "file": "test/4.edf",
+   "bytes": 164430350,
+   "sha256": "3062da17de584cc00833a7216ebaa6e83e3af40c8fb03b013252dba2b6abfbe3",
+   "subject": "4"
+  },
+  {
+   "file": "test/5.edf",
+   "bytes": 161768070,
+   "sha256": "9b780a6e4c20c992c99d19636e6eb6093076ee33c1e51ec1c279dc71cbbe12a0",
+   "subject": "5"
+  },
+  {
+   "file": "test/6.edf",
+   "bytes": 164031008,
+   "sha256": "910714b0cc33249c59e67404b0a62f14fffcfdbe63852974256aa9ca48ccb8bc",
+   "subject": "6"
+  },
+  {
+   "file": "test/7.edf",
+   "bytes": 162167412,
+   "sha256": "41f17747f29844106e24ec26aab790e21f9f5b0564c796ebe9051808319c1ae1",
+   "subject": "7"
+  },
+  {
+   "file": "test/8.edf",
+   "bytes": 164164122,
+   "sha256": "5f06c60c2fa532a1d69ddbc053a639042e9f7fe3a37cb8967b254873f5efe887",
+   "subject": "8"
+  },
+  {
+   "file": "test/9.edf",
+   "bytes": 163764780,
+   "sha256": "0d940368979fc15ae3454c50fc3eb2c86b97eb666f4690532df8c471f0326d7b",
+   "subject": "9"
+  },
+  {
+   "file": "train/1.edf",
+   "bytes": 326430088,
+   "sha256": "943390216871aee03dac6cda77e0f0ba34bc9adfc9d8bc7790127981b13b7bc4",
+   "subject": "1"
+  },
+  {
+   "file": "train/10.edf",
+   "bytes": 901615682,
+   "sha256": "80e0c259c660ecfbc5b53730e9bfb48368c96788f8f347caf4d6b0f35fe5bc25",
+   "subject": "10"
+  },
+  {
+   "file": "train/11.edf",
+   "bytes": 901748796,
+   "sha256": "903fd9739f519664e1aa374411d4ae6da413fdc60d3fd7ddccc33b4d63f45e0a",
+   "subject": "11"
+  },
+  {
+   "file": "train/12.edf",
+   "bytes": 901482568,
+   "sha256": "129932ad9f27fc2065f3fc764a4fe5c13587b8e0a70d0b389b8bb0042869056d",
+   "subject": "12"
+  },
+  {
+   "file": "train/13.edf",
+   "bytes": 807504084,
+   "sha256": "70e7695bd033a72c7ef97e0cb70bd3df6fd6c1de7135cf53d0a69025027f55da",
+   "subject": "13"
+  },
+  {
+   "file": "train/14.edf",
+   "bytes": 890700334,
+   "sha256": "3a7cd3325b521186b2481b85f76ef8bd0c0e6cfc43b93b97b20c5e18e27335fc",
+   "subject": "14"
+  },
+  {
+   "file": "train/2.edf",
+   "bytes": 833727542,
+   "sha256": "e53d6a6dba1239e2f82e05d7bd5cc1922126be614aa34d3bb6939f2fbeba495b",
+   "subject": "2"
+  },
+  {
+   "file": "train/3.edf",
+   "bytes": 891232790,
+   "sha256": "28aee29d810496a10de3a0c9b11afc0e06ce82fb022200ebf370464b215b0437",
+   "subject": "3"
+  },
+  {
+   "file": "train/4.edf",
+   "bytes": 918920502,
+   "sha256": "334888a2396c19554ea08dff763cabf4a2cfd51fd0f75b68346848dd74084d07",
+   "subject": "4"
+  },
+  {
+   "file": "train/5.edf",
+   "bytes": 728567482,
+   "sha256": "2c647a427fa0a72a10236e2529f7acaf01611004c80e1aa6847a9cd14b733519",
+   "subject": "5"
+  },
+  {
+   "file": "train/6.edf",
+   "bytes": 901881910,
+   "sha256": "ea7a96526ed7453d038b7970aab25a73509723bed92e5556e3a747bf7b211632",
+   "subject": "6"
+  },
+  {
+   "file": "train/7.edf",
+   "bytes": 893096386,
+   "sha256": "264ec29701e6457370792fcc3e052dfc7b670089205e5d01dfe5c8114a7ba0ad",
+   "subject": "7"
+  },
+  {
+   "file": "train/8.edf",
+   "bytes": 668799296,
+   "sha256": "ca23a36e8289e8ea1007415af3dc3c48405547760bf287e1e1bc471645287638",
+   "subject": "8"
+  },
+  {
+   "file": "train/9.edf",
+   "bytes": 900950112,
+   "sha256": "5fe8b90ecf815a34bb3c3d0a40265be203c9c2956e8580f0584f419c549e6ea3",
+   "subject": "9"
+  }
+ ],
+ "n_subjects_recorded": 14
+}
