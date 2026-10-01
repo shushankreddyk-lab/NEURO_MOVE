@@ -360,7 +360,6 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     latency_ms = 0.0
     try:
         import time
-        from sklearn.metrics import accuracy_score
         pipeline_to_eval = None
         if model_name == "MiniRocket": pipeline_to_eval = mr_pipeline
         elif model_name == "CNN-LSTM": pipeline_to_eval = conformer_pipeline
