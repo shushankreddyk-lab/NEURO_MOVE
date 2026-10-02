@@ -8,9 +8,9 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--kernels", type=int, default=10000)
+    parser.add_argument("--kernels", type=int, default=15000)
     parser.add_argument("--partition", type=int, default=80)
     args = parser.parse_args()
 

@@ -119,10 +119,10 @@ class CNN_LSTM_Network(nn.Module):
         return self.fc3(x)
 
 class CNN_LSTM_Pipeline:
-    def __init__(self, epochs=100, batch_size=64, lr=3e-3, channels=10, num_classes=4,
+    def __init__(self, epochs=100, batch_size=64, lr=3e-3, channels=10, samples=656, num_classes=4,
                  device="auto", amp=True, patience=12,
                  cnn_width=128, lstm_hidden=128, tf_layers=2, tf_heads=4,
-                 dropout=0.25, label_smoothing=0.05):
+                 dropout=0.25, label_smoothing=0.05, task_type="classification"):
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -143,6 +143,9 @@ class CNN_LSTM_Pipeline:
         self.std = None
         self.history = {"loss": [], "val_loss": [], "acc": [], "val_acc": [], "lr": []}
         self.channels = channels
+        self.task_type = task_type
+        if self.task_type == "regression":
+            self.criterion = nn.MSELoss()
 
     def _prepare_data(self, X):
         # Expects (Batch, Channels, Samples) like (B, 74, 656)
@@ -160,30 +163,45 @@ class CNN_LSTM_Pipeline:
             
         n_out = self.model.fc3.out_features
         y = np.asarray(y)
-        # Remap arbitrary labels (e.g. MNE event ids) to 0..K-1 for CrossEntropyLoss
-        uniq = np.unique(y)
-        if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
-            self.label_classes_ = uniq
-            lut = {c: i for i, c in enumerate(uniq)}
-            y = np.array([lut[v] for v in y], dtype=np.int64)
-            if y_val is not None:
-                new_y_val = []
-                for v in np.asarray(y_val):
-                    if v not in lut:
-                        raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
-                    new_y_val.append(lut[v])
-                y_val = np.array(new_y_val, dtype=np.int64)
-            n_out = len(uniq)
+        
+        if self.task_type == "classification":
+            # Handle string/object labels
+            if y.dtype.kind in {'U', 'S', 'O'} or (y_val is not None and y_val.dtype.kind in {'U', 'S', 'O'}):
+                from sklearn.preprocessing import LabelEncoder
+                le = LabelEncoder()
+                y = le.fit_transform(y)
+                if y_val is not None:
+                    y_val = le.transform(y_val)
+                self.label_classes_ = le.classes_
+            else:
+                # Remap arbitrary labels (e.g. MNE event ids) to 0..K-1 for CrossEntropyLoss
+                uniq = np.unique(y)
+                if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
+                    self.label_classes_ = uniq
+                    lut = {c: i for i, c in enumerate(uniq)}
+                    y = np.array([lut[v] for v in y], dtype=np.int64)
+                    if y_val is not None:
+                        new_y_val = []
+                        for v in np.asarray(y_val):
+                            if v not in lut:
+                                raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
+                            new_y_val.append(lut[v])
+                        y_val = np.array(new_y_val, dtype=np.int64)
+                    n_out = len(uniq)
+                else:
+                    self.label_classes_ = np.arange(n_out)
+            # Use minlength to ensure all classes are represented in weights
+            class_counts = np.bincount(y, minlength=n_out)
+            total_samples = len(y)
+            class_weights = np.ones(len(class_counts), dtype=np.float32)
+            for c in range(len(class_counts)):
+                if class_counts[c] > 0:
+                    class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
+            self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device), label_smoothing=0.1)
         else:
-            self.label_classes_ = np.arange(n_out)
-        # Use minlength to ensure all classes are represented in weights
-        class_counts = np.bincount(y, minlength=n_out)
-        total_samples = len(y)
-        class_weights = np.ones(len(class_counts), dtype=np.float32)
-        for c in range(len(class_counts)):
-            if class_counts[c] > 0:
-                class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
-        self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device))
+            # Regression task
+            self.label_classes_ = np.arange(n_out) # Dummy for dashboard compatibility
+            self.criterion = nn.MSELoss()
             
         # Z-score normalization per channel: mean/std over (batch, time), keep (1, C, 1, 1)
         batch_mean = np.mean(X, axis=(0, 3), keepdims=True)
@@ -205,9 +223,10 @@ class CNN_LSTM_Pipeline:
 
         X = (X - self.mean) / self.std
             
+        y_dtype = torch.float32 if self.task_type == "regression" else torch.long
         dataset = torch.utils.data.TensorDataset(
             torch.tensor(X, dtype=torch.float32), 
-            torch.tensor(y, dtype=torch.long)
+            torch.tensor(y, dtype=y_dtype)
         )
         # Reverted back to num_workers=0 (default) because PyTorch multiprocessing on Windows CPU causes severe overhead
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
@@ -216,7 +235,7 @@ class CNN_LSTM_Pipeline:
             X_val = self._prepare_data(X_val)
             X_val = (X_val - self.mean) / self.std
             val_X_t = torch.tensor(X_val, dtype=torch.float32).to(self.device)
-            val_y_t = torch.tensor(y_val, dtype=torch.long).to(self.device)
+            val_y_t = torch.tensor(y_val, dtype=y_dtype).to(self.device)
 
         start_time = time.time()
         
@@ -247,12 +266,18 @@ class CNN_LSTM_Pipeline:
                     self.optimizer.step()
 
                 running_loss += loss.item() * batch_X.size(0)
-                _, predicted = torch.max(outputs.data, 1)
+                if self.task_type == "classification":
+                    _, predicted = torch.max(outputs.data, 1)
+                    correct += (predicted == batch_y).sum().item()
+                else:
+                    # R^2 score equivalent metric (or just negative loss)
+                    # For simplicity, we just use -loss as accuracy so higher is better for early stopping
+                    correct += -loss.item() * batch_X.size(0)
+                    
                 total += batch_y.size(0)
-                correct += (predicted == batch_y).sum().item()
 
             train_loss = running_loss / total
-            train_acc = correct / total
+            train_acc = correct / total if self.task_type == "classification" else -train_loss
             self.scheduler.step()
 
             val_loss, val_acc = 0.0, 0.0
@@ -262,8 +287,11 @@ class CNN_LSTM_Pipeline:
                     val_outputs = self.model(val_X_t)
                     v_loss = self.criterion(val_outputs, val_y_t)
                     val_loss = v_loss.item()
-                    _, v_pred = torch.max(val_outputs.data, 1)
-                    val_acc = (v_pred == val_y_t).sum().item() / val_y_t.size(0)
+                    if self.task_type == "classification":
+                        _, v_pred = torch.max(val_outputs.data, 1)
+                        val_acc = (v_pred == val_y_t).sum().item() / val_y_t.size(0)
+                    else:
+                        val_acc = -val_loss
             self.history["loss"].append(train_loss)
             self.history["acc"].append(train_acc)
             self.history["val_loss"].append(val_loss)
@@ -308,8 +336,14 @@ class CNN_LSTM_Pipeline:
         with torch.no_grad():
             batch_X = torch.tensor(X, dtype=torch.float32).to(self.device)
             outputs = self.model(batch_X)
-            _, predicted = torch.max(outputs.data, 1)
-            return predicted.cpu().numpy()
+            if self.task_type == "classification":
+                _, predicted = torch.max(outputs.data, 1)
+                idx = predicted.cpu().numpy()
+                if hasattr(self, 'label_classes_') and self.label_classes_ is not None:
+                    return self.label_classes_[idx]
+                return idx
+            else:
+                return outputs.cpu().numpy()
 
     def predict_proba(self, X):
         self.model.eval()
@@ -319,7 +353,10 @@ class CNN_LSTM_Pipeline:
         with torch.no_grad():
             X_t = torch.tensor(X, dtype=torch.float32).to(self.device)
             outputs = self.model(X_t)
-            probs = torch.nn.functional.softmax(outputs, dim=1)
+            if self.task_type == "classification":
+                probs = torch.nn.functional.softmax(outputs, dim=1)
+            else:
+                probs = outputs # For regression, return raw outputs instead of softmax
         return probs.cpu().numpy()
         
     def measure_latency(self, X_sample):
@@ -353,6 +390,7 @@ class CNN_LSTM_Pipeline:
             'channel_names': getattr(self, 'channel_names', None),
             'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.fc3.out_features,
+            'task_type': getattr(self, 'task_type', 'classification'),
             'arch': 'multiscale-bilstm-transformer',
             'model_cfg': {
                 'cnn_width': self.model.stem[4].short.out_channels
@@ -403,6 +441,9 @@ class CNN_LSTM_Pipeline:
         self.mean = state.get('mean', None)
         self.std = state.get('std', None)
         self.label_classes_ = state.get('label_classes', None)
+        self.task_type = state.get('task_type', 'classification')
+        if self.task_type == "regression":
+            self.criterion = nn.MSELoss()
         self.epochs = state.get('epochs', 10)
         self.batch_size = state.get('batch_size', 64)
         self.lr = state.get('lr', 1e-3)

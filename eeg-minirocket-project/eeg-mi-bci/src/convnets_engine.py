@@ -47,7 +47,7 @@ class ShallowConvNet(nn.Module):
         dummy = self.transformer(dummy)
         dummy = dummy.permute(0, 2, 1).unsqueeze(2)
         
-        out_dim = dummy.view(-1).shape[0]
+        out_dim = dummy.reshape(-1).shape[0]
         self.fc = nn.Linear(out_dim, num_classes)
 
     def forward(self, x):
@@ -72,13 +72,13 @@ class ShallowConvNet(nn.Module):
         x = self.transformer(x)             # Self-Attention
         x = x.permute(0, 2, 1).unsqueeze(2) # (batch, 60, 1, time)
         
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         return x
 
 class ConvNet_Pipeline:
     def __init__(self, arch="shallow", epochs=100, batch_size=64, lr=1e-3, channels=22, samples=656, num_classes=4,
-                 device="auto", amp=True, patience=9999, label_smoothing=0.0):
+                 device="auto", amp=True, patience=9999, label_smoothing=0.1):
         self.arch = arch
         self.epochs = epochs
         self.batch_size = batch_size
@@ -88,10 +88,11 @@ class ConvNet_Pipeline:
         self.patience = patience
         self.scaler = torch.amp.GradScaler("cuda") if self.amp else None
         
+        self.samples = samples
         self.model = ShallowConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
             
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.0)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.01)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0
@@ -114,21 +115,30 @@ class ConvNet_Pipeline:
         n_out = self.model.num_classes
         y = np.asarray(y)
         
-        uniq = np.unique(y)
-        if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
-            self.label_classes_ = uniq
-            lut = {c: i for i, c in enumerate(uniq)}
-            y = np.array([lut[v] for v in y], dtype=np.int64)
+        from sklearn.preprocessing import LabelEncoder
+        if y.dtype.kind in {'U', 'S', 'O'} or not np.issubdtype(y.dtype, np.integer):
+            le = LabelEncoder()
+            y = le.fit_transform(y)
+            self.label_classes_ = le.classes_
             if y_val is not None:
-                new_y_val = []
-                for v in np.asarray(y_val):
-                    if v not in lut:
-                        raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
-                    new_y_val.append(lut[v])
-                y_val = np.array(new_y_val, dtype=np.int64)
-            n_out = len(uniq)
+                y_val = le.transform(np.asarray(y_val))
+            n_out = len(self.label_classes_)
         else:
-            self.label_classes_ = np.arange(n_out)
+            uniq = np.unique(y)
+            if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
+                self.label_classes_ = uniq
+                lut = {c: i for i, c in enumerate(uniq)}
+                y = np.array([lut[v] for v in y], dtype=np.int64)
+                if y_val is not None:
+                    new_y_val = []
+                    for v in np.asarray(y_val):
+                        if v not in lut:
+                            raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
+                        new_y_val.append(lut[v])
+                    y_val = np.array(new_y_val, dtype=np.int64)
+                n_out = len(uniq)
+            else:
+                self.label_classes_ = np.arange(n_out)
             
         batch_mean = np.mean(X, axis=(0, 3), keepdims=True).astype(np.float32)
         batch_std = (np.std(X, axis=(0, 3), keepdims=True) + 1e-8).astype(np.float32)
@@ -245,7 +255,10 @@ class ConvNet_Pipeline:
             batch_X = torch.tensor(X, dtype=torch.float32).to(self.device)
             outputs = self.model(batch_X)
             _, predicted = torch.max(outputs.data, 1)
-            return predicted.cpu().numpy()
+            idx = predicted.cpu().numpy()
+            if hasattr(self, 'label_classes_') and self.label_classes_ is not None:
+                return self.label_classes_[idx]
+            return idx
 
     def predict_proba(self, X):
         self.model.eval()
@@ -273,6 +286,7 @@ class ConvNet_Pipeline:
             'lr': self.lr,
             'label_classes': getattr(self, 'label_classes_', None),
             'channels': self.model.channels,
+            'samples': getattr(self, 'samples', 481),
             'channel_names': getattr(self, 'channel_names', None),
             'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.num_classes,
@@ -285,8 +299,21 @@ class ConvNet_Pipeline:
         self.arch = state.get('arch', 'shallow')
         channels = state.get('channels', 22)
         num_classes = state.get('num_classes', 4)
+        
+        # Determine samples
+        if 'samples' in state:
+            samples = state['samples']
+        else:
+            # Infer samples by checking fc weight if available
+            sd = state['model_state_dict']
+            if 'fc.weight' in sd:
+                # We can't easily reverse engineer samples for ShallowConvNet due to pooling math, 
+                # but we know it's 481 for our dataset. If it breaks, we just retrain.
+                samples = 481
+            else:
+                samples = 481
 
-        self.model = ShallowConvNet(channels=channels, num_classes=num_classes).to(self.device)
+        self.model = ShallowConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
 
         self.model.load_state_dict(state['model_state_dict'])
         self.mean = state.get('mean', None)

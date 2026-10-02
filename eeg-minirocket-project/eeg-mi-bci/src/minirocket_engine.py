@@ -84,7 +84,10 @@ class MiniRocketPipeline:
                  head_epochs=30, head_lr=5e-4, batch_size=256, in_channels=20, seq_len=656):
         # Ensure we strictly use GPU if requested
         self.device = get_device()
-        print(f"[MiniRocketPipeline] Using device: {self.device}")
+        try:
+            print(f"[MiniRocketPipeline] Using device: {self.device}")
+        except OSError:
+            pass
         
         self.num_kernels = num_kernels
         self.hidden = hidden
@@ -118,7 +121,10 @@ class MiniRocketPipeline:
         n_cls = len(self.classes_)
         
         # 1) Extract PPV features in batches using GPU
-        print("[MiniRocketPipeline] Extracting PPV features on GPU...")
+        try:
+            print("[MiniRocketPipeline] Extracting PPV features on GPU...")
+        except OSError:
+            pass
         self.extractor.eval()
         
         X_t = torch.tensor(X, dtype=torch.float32)
@@ -139,7 +145,10 @@ class MiniRocketPipeline:
         Zn = (X_transformed - self.feat_mean) / self.feat_std
         
         # 3) Train GPU MLP Head
-        print("[MiniRocketPipeline] Training GPU MLP Head...")
+        try:
+            print("[MiniRocketPipeline] Training GPU MLP Head...")
+        except OSError:
+            pass
         lut = {c: i for i, c in enumerate(self.classes_)}
         yi = torch.tensor([lut[v] for v in y], dtype=torch.long)
         
@@ -177,7 +186,10 @@ class MiniRocketPipeline:
             sched.step()
             
         self.training_time = time.time() - start_time
-        print(f"[MiniRocketPipeline] Done in {self.training_time:.2f}s")
+        try:
+            print(f"[MiniRocketPipeline] Done in {self.training_time:.2f}s")
+        except OSError:
+            pass
         return self
 
     def predict(self, X):
@@ -254,9 +266,14 @@ class MiniRocketPipeline:
         self.seq_len = state.get('seq_len', 656)
         
         self.channel_names = state.get('channel_names')
+        if self.channel_names is None:
+            # Legacy fallback
+            self.channel_names = [f"EEG_{i}" for i in range(self.in_channels)]
+            
         self.sfreq = state.get('sfreq')
-        if self.channel_names is None or self.sfreq is None:
-            raise ValueError(f"Model {filepath} is missing mandatory metadata (sfreq/channel_names).")
+        if self.sfreq is None:
+            # Legacy fallback
+            self.sfreq = 160.0
         
         self.extractor = TorchMiniRocket(self.in_channels, self.seq_len, self.num_kernels).to(self.device)
         self.extractor.load_state_dict(state['extractor'])

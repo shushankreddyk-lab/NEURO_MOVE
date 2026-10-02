@@ -93,7 +93,7 @@ class EEGNet(nn.Module):
 class EEGNet_Pipeline:
     def __init__(self, epochs=100, batch_size=32, lr=1e-3, channels=22, samples=656, num_classes=4,
                  device="auto", amp=True, patience=9999,
-                 F1=32, D=2, F2=64, kernel_length=64, dropout=0.0, label_smoothing=0.0):
+                 F1=32, D=2, F2=64, kernel_length=64, dropout=0.0, label_smoothing=0.0, task_type="classification"):
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -105,7 +105,11 @@ class EEGNet_Pipeline:
             num_classes=num_classes, channels=channels, samples=samples,
             F1=F1, D=D, F2=F2, kernel_length=kernel_length, p_drop=dropout
         ).to(self.device)
-        self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        self.task_type = task_type
+        if self.task_type == "regression":
+            self.criterion = nn.MSELoss()
+        else:
+            self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
         self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.0)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
@@ -129,30 +133,43 @@ class EEGNet_Pipeline:
         n_out = self.model.num_classes
         y = np.asarray(y)
         
-        uniq = np.unique(y)
-        if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
-            self.label_classes_ = uniq
-            lut = {c: i for i, c in enumerate(uniq)}
-            y = np.array([lut[v] for v in y], dtype=np.int64)
-            if y_val is not None:
-                new_y_val = []
-                for v in np.asarray(y_val):
-                    if v not in lut:
-                        raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
-                    new_y_val.append(lut[v])
-                y_val = np.array(new_y_val, dtype=np.int64)
-            n_out = len(uniq)
+        if self.task_type == "classification":
+            # Handle string/object labels
+            if y.dtype.kind in {'U', 'S', 'O'} or (y_val is not None and y_val.dtype.kind in {'U', 'S', 'O'}):
+                from sklearn.preprocessing import LabelEncoder
+                le = LabelEncoder()
+                y = le.fit_transform(y)
+                if y_val is not None:
+                    y_val = le.transform(y_val)
+                self.label_classes_ = le.classes_
+            else:
+                uniq = np.unique(y)
+                if uniq.min() < 0 or uniq.max() >= n_out or len(uniq) != n_out:
+                    self.label_classes_ = uniq
+                    lut = {c: i for i, c in enumerate(uniq)}
+                    y = np.array([lut[v] for v in y], dtype=np.int64)
+                    if y_val is not None:
+                        new_y_val = []
+                        for v in np.asarray(y_val):
+                            if v not in lut:
+                                raise ValueError(f"Unknown validation label: {v}. Must be one of {list(lut.keys())}")
+                            new_y_val.append(lut[v])
+                        y_val = np.array(new_y_val, dtype=np.int64)
+                    n_out = len(uniq)
+                else:
+                    self.label_classes_ = np.arange(n_out)
+                
+            class_counts = np.bincount(y, minlength=n_out)
+            total_samples = len(y)
+            class_weights = np.ones(len(class_counts), dtype=np.float32)
+            for c in range(len(class_counts)):
+                if class_counts[c] > 0:
+                    class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
+            self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device))
         else:
             self.label_classes_ = np.arange(n_out)
+            self.criterion = nn.MSELoss()
             
-        class_counts = np.bincount(y, minlength=n_out)
-        total_samples = len(y)
-        class_weights = np.ones(len(class_counts), dtype=np.float32)
-        for c in range(len(class_counts)):
-            if class_counts[c] > 0:
-                class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
-        self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device))
-        
         batch_mean = np.mean(X, axis=(0, 3), keepdims=True).astype(np.float32)
         batch_std = (np.std(X, axis=(0, 3), keepdims=True) + 1e-8).astype(np.float32)
 
@@ -273,8 +290,14 @@ class EEGNet_Pipeline:
         with torch.no_grad():
             batch_X = torch.tensor(X, dtype=torch.float32).to(self.device)
             outputs = self.model(batch_X)
-            _, predicted = torch.max(outputs.data, 1)
-            return predicted.cpu().numpy()
+            if self.task_type == "classification":
+                _, predicted = torch.max(outputs.data, 1)
+                idx = predicted.cpu().numpy()
+                if hasattr(self, 'label_classes_') and self.label_classes_ is not None:
+                    return self.label_classes_[idx]
+                return idx
+            else:
+                return outputs.cpu().numpy()
 
     def predict_proba(self, X):
         self.model.eval()
@@ -319,6 +342,7 @@ class EEGNet_Pipeline:
             'lr': self.lr,
             'label_classes': getattr(self, 'label_classes_', None),
             'channels': self.model.channels,
+            'samples': getattr(self, 'samples', getattr(self.model, 'samples', 481)),
             'channel_names': getattr(self, 'channel_names', None),
             'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.num_classes,
@@ -337,18 +361,34 @@ class EEGNet_Pipeline:
         
         channels = state.get('channels', 22)
         num_classes = state.get('num_classes', 4)
+        
+        # Determine samples
+        if 'samples' in state:
+            samples = state['samples']
+        else:
+            # Infer samples from checkpoint fc weight
+            sd = state['model_state_dict']
+            F2 = int(saved_cfg.get('F2', 64))
+            if 'fc.weight' in sd:
+                fc_in = sd['fc.weight'].shape[1]
+                samples = (fc_in // F2) * 32
+            else:
+                samples = 481
 
         self.model = EEGNet(
-            num_classes=num_classes, channels=channels,
-            F1=int(saved_cfg.get('F1', 8)),
+            num_classes=num_classes, channels=channels, samples=samples,
+            F1=int(saved_cfg.get('F1', 32)),
             D=int(saved_cfg.get('D', 2)),
-            F2=int(saved_cfg.get('F2', 16)),
+            F2=int(saved_cfg.get('F2', 64)),
         ).to(self.device)
 
         try:
             self.model.load_state_dict(state['model_state_dict'])
         except Exception as e:
-            print("Warning: Could not load state_dict.", e)
+            try:
+                print("Warning: Could not load state_dict.", e)
+            except OSError:
+                pass
         
         self.mean = state.get('mean', None)
         self.std = state.get('std', None)

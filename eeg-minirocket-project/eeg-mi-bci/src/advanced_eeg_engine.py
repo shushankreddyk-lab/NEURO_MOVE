@@ -129,9 +129,12 @@ class AdvancedEEGPipeline:
     Executes entirely on GPU.
     """
     def __init__(self, num_classes=4, channels=20, samples=656, 
-                 epochs=15, batch_size=256, lr=1e-3, device="cuda"):
+                 epochs=15, batch_size=256, lr=1e-3, device="cuda", task_type="classification"):
         self.device = get_device()
-        print(f"[AdvancedEEGPipeline] Using device: {self.device}")
+        try:
+            print(f"[AdvancedEEGPipeline] Using device: {self.device}")
+        except OSError:
+            pass
         
         self.num_classes = num_classes
         self.channels = channels
@@ -140,6 +143,7 @@ class AdvancedEEGPipeline:
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
+        self.task_type = task_type
         
         self.model = EEG_Conformer(
             num_classes=num_classes, 
@@ -157,7 +161,7 @@ class AdvancedEEGPipeline:
     def fit(self, X, y, X_val=None, y_val=None):
         start_time = time.time()
         
-        self.classes_ = np.unique(y)
+        self.classes_ = np.unique(y) if self.task_type == "classification" else np.arange(y.shape[1] if y.ndim > 1 else 1)
         
         # Calculate standardization on raw signals
         X_t = torch.tensor(X, dtype=torch.float32)
@@ -166,8 +170,13 @@ class AdvancedEEGPipeline:
         
         X_t = (X_t - self.feat_mean) / self.feat_std
         
-        lut = {c: i for i, c in enumerate(self.classes_)}
-        yi = torch.tensor([lut[v] for v in y], dtype=torch.long)
+        y_dtype = torch.float32 if self.task_type == "regression" else torch.long
+        
+        if self.task_type == "classification":
+            lut = {c: i for i, c in enumerate(self.classes_)}
+            yi = torch.tensor([lut[v] for v in y], dtype=y_dtype)
+        else:
+            yi = torch.tensor(y, dtype=y_dtype)
         
         ds = torch.utils.data.TensorDataset(X_t, yi)
         # Using pin_memory for faster transfer
@@ -176,10 +185,13 @@ class AdvancedEEGPipeline:
         if X_val is not None and y_val is not None:
             X_v = torch.tensor(X_val, dtype=torch.float32)
             X_v = (X_v - self.feat_mean) / self.feat_std
-            try:
-                y_v = torch.tensor([lut[v] for v in y_val], dtype=torch.long)
-            except KeyError as e:
-                raise ValueError(f"Unknown validation label: {e.args[0]}. Must be one of {list(lut.keys())}")
+            if self.task_type == "classification":
+                try:
+                    y_v = torch.tensor([lut[v] for v in y_val], dtype=y_dtype)
+                except KeyError as e:
+                    raise ValueError(f"Unknown validation label: {e.args[0]}. Must be one of {list(lut.keys())}")
+            else:
+                y_v = torch.tensor(y_val, dtype=y_dtype)
             val_ds = torch.utils.data.TensorDataset(X_v, y_v)
             val_dl = torch.utils.data.DataLoader(val_ds, batch_size=self.batch_size, shuffle=False)
         else:
@@ -190,12 +202,15 @@ class AdvancedEEGPipeline:
             opt, max_lr=self.lr, steps_per_epoch=len(dl), epochs=self.epochs
         )
         
-        # Class weights
-        class_counts = np.bincount(yi.numpy())
-        total = len(yi)
-        class_weights = total / (len(self.classes_) * class_counts)
-        class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
-        crit = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
+        # Loss
+        if self.task_type == "classification":
+            class_counts = np.bincount(yi.numpy())
+            total = len(yi)
+            class_weights = total / (len(self.classes_) * class_counts)
+            class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
+            crit = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
+        else:
+            crit = nn.MSELoss()
         
         amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda") if amp else None
@@ -223,11 +238,14 @@ class AdvancedEEGPipeline:
                 sched.step()
                 total_loss += loss.item()
                 
-                preds = logits.detach().argmax(dim=1)
-                train_correct += (preds == by).sum().item()
+                if self.task_type == "classification":
+                    preds = logits.detach().argmax(dim=1)
+                    train_correct += (preds == by).sum().item()
+                else:
+                    train_correct += -loss.item() * by.size(0)
                 train_total += by.size(0)
                 
-            train_acc = train_correct / train_total
+            train_acc = train_correct / train_total if self.task_type == "classification" else train_correct / train_total
                 
             if val_dl:
                 self.model.eval()
@@ -240,10 +258,13 @@ class AdvancedEEGPipeline:
                         logits = self.model(bx)
                         loss = crit(logits, by)
                         val_loss_sum += loss.item() * bx.size(0)
-                        preds = logits.argmax(dim=1)
-                        correct += (preds == by).sum().item()
+                        if self.task_type == "classification":
+                            preds = logits.argmax(dim=1)
+                            correct += (preds == by).sum().item()
+                        else:
+                            correct += -loss.item() * bx.size(0)
                         total_val += by.size(0)
-                val_acc = correct / total_val
+                val_acc = correct / total_val if self.task_type == "classification" else correct / total_val
                 avg_val_loss = val_loss_sum / total_val if total_val > 0 else 0.0
                 avg_train_loss = total_loss / len(dl)
                 print(json.dumps({
@@ -257,11 +278,20 @@ class AdvancedEEGPipeline:
                 }), flush=True)
             
         self.training_time = time.time() - start_time
-        print(f"[AdvancedEEGPipeline] Done in {self.training_time:.2f}s")
+        try:
+            print(f"[AdvancedEEGPipeline] Done in {self.training_time:.2f}s")
+        except OSError:
+            pass
         return self
 
     def predict(self, X):
-        return np.argmax(self.predict_proba(X), axis=1)
+        if self.task_type == "classification":
+            idx = np.argmax(self.predict_proba(X), axis=1)
+            if hasattr(self, 'classes_') and self.classes_ is not None:
+                return self.classes_[idx]
+            return idx
+        else:
+            return self.predict_proba(X)
 
     def predict_proba(self, X):
         self.model.eval()
@@ -287,7 +317,10 @@ class AdvancedEEGPipeline:
             for i in range(0, len(X_t), self.batch_size):
                 bx = X_t[i:i+self.batch_size].to(self.device)
                 logits = self.model(bx)
-                p = torch.softmax(logits, dim=1).cpu().numpy()
+                if self.task_type == "classification":
+                    p = torch.softmax(logits, dim=1).cpu().numpy()
+                else:
+                    p = logits.cpu().numpy()
                 probs.append(p)
                 
         return np.vstack(probs)
@@ -304,7 +337,8 @@ class AdvancedEEGPipeline:
             'channel_names': getattr(self, 'channel_names', None),
             'sfreq': getattr(self, 'sfreq', 160.0),
             'label_classes': getattr(self, 'label_classes_', None),
-            'samples': self.samples
+            'samples': self.samples,
+            'task_type': getattr(self, 'task_type', 'classification')
         }
         torch.save(state, filepath)
 
@@ -313,6 +347,7 @@ class AdvancedEEGPipeline:
         self.num_classes = state['num_classes']
         self.channels = state['channels']
         self.samples = state['samples']
+        self.task_type = state.get('task_type', 'classification')
         self.feat_mean = state.get('feat_mean', None)
         self.feat_std = state.get('feat_std', None)
         
@@ -321,7 +356,10 @@ class AdvancedEEGPipeline:
             self.model.load_state_dict(state['model'])
         except RuntimeError as e:
             if "size mismatch" in str(e) or "Missing key" in str(e) or "Unexpected key" in str(e):
-                print("[AdvancedEEGPipeline] Modern model load failed. Falling back to legacy architecture...", flush=True)
+                try:
+                    print("[AdvancedEEGPipeline] Modern model load failed. Falling back to legacy architecture...", flush=True)
+                except OSError:
+                    pass
                 # Initialize legacy architecture
                 self.model = EEG_Conformer(
                     self.num_classes, self.channels, self.samples,
@@ -339,7 +377,10 @@ class AdvancedEEGPipeline:
                 )
                 self.model = self.model.to(self.device)
                 self.model.load_state_dict(state['model'], strict=False)
-                print("[AdvancedEEGPipeline] Legacy architecture loaded successfully.", flush=True)
+                try:
+                    print("[AdvancedEEGPipeline] Legacy architecture loaded successfully.", flush=True)
+                except OSError:
+                    pass
             else:
                 raise e
         

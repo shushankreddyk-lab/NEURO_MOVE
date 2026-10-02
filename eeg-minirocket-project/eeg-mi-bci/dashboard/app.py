@@ -546,6 +546,15 @@ st.markdown("<br>", unsafe_allow_html=True)
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #00d4ff; font-family: Playfair Display; margin-bottom: 30px;'>NeuroDecoder</h2>", unsafe_allow_html=True)
 
+    st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Global Target Dataset</div>", unsafe_allow_html=True)
+    selected_dataset_str = st.selectbox(
+        "Dataset",
+        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"],
+        index=0,
+        label_visibility="collapsed"
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
     selected_tab = option_menu(
         menu_title=None,
         options=[
@@ -639,36 +648,65 @@ if selected_tab == '🧠 Overview':
     col1, col2 = st.columns([1, 1], gap="large")
 
     with col1:
-        st.markdown("""
+        ds_name, ds_classes, ds_channels, ds_sampling, ds_split = "", "", "", "", "80/20 Train-Test"
+        if "PhysioNet" in selected_dataset_str:
+            ds_name = "PhysioNet EEGMMIDB · 109 subjects"
+            ds_classes = "4 active motor tasks (Fists + Feet)"
+            ds_channels = "64 scalp EEG channels"
+            ds_sampling = "160 Hz · 4.0s window · 656 samples"
+        elif "BCI" in selected_dataset_str:
+            ds_name = "BCI Competition IV 2a · 9 subjects"
+            ds_classes = "4 motor imagery tasks (Hands, Feet, Tongue)"
+            ds_channels = "22 scalp EEG channels"
+            ds_sampling = "250 Hz · 4.1s window · 1025 samples"
+        elif "High-Gamma" in selected_dataset_str:
+            ds_name = "High-Gamma Dataset"
+            ds_classes = "4 motor execution tasks"
+            ds_channels = "128 scalp EEG channels"
+            ds_sampling = "500 Hz · 4.0s window"
+        elif "Kaya" in selected_dataset_str:
+            ds_name = "Kaya Finger Movements"
+            ds_classes = "Finger movements"
+            ds_channels = "19 or 32 channels"
+            ds_sampling = "1000 Hz"
+        elif "WAY" in selected_dataset_str:
+            ds_name = "WAY-EEG-GAL"
+            ds_classes = "Grasp/Lift events"
+            ds_channels = "32 channels"
+            ds_sampling = "500 Hz"
+        elif "DREAMER" in selected_dataset_str:
+            ds_name = "DREAMER Emotion Dataset · 23 subjects"
+            ds_classes = "Continuous Regression (Valence, Arousal, Dominance)"
+            ds_channels = "14 channels"
+            ds_sampling = "128 Hz"
+
+        st.markdown(f"""
         <div class="glass-card">
             <h3 style="color:#00d4ff; margin-top:0; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em;">🎯 Clinical Context</h3>
-            <p style="color:#8aa0b8; font-size:0.88rem; margin-bottom:18px;">
-                Non-invasive MI-BCI targeting post-stroke motor neurorehabilitation via scalp EEG.
-            </p>
             <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600; width:40%;">DATASET</td>
-                    <td style="color:#c8d6e5;">PhysioNet EEGMMIDB · 109 subjects · 14 runs each</td>
+                    <td style="color:#c8d6e5;">{ds_name}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600;">CLASSES</td>
-                    <td style="color:#c8d6e5;">4 active motor tasks (Fists + Feet)</td>
+                    <td style="color:#c8d6e5;">{ds_classes}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600;">CHANNELS</td>
-                    <td style="color:#c8d6e5;">64 scalp EEG channels</td>
+                    <td style="color:#c8d6e5;">{ds_channels}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600;">SAMPLING</td>
-                    <td style="color:#c8d6e5;">160 Hz · 4.0 s trial window · 656 samples/epoch</td>
+                    <td style="color:#c8d6e5;">{ds_sampling}</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600;">FILTERING</td>
-                    <td style="color:#c8d6e5;">4–38 Hz Butterworth Bandpass · CAR Reference</td>
+                    <td style="color:#c8d6e5;">4–38 Hz Bandpass · CAR Reference</td>
                 </tr>
                 <tr>
                     <td style="color:#5a7a99; padding:8px 0; font-weight:600;">SPLIT</td>
-                    <td style="color:#c8d6e5;">80/20 Train-Test · 10-fold Stratified CV</td>
+                    <td style="color:#c8d6e5;">{ds_split}</td>
                 </tr>
             </table>
         </div>
@@ -706,50 +744,56 @@ if selected_tab == '🧠 Overview':
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --- Classification Target Grid ---
-    st.markdown("""
-    <h3 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a7a99;">📌 4 Active Classification Targets</h3>
-    """, unsafe_allow_html=True)
+    if "PhysioNet" in selected_dataset_str:
+        num_c = 4
+        c_icons = ["✋", "🤚", "👐", "🦶"]
+        c_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+    elif "BCI" in selected_dataset_str:
+        num_c = 4
+        c_icons = ["✋", "🤚", "🦶", "👅"]
+        c_names = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
+    elif "High-Gamma" in selected_dataset_str:
+        num_c = 4
+        c_icons = ["🤚", "✋", "🦶", "😴"]
+        c_names = ["Right Hand", "Left Hand", "Both Feet", "Rest"]
+    elif "Kaya" in selected_dataset_str:
+        num_c = 4
+        c_icons = ["👍", "👆", "🖕", "🖖"]
+        c_names = ["Thumb", "Index", "Middle", "Ring/Pinky"]
+    elif "WAY" in selected_dataset_str:
+        num_c = 6
+        c_icons = ["🚀", "👆", "👐", "🛫", "🛬", "🙌"]
+        c_names = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
+    elif "DREAMER" in selected_dataset_str:
+        num_c = 3
+        c_icons = ["😄", "⚡", "👑"]
+        c_names = ["Valence", "Arousal", "Dominance"]
+    else:
+        num_c = 4
+        c_icons = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
+        c_names = ["Class 0", "Class 1", "Class 2", "Class 3"]
 
-    dataset_tab1, dataset_tab2 = st.tabs(["PhysioNet (EDF)", "BCI Comp IV 2a (GDF)"])
-    class_colors = ["#00b4d8", "#0096c7", "#0077b6", "#023e8a"]
-
-    with dataset_tab1:
-        class_icons = ["✋", "🤚", "👐", "🦶"]
-        class_names = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+    task_type_str = "TARGETS" if "DREAMER" in selected_dataset_str else "CLASSIFICATION TARGETS"
     
-        cols = st.columns(4)
-        for i, col in enumerate(cols):
-            with col:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
-                            border-radius:12px; padding:14px 8px; text-align:center;
-                            border-top:2px solid {class_colors[i]};">
-                    <div style="font-size:1.4rem;">{class_icons[i]}</div>
-                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
-                                letter-spacing:0.04em; line-height:1.4;">{class_names[i]}</div>
-                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
-                                margin-top:4px;">CLASS {i}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-    with dataset_tab2:
-        class_icons2 = ["✋", "🤚", "🦶", "👅"]
-        class_names2 = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
-        
-        cols2 = st.columns(4)
-        for i, col in enumerate(cols2):
-            with col:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
-                            border-radius:12px; padding:14px 8px; text-align:center;
-                            border-top:2px solid {class_colors[i]};">
-                    <div style="font-size:1.4rem;">{class_icons2[i]}</div>
-                    <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
-                                letter-spacing:0.04em; line-height:1.4;">{class_names2[i]}</div>
-                    <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
-                                margin-top:4px;">CLASS {i}</div>
-                </div>
-                """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <h3 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.08em; color:#5a7a99;">📌 {num_c} ACTIVE {task_type_str}</h3>
+    """, unsafe_allow_html=True)
+    
+    class_colors = ["#00b4d8", "#0096c7", "#0077b6", "#023e8a", "#03045e", "#9d4edd"]
+    cols = st.columns(num_c)
+    for i, col in enumerate(cols):
+        with col:
+            st.markdown(f"""
+            <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+                        border-radius:12px; padding:14px 8px; text-align:center;
+                        border-top:2px solid {class_colors[i]};">
+                <div style="font-size:1.4rem;">{c_icons[i]}</div>
+                <div style="font-size:0.62rem; color:#8aa0b8; font-weight:600; margin-top:6px;
+                            letter-spacing:0.04em; line-height:1.4;">{c_names[i]}</div>
+                <div style="font-size:0.6rem; color:{class_colors[i]}; font-family:'JetBrains Mono',monospace;
+                            margin-top:4px;">{"OUTPUT" if "DREAMER" in selected_dataset_str else "CLASS"} {i}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # --- TAB 2: MODEL ARCHITECTURES ---
 if selected_tab == '🏗️ Model Architectures':
@@ -885,15 +929,23 @@ if selected_tab == '💻 Live Training Console':
     with st.expander('📊 Dataset', expanded=True):
         st.subheader("Dataset Source Directory")
         
-        selected_console_dataset = st.radio(
-            "Select the dataset to scan:",
-            ["PhysioNet EEGMMIDB (.edf)", "BCI Competition IV 2a (.gdf)"],
-            horizontal=True
-        )
+        st.info(f"Targeting global dataset: {selected_dataset_str}")
         
-        if "BCI" in selected_console_dataset:
+        if "BCI" in selected_dataset_str:
             default_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
             folder_hint = "Enter root path to the 9-subject BCI 2a folder:"
+        elif "High-Gamma" in selected_dataset_str:
+            default_path = st.session_state.get('hg_data_dir', r"D:\eeg-minirocket-project\data\NEMAR\nm000172")
+            folder_hint = "Enter root path to High-Gamma folder:"
+        elif "Kaya" in selected_dataset_str:
+            default_path = st.session_state.get('kaya_data_dir', r"D:\eeg-minirocket-project\data\Kaya_Finger_Movements")
+            folder_hint = "Enter root path to Kaya folder:"
+        elif "WAY" in selected_dataset_str:
+            default_path = st.session_state.get('way_data_dir', r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection")
+            folder_hint = "Enter root path to WAY-EEG-GAL folder:"
+        elif "DREAMER" in selected_dataset_str:
+            default_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\dataset")
+            folder_hint = "Enter root path to DREAMER folder (.mat):"
         else:
             default_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\physionet")
             folder_hint = "Enter root path to the 109-subject PhysioNet folder:"
@@ -904,9 +956,17 @@ if selected_tab == '💻 Live Training Console':
         with st.spinner("Scanning subjects... Please wait."):
             # Calls the bulk crawler backend
             import sys
+            import importlib
             sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+            import binary_parser
+            importlib.reload(binary_parser)
             from binary_parser import generate_dataset_toc
-            dataset_type = "bci" if "BCI" in selected_console_dataset else "physionet"
+            if "BCI" in selected_dataset_str: dataset_type = "bci"
+            elif "High-Gamma" in selected_dataset_str: dataset_type = "high-gamma"
+            elif "Kaya" in selected_dataset_str: dataset_type = "kaya"
+            elif "WAY" in selected_dataset_str: dataset_type = "way"
+            elif "DREAMER" in selected_dataset_str: dataset_type = "dreamer"
+            else: dataset_type = "physionet"
             generate_dataset_toc(dataset_path, dataset_type=dataset_type)
         st.success("Full dataset successfully scanned and categorized!")
 
@@ -916,7 +976,7 @@ if selected_tab == '💻 Live Training Console':
     try:
         detailed_csv_path = os.path.join(os.path.dirname(__file__), '..', 'artifacts', 'toc_detailed.csv')
         if os.path.exists(detailed_csv_path):
-            detailed_df = pd.read_csv(detailed_csv_path)
+            detailed_df = pd.read_csv(detailed_csv_path, keep_default_na=False)
             
             # Show summary metrics
             c1, c2, c3 = st.columns(3)
@@ -978,32 +1038,30 @@ if selected_tab == '💻 Live Training Console':
                     t3_name = str(row['T3_Name']).strip() if pd.notna(row['T3_Name']) else ""
                     t4_name = str(row['T4_Name']).strip() if pd.notna(row['T4_Name']) else ""
                     
-                    if t0_name in class_to_group:
-                        melted_rows.append({"Group_Num": class_to_group[t0_name], "Task_Type": row["Task_Type"], "Marker": "T0", "Class": t0_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T0"]})
-                    if t1_name in class_to_group:
-                        melted_rows.append({"Group_Num": class_to_group[t1_name], "Task_Type": row["Task_Type"], "Marker": "T1", "Class": t1_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T1"]})
-                    if t2_name in class_to_group:
-                        melted_rows.append({"Group_Num": class_to_group[t2_name], "Task_Type": row["Task_Type"], "Marker": "T2", "Class": t2_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T2"]})
-                    if t3_name in class_to_group:
-                        melted_rows.append({"Group_Num": class_to_group[t3_name], "Task_Type": row["Task_Type"], "Marker": "T3", "Class": t3_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T3"]})
-                    if t4_name in class_to_group:
-                        melted_rows.append({"Group_Num": class_to_group[t4_name], "Task_Type": row["Task_Type"], "Marker": "T4", "Class": t4_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T4"]})
+                    if t0_name:
+                        melted_rows.append({"Group": class_to_group.get(t0_name, f"Group {t0_name}"), "Task_Type": row["Task_Type"], "Marker": "T0", "Class": t0_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T0"]})
+                    if t1_name:
+                        melted_rows.append({"Group": class_to_group.get(t1_name, f"Group {t1_name}"), "Task_Type": row["Task_Type"], "Marker": "T1", "Class": t1_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T1"]})
+                    if t2_name:
+                        melted_rows.append({"Group": class_to_group.get(t2_name, f"Group {t2_name}"), "Task_Type": row["Task_Type"], "Marker": "T2", "Class": t2_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T2"]})
+                    if t3_name:
+                        melted_rows.append({"Group": class_to_group.get(t3_name, f"Group {t3_name}"), "Task_Type": row["Task_Type"], "Marker": "T3", "Class": t3_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T3"]})
+                    if t4_name:
+                        melted_rows.append({"Group": class_to_group.get(t4_name, f"Group {t4_name}"), "Task_Type": row["Task_Type"], "Marker": "T4", "Class": t4_name, "Files_Found": row["Files_Found"], "Trials": row["Trials_T4"]})
                 
                 summary_df = pd.DataFrame(melted_rows)
                 
-                # Aggregate to exactly 10 rows!
-                final_summary = summary_df.groupby(["Group_Num", "Class", "Marker"], as_index=False).agg(
-                    Task_Type=("Task_Type", lambda x: "All Motor Tasks" if len(set(x)) > 1 else list(x)[0]),
-                    Files_Found=("Files_Found", "sum"),
-                    Trials=("Trials", "sum")
-                )
-                final_summary["Group"] = "Group " + final_summary["Group_Num"].astype(str)
-                
-                # Sort strictly 1 through 10
-                final_summary = final_summary.sort_values(by="Group_Num")
-                
-                # Reorder columns and drop Group_Num for clean display
-                final_summary = final_summary[["Group", "Task_Type", "Marker", "Class", "Files_Found", "Trials"]]
+                if not summary_df.empty:
+                    final_summary = summary_df.groupby(["Group", "Class", "Marker"], as_index=False).agg(
+                        Task_Type=("Task_Type", lambda x: "All Motor Tasks" if len(set(x)) > 1 else list(x)[0]),
+                        Files_Found=("Files_Found", "sum"),
+                        Trials=("Trials", "sum")
+                    )
+                    
+                    final_summary = final_summary.sort_values(by="Group")
+                    final_summary = final_summary[["Group", "Task_Type", "Marker", "Class", "Files_Found", "Trials"]]
+                else:
+                    final_summary = pd.DataFrame(columns=["Group", "Task_Type", "Marker", "Class", "Files_Found", "Trials"])
                 
                 st.dataframe(final_summary, hide_index=True, width='stretch')
             else:
@@ -1060,13 +1118,8 @@ if selected_tab == '🚀 Live Training':
     
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # --- Dataset Selection ---
+    # --- Dataset Selection Info ---
     st.markdown("### 🗂️ Target Dataset")
-    selected_dataset_str = st.radio(
-        "Select the dataset to train on:",
-        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL"],
-        horizontal=True
-    )
     if "BCI" in selected_dataset_str:
         dataset_path = "BNCI2014_001"
         st.info("Using BCI Competition IV 2a Dataset. Architecture adapts to 22 Channels automatically.")
@@ -1079,6 +1132,9 @@ if selected_tab == '🚀 Live Training':
     elif "WAY" in selected_dataset_str:
         dataset_path = "WayEEGGAL"
         st.info("Using WAY-EEG-GAL Dataset. Architecture adapts to 32 Channels automatically.")
+    elif "DREAMER" in selected_dataset_str:
+        dataset_path = "DREAMER"
+        st.info("Using DREAMER Dataset. Architecture adapts to 14 Channels automatically.")
     else:
         dataset_path = "PhysionetMI"
         st.info("Using PhysioNet EEGMMIDB Dataset (64-channel).")
@@ -1104,9 +1160,18 @@ if selected_tab == '🚀 Live Training':
         train_partition = st.slider('Train Split (%)', min_value=50, max_value=90, value=80, step=10)
         
     with ctrl2:
-            lr_str = st.selectbox('Learning Rate', ['0.001', '0.0001', '0.005'])
-            
-        sub_start, sub_end = st.slider('Subject Range (1–109)', min_value=1, max_value=109, value=(1, 5))
+        lr_str = st.selectbox('Learning Rate', ['0.001', '0.0001', '0.005'])
+        
+        if "PhysioNet" in selected_dataset_str: max_subs = 109
+        elif "BCI" in selected_dataset_str: max_subs = 9
+        elif "High-Gamma" in selected_dataset_str: max_subs = 14
+        elif "Kaya" in selected_dataset_str: max_subs = 10
+        elif "WAY" in selected_dataset_str: max_subs = 12
+        elif "DREAMER" in selected_dataset_str: max_subs = 23
+        else: max_subs = 10
+        
+        default_end = min(5, max_subs)
+        sub_start, sub_end = st.slider(f'Subject Range (1–{max_subs})', min_value=1, max_value=max_subs, value=(1, default_end))
         st.markdown(f"""
         <div style="background:rgba(255,255,255,0.02); border-radius:10px; padding:12px 16px;
                     border:1px solid rgba(255,255,255,0.06); font-size:0.78rem; color:#8aa0b8; margin-top:8px;">
@@ -1120,16 +1185,61 @@ if selected_tab == '🚀 Live Training':
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    train_mode = st.radio('Select Training Mode:', [
-        '🎯 4-Class Master Model (Recommended)',
-        'OVR: Left Fist (Group 3)',
-        'OVR: Right Fist (Group 4)',
-        'OVR: Both Fists (Group 5)',
-        'OVR: Both Feet (Group 6)'
-    ])
+    if "DREAMER" in selected_dataset_str:
+        training_modes = [
+            '🎯 3-Target Emotion Regression (Valence, Arousal, Dominance)'
+        ]
+    elif "PhysioNet" in selected_dataset_str:
+        training_modes = [
+            '🎯 4-Class Master Model (Recommended)',
+            'OVR: Left Fist (Group 3)',
+            'OVR: Right Fist (Group 4)',
+            'OVR: Both Fists (Group 5)',
+            'OVR: Both Feet (Group 6)'
+        ]
+    elif "BCI" in selected_dataset_str:
+        training_modes = [
+            '🎯 4-Class Master Model (Recommended)',
+            'OVR: Left Hand (Group 0)',
+            'OVR: Right Hand (Group 1)',
+            'OVR: Both Feet (Group 2)',
+            'OVR: Tongue (Group 3)'
+        ]
+    elif "High-Gamma" in selected_dataset_str:
+        training_modes = [
+            '🎯 4-Class Master Model (Recommended)',
+            'OVR: Right Hand (Group 0)',
+            'OVR: Left Hand (Group 1)',
+            'OVR: Both Feet (Group 2)',
+            'OVR: Rest (Group 3)'
+        ]
+    elif "Kaya" in selected_dataset_str:
+        training_modes = [
+            '🎯 4-Class Master Model (Recommended)',
+            'OVR: Thumb (Group 0)',
+            'OVR: Index (Group 1)',
+            'OVR: Middle (Group 2)',
+            'OVR: Ring/Pinky (Group 3)'
+        ]
+    elif "WAY" in selected_dataset_str:
+        training_modes = [
+            '🎯 6-Class Master Model (Recommended)',
+            'OVR: HandStart (Group 0)',
+            'OVR: FirstDigitTouch (Group 1)',
+            'OVR: BothStartLoadPhase (Group 2)',
+            'OVR: LiftOff (Group 3)',
+            'OVR: Replace (Group 4)',
+            'OVR: BothReleased (Group 5)'
+        ]
+    else:
+        training_modes = [
+            '🎯 Master Model (Recommended)'
+        ]
+        
+    train_mode = st.radio('Select Training Mode:', training_modes)
 
     selected_training = None
-    if '4-Class Master' in train_mode:
+    if 'Master' in train_mode or '3-Target' in train_mode:
         btn_col1, btn_col2 = st.columns(2)
         with btn_col1:
             if st.button('⚡ Launch Master Training', width='stretch', type='primary'):
@@ -1693,7 +1803,7 @@ if selected_tab == '⚙️ Preprocessing':
     
     st.subheader('Live Pipeline Execution')
     st.markdown('Upload a raw `.edf` or `.gdf` file to dynamically observe the preprocessing filter effects.')
-    uploaded_file = st.file_uploader('Choose an EDF/GDF file', type=['edf', 'gdf'])
+    uploaded_file = st.file_uploader('Choose an EEG file (EDF/GDF/MAT/CSV)', type=['edf', 'gdf', 'mat', 'csv'])
     
     if uploaded_file is not None:
         if st.button('Preprocess File'):
@@ -1706,10 +1816,34 @@ if selected_tab == '⚙️ Preprocessing':
                     f.write(uploaded_file.getbuffer())
                 
                 try:
+                    import scipy.io
+                    import pandas as pd
                     if ext == '.gdf':
                         raw = mne.io.read_raw_gdf(temp_path, preload=True, verbose=False)
-                    else:
+                    elif ext == '.edf':
                         raw = mne.io.read_raw_edf(temp_path, preload=True, verbose=False)
+                    elif ext == '.csv':
+                        df = pd.read_csv(temp_path)
+                        if 'id' in df.columns:
+                            df = df.drop(columns=['id'])
+                        data = df.values.T if df.shape[1] < df.shape[0] else df.values
+                        info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=250.0, ch_types='eeg')
+                        raw = mne.io.RawArray(data, info)
+                    elif ext == '.mat':
+                        mat = scipy.io.loadmat(temp_path)
+                        if 'o' in mat:
+                            data = mat['o'][0,0]['data'].T
+                            info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=1000.0, ch_types='eeg')
+                            raw = mne.io.RawArray(data, info)
+                        elif 'DREAMER' in mat:
+                            data = mat['DREAMER'][0,0]['Data'][0,0]['EEG'][0,0]['stimuli'][0,0].T
+                            sfreq = int(mat['DREAMER'][0,0]['EEG_SamplingRate'][0,0])
+                            info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=sfreq, ch_types='eeg')
+                            raw = mne.io.RawArray(data, info)
+                        else:
+                            raise ValueError("Unknown .mat format")
+                    else:
+                        raise ValueError(f"Unsupported ext: {ext}")
                     from src.preprocessing import apply_car, apply_bandpass_filter
                     raw = apply_car(raw)
                     raw = apply_bandpass_filter(raw, 4, 38)
@@ -1944,6 +2078,20 @@ if selected_tab == '🎯 Live Inference':
     models = glob.glob(os.path.join(model_dir, '*.pkl')) + glob.glob(os.path.join(model_dir, '*.pth'))
     
     model_options = [os.path.relpath(p, model_dir) for p in models]
+    
+    # Filter models strictly based on the global target dataset
+    if "PhysioNet" in selected_dataset_str:
+        model_options = [m for m in model_options if 'master_' in m.lower() or 'physionet' in m.lower()]
+    elif "BCI" in selected_dataset_str:
+        model_options = [m for m in model_options if 'bci2a' in m.lower() or 'bci' in m.lower()]
+    elif "High-Gamma" in selected_dataset_str:
+        model_options = [m for m in model_options if 'highgamma' in m.lower()]
+    elif "Kaya" in selected_dataset_str:
+        model_options = [m for m in model_options if 'kaya' in m.lower()]
+    elif "WAY" in selected_dataset_str:
+        model_options = [m for m in model_options if 'way' in m.lower()]
+    elif "DREAMER" in selected_dataset_str:
+        model_options = [m for m in model_options if 'dreamer' in m.lower()]
     conformer_models = [m for m in model_options if 'conformer' in m.lower()]
     cnn_lstm_models  = [m for m in model_options if 'cnn_lstm' in m.lower()]
     minirocket_models = [m for m in model_options if 'minirocket' in m.lower()]
@@ -1975,30 +2123,47 @@ if selected_tab == '🎯 Live Inference':
             import re
             
             for model_name in selected_models:
-                model_path = os.path.join(model_dir, model_name)
+                # Remove any trailing spaces or hidden characters
+                model_name_clean = str(model_name).strip()
+                model_path = os.path.join(model_dir, model_name_clean)
+                
                 # Attempt to extract channel count from filename if present (e.g., _64ch_ or _22ch_)
-                ch_match = re.search(r'_(\d+)ch_', model_name)
-                _n_ch = int(ch_match.group(1)) if ch_match else (22 if 'bci2a' in model_name.lower() else 64)
+                ch_match = re.search(r'_(\d+)ch_', model_name_clean)
+                _n_ch = int(ch_match.group(1)) if ch_match else (22 if 'bci2a' in model_name_clean.lower() else 64)
                 target_samples = 656
                 
                 try:
-                    if "conformer" in model_name.lower():
-                        pipeline = AdvancedEEGPipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                    elif "cnn_lstm" in model_name.lower():
-                        pipeline = CNN_LSTM_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                    elif "minirocket" in model_name.lower():
-                        pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples)
-                    elif "eegnet" in model_name.lower():
-                        pipeline = EEGNet_Pipeline(num_classes=4, channels=_n_ch, samples=target_samples)
-                    elif "shallow" in model_name.lower():
-                        pipeline = ConvNet_Pipeline(arch="shallow", num_classes=4, channels=_n_ch, samples=target_samples)
+                    # Dynamically determine num_classes based on dataset hint in model_name
+                    # Default is 4 classes (PhysioNet, BCI, Kaya, HighGamma, WAY-EEG-GAL all output 4)
+                    _n_classes = 3 if 'dreamer' in model_name_clean.lower() else 4
+                    
+                    if "conformer" in model_name_clean.lower():
+                        pipeline = AdvancedEEGPipeline(num_classes=_n_classes, channels=_n_ch, samples=target_samples)
+                    elif "cnn_lstm" in model_name_clean.lower():
+                        pipeline = CNN_LSTM_Pipeline(num_classes=_n_classes, channels=_n_ch, samples=target_samples)
+                    elif "minirocket" in model_name_clean.lower():
+                        pipeline = MiniRocketPipeline(in_channels=_n_ch, seq_len=target_samples) # MiniRocket uses internal ridge
+                    elif "eegnet" in model_name_clean.lower():
+                        pipeline = EEGNet_Pipeline(num_classes=_n_classes, channels=_n_ch, samples=target_samples)
+                    elif "shallow" in model_name_clean.lower():
+                        pipeline = ConvNet_Pipeline(arch="shallow", num_classes=_n_classes, channels=_n_ch, samples=target_samples)
                     else:
                         continue
                     
+                    # Ensure path exists and is a file before loading to give a better error
+                    if not os.path.isfile(model_path):
+                        raise FileNotFoundError(f"File not found or invalid path: {repr(model_path)}")
+                    
                     pipeline.load(model_path)
-                    st.session_state.loaded_models[model_name] = pipeline
+                    st.session_state.loaded_models[model_name_clean] = pipeline
                 except Exception as e:
-                    st.error(f"Error loading {model_name}: {e}")
+                    import traceback
+                    tb = traceback.format_exc()
+                    st.error(f"Error loading {repr(model_name_clean)}: {type(e).__name__} - {e}")
+                    st.error(f"Attempted path: {repr(model_path)}")
+                    st.error(f"Traceback: {tb}")
+                    with open(os.path.join(model_dir, "streamlit_load_error.log"), "a") as f:
+                        f.write(f"Error loading {model_name_clean}:\n{tb}\n\n")
                     
         num_loaded = len(st.session_state.get("loaded_models", {}))
         if num_loaded > 0:
@@ -2007,12 +2172,27 @@ if selected_tab == '🎯 Live Inference':
             st.warning('No models were successfully loaded.')
         
     st.markdown('### 2. Predict on EEG Record')
-    inf_file = st.file_uploader('Upload EEG File (EDF or GDF)', type=['edf', 'gdf'], key='inf_file')
+    inf_file = st.file_uploader('Upload EEG File (EDF/GDF/MAT/CSV)', type=['edf', 'gdf', 'mat', 'csv'], key='inf_file')
     
     # Allow user to configure uncertainty
     uncertainty_threshold = st.slider("Uncertainty Rejection Threshold (%)", min_value=25, max_value=99, value=60, step=5)
 
-    target_event = st.selectbox('Select Target Event to Predict', ['T1 (Left Fist / Both Fists - PhysioNet)', 'T2 (Right Fist / Both Feet - PhysioNet)', '769 (Left Hand - BCI)', '770 (Right Hand - BCI)', '771 (Both Feet - BCI)', '772 (Tongue - BCI)'])
+    # Dynamically build target event options for all supported datasets
+    if "PhysioNet" in selected_dataset_str:
+        target_options = ['T1 (Left Fist / Both Fists)', 'T2 (Right Fist / Both Feet)']
+    elif "BCI" in selected_dataset_str:
+        target_options = ['769 (Left Hand)', '770 (Right Hand)', '771 (Both Feet)', '772 (Tongue)']
+    elif "Kaya" in selected_dataset_str:
+        target_options = ['Thumb (Kaya)', 'Index (Kaya)', 'Middle (Kaya)', 'Ring (Kaya)']
+    elif "High-Gamma" in selected_dataset_str:
+        target_options = ['Right Hand', 'Left Hand', 'Both Feet']
+    elif "WAY" in selected_dataset_str:
+        target_options = ['HandStart', 'FirstDigitTouch', 'BothStartLoadPhase', 'LiftOff', 'Replace', 'BothReleased']
+    elif "DREAMER" in selected_dataset_str:
+        target_options = ['Valence', 'Arousal', 'Dominance']
+    else:
+        target_options = ['T1', 'T2']
+    target_event = st.selectbox('Select Target Event to Predict', target_options)
 
     # START PREDICTING button — always visible, validates inside
     predict_clicked = st.button(
@@ -2043,13 +2223,42 @@ if selected_tab == '🎯 Live Inference':
                 os.makedirs(os.path.dirname(temp_path), exist_ok=True)
                 with open(temp_path, 'wb') as f:
                     f.write(inf_file.getbuffer())
-                if inf_file.name.lower().endswith('.gdf'):
+                ext = '.' + inf_file.name.split('.')[-1].lower()
+                import scipy.io
+                
+                if ext == '.gdf':
                     raw = mne.io.read_raw_gdf(temp_path, preload=True, verbose=False)
-                else:
+                elif ext == '.edf':
                     raw = mne.io.read_raw_edf(temp_path, preload=True, verbose=False)
+                elif ext == '.csv':
+                    df = pd.read_csv(temp_path)
+                    if 'id' in df.columns:
+                        df = df.drop(columns=['id'])
+                    data = df.values.T if df.shape[1] < df.shape[0] else df.values
+                    info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=250.0, ch_types='eeg')
+                    raw = mne.io.RawArray(data, info)
+                elif ext == '.mat':
+                    mat = scipy.io.loadmat(temp_path)
+                    if 'o' in mat:
+                        data = mat['o'][0,0]['data'].T
+                        info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=1000.0, ch_types='eeg')
+                        raw = mne.io.RawArray(data, info)
+                    elif 'DREAMER' in mat:
+                        data = mat['DREAMER'][0,0]['Data'][0,0]['EEG'][0,0]['stimuli'][0,0].T
+                        sfreq = int(mat['DREAMER'][0,0]['EEG_SamplingRate'][0,0])
+                        info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=sfreq, ch_types='eeg')
+                        raw = mne.io.RawArray(data, info)
+                    else:
+                        raise ValueError("Unknown .mat format")
+                else:
+                    raise ValueError(f"Unsupported ext: {ext}")
                     
-                events, event_id = mne.events_from_annotations(raw, verbose=False)
-                st.write(f'**Found Annotations:** {event_id}')
+                try:
+                    events, event_id = mne.events_from_annotations(raw, verbose=False)
+                    st.write(f'**Found Annotations:** {event_id}')
+                except Exception:
+                    st.write(f'**No Annotations Found** (Raw array format)')
+                    events, event_id = [], {}
                 
                 target_code = target_event.split(' ')[0]
                 target_int = event_id.get(target_code)
@@ -2091,20 +2300,46 @@ if selected_tab == '🎯 Live Inference':
                     model_classes = getattr(pipeline, 'label_classes', getattr(pipeline, 'classes_', None))
                     
                     if expected_channels is None:
-                        # Fallback if checkpoint doesn't specify channels
                         is_bci2a = 'bci2a' in model_name.lower()
-                        if is_bci2a:
+                        model_ch_count = None
+                        if hasattr(pipeline, 'mean') and pipeline.mean is not None:
+                            # Try to infer expected channels from mean shape
+                            try:
+                                model_ch_count = pipeline.mean.shape[2] if pipeline.mean.ndim == 4 else pipeline.mean.shape[1]
+                            except:
+                                pass
+                        elif hasattr(pipeline, 'channels'):
+                            model_ch_count = pipeline.channels
+                        elif hasattr(pipeline, 'model') and hasattr(pipeline.model, 'channels'):
+                            model_ch_count = pipeline.model.channels
+                        
+                        if model_ch_count is not None and model_ch_count == len(raw.ch_names):
+                            expected_channels = raw.ch_names
+                        elif model_ch_count == 64 and len(raw.ch_names) >= 64:
+                            expected_channels = raw.ch_names[:64]
+                        elif is_bci2a:
                             expected_channels = raw.ch_names[:22]
                         else:
+                            # Fallback to motor channels
                             expected_channels = ['FC3', 'FC4', 'C3', 'C4', 'CP3', 'CP4', 'C1', 'C2', 'C5', 'C6', 'CZ', 'FCZ', 'CPZ', 'F3', 'F4', 'P3', 'P4', 'O1', 'O2', 'OZ']
                             
                     model_expected_channels[model_name] = expected_channels
-                    missing_ch = [ch for ch in expected_channels if ch not in raw.ch_names]
+                    
+                    raw_copy = raw.copy()
+                    
+                    # If model was saved with generic 'EEG_0' names but the channel counts match, bypass name check
+                    is_generic_eeg = all(ch.startswith('EEG_') for ch in expected_channels)
+                    if is_generic_eeg and len(expected_channels) == len(raw_copy.ch_names):
+                        rename_dict = {old: new for old, new in zip(raw_copy.ch_names, expected_channels)}
+                        raw_copy.rename_channels(rename_dict)
+                        missing_ch = []
+                    else:
+                        missing_ch = [ch for ch in expected_channels if ch not in raw_copy.ch_names]
+                        
                     if len(missing_ch) > 0:
                         st.error(f"Compatibility Error: Input data is missing required channels for {model_name}: {missing_ch}")
                         continue
                         
-                    raw_copy = raw.copy()
                     raw_copy.reorder_channels(expected_channels)
                     
                     # Preprocessing via Checkpoint Spec or fallback
@@ -2121,11 +2356,11 @@ if selected_tab == '🎯 Live Inference':
                         epochs = mne.Epochs(raw_copy, np.array(target_events), event_id=target_event_id, tmin=tmin, tmax=tmax, baseline=None, preload=True, verbose=False)
                         if raw_copy.info['sfreq'] != sfreq:
                             epochs.resample(sfreq)
-                        X_model = epochs.get_data(copy=True) * 1e6
+                        X_model = epochs.get_data(copy=True)
                     else:
                         tmin = tmin if tmin is not None else 0.0
                         tmax = tmax if tmax is not None else (target_samples / sfreq)
-                        raw_copy.apply_function(lambda x: x * 1e6, verbose=False)
+                        # Remove apply_function lambda scaling as models were trained on volts
                         raw_copy = apply_bandpass_filter(apply_car(raw_copy), 4, 38)
                         epochs = mne.Epochs(raw_copy, np.array(target_events), event_id=target_event_id, tmin=tmin, tmax=tmax, baseline=None, preload=True, verbose=False)
                         if epochs.info['sfreq'] != sfreq:
@@ -2168,6 +2403,12 @@ if selected_tab == '🎯 Live Inference':
                 sfreq = getattr(st.session_state.loaded_models[first_valid_model], 'sfreq', 160.0)
                 
                 ch1_name, ch2_name = 'C3', 'C4'
+                if ch1_name not in expected_channels or ch2_name not in expected_channels:
+                    if len(expected_channels) >= 2:
+                        ch1_name, ch2_name = expected_channels[0], expected_channels[1]
+                    elif len(expected_channels) == 1:
+                        ch1_name = ch2_name = expected_channels[0]
+                        
                 ch1_idx = expected_channels.index(ch1_name) if ch1_name in expected_channels else None
                 ch2_idx = expected_channels.index(ch2_name) if ch2_name in expected_channels else None
                 
@@ -2197,7 +2438,7 @@ if selected_tab == '🎯 Live Inference':
                         fig.add_trace(go.Scatter(x=time_axis[:current_idx], y=sample_trial[ch2_idx, :current_idx], mode='lines', name=ch2_name, line=dict(color='#FF00FF', width=1.5)))
                     if ch1_idx is None and ch2_idx is None:
                         # Fallback if both missing
-                        fig.add_annotation(text="Selected channels C3/C4 missing in this model.", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color="#aaa"))
+                        fig.add_annotation(text=f"Selected channels {ch1_name}/{ch2_name} missing in this model.", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color="#aaa"))
                         
                     max_time = window_size / sfreq
                     fig.update_layout(
@@ -2211,7 +2452,7 @@ if selected_tab == '🎯 Live Inference':
                         showlegend=False
                     )
                     
-                    chart_placeholder.plotly_chart(fig, width='stretch')
+                    chart_placeholder.plotly_chart(fig, use_container_width=True, key=f"osc_{current_idx}")
                     pct = int((current_idx / window_size) * 100)
                     cur_time = (current_idx / window_size) * max_time
                     status_placeholder.markdown(f'''
@@ -2264,12 +2505,11 @@ if selected_tab == '🎯 Live Inference':
 
                 def get_icon(lbl):
                     l = str(lbl).lower()
-                    if 'left' in l and 'fist' in l: return "✋"
-                    if 'right' in l and 'fist' in l: return "🤚"
-                    if 'left' in l and 'hand' in l: return "✋"
-                    if 'right' in l and 'hand' in l: return "🤚"
-                    if 'both' in l and 'fist' in l: return "👐"
-                    if 'both' in l and 'feet' in l: return "🦶"
+                    if 'left' in l and ('fist' in l or 'hand' in l): return "🤛"
+                    if 'right' in l and ('fist' in l or 'hand' in l): return "🤜"
+                    if 'feet' in l or 'foot' in l: return "🦶"
+                    if 'hands' in l or ('both' in l and ('fist' in l or 'hand' in l)): return "👐"
+                    if 'rest' in l: return "🧘"
                     if 'tongue' in l: return "👅"
                     return "🎯"
 
@@ -2300,61 +2540,106 @@ if selected_tab == '🎯 Live Inference':
                         
                         has_probs = not np.isnan(trial_probs).all()
                         
-                        if not is_prob_index:
-                            best_val = str(preds[0])
-                            if best_val in labels:
-                                best_idx = labels.index(best_val)
-                            else:
-                                st.error(f"Inference Error: {model_name} output unrecognized label '{best_val}'. Must be one of {labels}.")
-                                continue
-                        else:
-                            best_idx = int(preds[0])
-                            if best_idx >= len(labels):
-                                st.error(f"Inference Error: {model_name} output index {best_idx} which exceeds labels list length {len(labels)}.")
-                                continue
+                        task_type = 'classification'
+                        loaded_model = st.session_state.loaded_models.get(model_name)
+                        if loaded_model is not None:
+                            task_type = getattr(loaded_model, 'task_type', 'classification')
                         
-                        confidence = float(trial_probs[best_idx]) * 100 if has_probs else None
-                        is_uncertain = (confidence is not None and confidence < float(uncertainty_threshold))
-
-                        for i in range(len(trial_probs)):
-                            prob_val = float(trial_probs[i]) * 100 if has_probs else 0.0
-                            label = labels[i] if i < len(labels) else f"Class {i}"
-                            icon = get_icon(label)
-                            is_best = (i == best_idx)
-                            bar_color = "#00d4ff" if is_best else "#a855f7"
-                            pct_color = "#00d4ff" if is_best else "#8aa0b8"
-                            bold = "font-weight:700;" if is_best else ""
-                            prob_str = f"{prob_val:.1f}%" if has_probs else ("N/A" if is_best else "0.0%")
-
+                        if task_type == 'regression':
+                            is_uncertain = False
+                            confidence = None
+                            
+                            for i in range(len(labels)):
+                                val = float(preds[0][i]) if i < len(preds[0]) else 0.0
+                                label = labels[i]
+                                icon = get_icon(label)
+                                bar_color = "#00d4ff"
+                                pct_color = "#00d4ff"
+                                bold = "font-weight:700;"
+                                prob_str = f"{val:.2f}"
+                                
+                                # Scale value to 0-100 for bar width (assuming roughly 1-9 range for Val/Aro/Dom)
+                                width_pct = min(max((val - 1) / 8 * 100, 0), 100)
+                                
+                                st.markdown(f'''
+                                    <div class="prob-row">
+                                        <span class="prob-class-label" style="{bold}">{icon} {label}</span>
+                                        <span class="prob-pct-label" style="color:{pct_color};{bold}">{prob_str}</span>
+                                    </div>
+                                    <div class="neural-bar-wrap">
+                                        <div class="neural-bar-fill" style="width: {width_pct:.1f}%; background: linear-gradient(90deg, {bar_color}, #a855f7);"></div>
+                                    </div>
+                                ''', unsafe_allow_html=True)
+                            
+                            predicted_label = "Continuous Output"
+                            pred_icon = "📈"
+                            pred_color = "#00ff9a"
+                            
                             st.markdown(f'''
-                                <div class="prob-row">
-                                    <span class="prob-class-label" style="{bold}">{icon} {label}</span>
-                                    <span class="prob-pct-label" style="color:{pct_color};{bold}">{prob_str}</span>
-                                </div>
-                                <div class="neural-bar-wrap">
-                                    <div class="neural-bar-fill" style="width: {min(prob_val, 100) if has_probs else (100 if is_best else 0):.1f}%; background: {'linear-gradient(90deg, ' + bar_color + ', #a855f7)' if has_probs else '#333'};"></div>
+                                <div style="display:flex; justify-content:space-between; font-size:11px;
+                                            color:#888; margin-top:15px; padding-top:10px;
+                                            border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span>Task: Regression &nbsp;·&nbsp;
+                                        <strong style="color:{pred_color};">{pred_icon} {predicted_label}</strong></span>
+                                    <span>Continuous Outputs</span>
                                 </div>
                             ''', unsafe_allow_html=True)
-
-                        if is_uncertain:
-                            predicted_label = "Uncertain—repeat trial"
-                            pred_icon = "❓"
-                            pred_color = "#ff8c00"
                         else:
-                            predicted_label = labels[best_idx] if best_idx < len(labels) else f"Class {best_idx}"
-                            pred_icon = "🎯"
-                            pred_color = "#00ff9a"
+                            if not is_prob_index:
+                                best_val = str(preds[0])
+                                if best_val in labels:
+                                    best_idx = labels.index(best_val)
+                                else:
+                                    st.error(f"Inference Error: {model_name} output unrecognized label '{best_val}'. Must be one of {labels}.")
+                                    continue
+                            else:
+                                best_idx = int(preds[0])
+                                if best_idx >= len(labels):
+                                    st.error(f"Inference Error: {model_name} output index {best_idx} which exceeds labels list length {len(labels)}.")
+                                    continue
+                            
+                            confidence = float(trial_probs[best_idx]) * 100 if has_probs else None
+                            is_uncertain = (confidence is not None and confidence < float(uncertainty_threshold))
 
-                        st.markdown(f'''
-                            <div style="display:flex; justify-content:space-between; font-size:11px;
-                                        color:#888; margin-top:15px; padding-top:10px;
-                                        border-top:1px solid rgba(255,255,255,0.06);">
-                                <span>Threshold: {uncertainty_threshold}% &nbsp;·&nbsp;
-                                    <strong style="color:{pred_color};">{pred_icon} {predicted_label}</strong>
-                                    {f"@ <strong style='color:#00d4ff;'>{confidence:.1f}%</strong>" if confidence is not None else ""}</span>
-                                <span>ArgMax Soft Voting</span>
-                            </div>
-                        ''', unsafe_allow_html=True)
+                            for i in range(len(trial_probs)):
+                                prob_val = float(trial_probs[i]) * 100 if has_probs else 0.0
+                                label = labels[i] if i < len(labels) else f"Class {i}"
+                                icon = get_icon(label)
+                                is_best = (i == best_idx)
+                                bar_color = "#00d4ff" if is_best else "#a855f7"
+                                pct_color = "#00d4ff" if is_best else "#8aa0b8"
+                                bold = "font-weight:700;" if is_best else ""
+                                prob_str = f"{prob_val:.1f}%" if has_probs else ("N/A" if is_best else "0.0%")
+
+                                st.markdown(f'''
+                                    <div class="prob-row">
+                                        <span class="prob-class-label" style="{bold}">{icon} {label}</span>
+                                        <span class="prob-pct-label" style="color:{pct_color};{bold}">{prob_str}</span>
+                                    </div>
+                                    <div class="neural-bar-wrap">
+                                        <div class="neural-bar-fill" style="width: {min(prob_val, 100) if has_probs else (100 if is_best else 0):.1f}%; background: {'linear-gradient(90deg, ' + bar_color + ', #a855f7)' if has_probs else '#333'};"></div>
+                                    </div>
+                                ''', unsafe_allow_html=True)
+
+                            if is_uncertain:
+                                predicted_label = "Uncertain—repeat trial"
+                                pred_icon = "❓"
+                                pred_color = "#ff8c00"
+                            else:
+                                predicted_label = labels[best_idx] if best_idx < len(labels) else f"Class {best_idx}"
+                                pred_icon = "🎯"
+                                pred_color = "#00ff9a"
+
+                            st.markdown(f'''
+                                <div style="display:flex; justify-content:space-between; font-size:11px;
+                                            color:#888; margin-top:15px; padding-top:10px;
+                                            border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span>Threshold: {uncertainty_threshold}% &nbsp;·&nbsp;
+                                        <strong style="color:{pred_color};">{pred_icon} {predicted_label}</strong>
+                                        {f"@ <strong style='color:#00d4ff;'>{confidence:.1f}%</strong>" if confidence is not None else ""}</span>
+                                    <span>ArgMax Soft Voting</span>
+                                </div>
+                            ''', unsafe_allow_html=True)
                         st.divider()
 
                 # ===== 3 CHANNEL PAIR WAVEFORMS =====
@@ -2441,14 +2726,22 @@ if selected_tab == '🔍 Accuracy Analysis':
     </div>
     """, unsafe_allow_html=True)
     
-    data_path = os.path.join(os.path.dirname(__file__), '..', 'physionet')
-    edf_files_list = []
+    if "PhysioNet" in selected_dataset_str:
+        data_path = st.session_state.get('physionet_data_dir', r"D:\eeg-minirocket-project\physionet")
+    elif "BCI" in selected_dataset_str:
+        data_path = st.session_state.get('bci2a_data_dir', r"D:\eeg-minirocket-project\bci2a")
+    elif "DREAMER" in selected_dataset_str:
+        data_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\DREAMER")
+    else:
+        data_path = os.path.join(os.path.dirname(__file__), '..', 'data')
+
+    test_files_list = []
     if os.path.exists(data_path):
-        edf_files_list = [f for f in os.listdir(data_path) if f.endswith('.edf')]
-        edf_files_list.sort()
+        test_files_list = [f for f in os.listdir(data_path) if f.endswith('.edf') or f.endswith('.gdf') or f.endswith('.mat')]
+        test_files_list.sort()
     
-    if edf_files_list:
-        selected_acc_file = st.selectbox("Select EDF File to Analyze Accuracy Prediction", edf_files_list, key="acc_file_sel")
+    if test_files_list:
+        selected_acc_file = st.selectbox("Select File to Analyze Accuracy Prediction", test_files_list, key="acc_file_sel")
         
         import re
         match = re.search(r'S(\d+)R(\d+)', selected_acc_file)

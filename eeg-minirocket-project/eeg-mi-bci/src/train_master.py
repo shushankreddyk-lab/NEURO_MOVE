@@ -27,7 +27,12 @@ def get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir):
     import hashlib
     import os
     sub_str = f"subs{sub_start}to{sub_end}"
-    dataset_name = "bci2a" if "2a" in dataset_path.lower() else "physionet"
+    
+    dataset_name = dataset_path.lower().replace(" ", "_").replace("\\", "_").replace("/", "_")
+    if "2a" in dataset_path.lower():
+        dataset_name = "bci2a"
+    elif "physionet" in dataset_path.lower():
+        dataset_name = "physionetmi"
     
     # Include dataset identity and preprocessing settings (e.g. v3)
     config_str = f"{mode}_{group_id}_{sub_str}_{dataset_name}_v3"
@@ -90,6 +95,61 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         if X_all.shape[2] < target_samples:
             pad_width = target_samples - X_all.shape[2]
             X_all = np.pad(X_all, ((0,0), (0,0), (0,pad_width)), mode='constant')
+            
+        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+        np.savez_compressed(data_path, X=X_all, y=y_all)
+        return X_all.shape, y_all.shape
+
+    elif "dreamer" in dataset_path.lower():
+        msg = f"Extracting DREAMER data for subjects {sub_start} to {sub_end}..."
+        print(json.dumps({"type": "progress", "message": msg}), flush=True)
+        
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+        from dreamer_loader import DREAMERLoader
+        
+        if dataset_path.endswith('.mat') and os.path.isfile(dataset_path):
+            mat_path = dataset_path
+        else:
+            mat_path = os.path.join(dataset_path, "DREAMER.mat")
+        loader = DREAMERLoader(mat_path, window_size_sec=1.0, overlap=0.5)
+        X_all, y_all = loader.load_data()
+        
+        if len(X_all) == 0:
+            return None, None
+            
+        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+        np.savez_compressed(data_path, X=X_all, y=y_all)
+        return X_all.shape, y_all.shape
+        
+    elif "high-gamma" in dataset_path.lower():
+        msg = f"Extracting High-Gamma data for subjects {sub_start} to {sub_end}..."
+        print(json.dumps({"type": "progress", "message": msg}), flush=True)
+        
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+        from high_gamma_loader import load_high_gamma_data
+        
+        subject_range = list(range(sub_start, sub_end + 1))
+        X_all, y_all = load_high_gamma_data(dataset_path, subject_range, resample_freq=160.0)
+        
+        if len(X_all) == 0:
+            return None, None
+            
+        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+        np.savez_compressed(data_path, X=X_all, y=y_all)
+        return X_all.shape, y_all.shape
+
+    elif "way" in dataset_path.lower() or "grasp" in dataset_path.lower():
+        msg = f"Extracting WAY-EEG-GAL data for subjects {sub_start} to {sub_end}..."
+        print(json.dumps({"type": "progress", "message": msg}), flush=True)
+        
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+        from way_loader import load_way_data
+        
+        subject_range = list(range(sub_start, sub_end + 1))
+        X_all, y_all = load_way_data(dataset_path, subject_range, resample_freq=160.0)
+        
+        if len(X_all) == 0:
+            return None, None
             
         data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
         np.savez_compressed(data_path, X=X_all, y=y_all)
@@ -285,24 +345,34 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
                     X_train.append(sub_X[i])
                     y_train.append(sub_y[i])
     else:
-        print(json.dumps({"type": "info", "message": "No metadata found. Using temporal 80/10/10 slice..."}), flush=True)
-        for cls in np.unique(y):
-            idx = np.where(y == cls)[0]
-            val_split = int(len(idx) * 0.8)
-            test_split = int(len(idx) * 0.9)
-            X_train.append(X[idx[:val_split]])
-            y_train.append(y[idx[:val_split]])
-            X_val.append(X[idx[val_split:test_split]])
-            y_val.append(y[idx[val_split:test_split]])
-            X_test.append(X[idx[test_split:]])
-            y_test.append(y[idx[test_split:]])
-
-    X_train = np.concatenate(X_train, axis=0) if X_train else np.empty((0, *X.shape[1:]))
-    y_train = np.concatenate(y_train, axis=0) if y_train else np.empty((0,))
-    X_val = np.concatenate(X_val, axis=0) if X_val else np.empty((0, *X.shape[1:]))
-    y_val = np.concatenate(y_val, axis=0) if y_val else np.empty((0,))
-    X_test = np.concatenate(X_test, axis=0) if X_test else np.empty((0, *X.shape[1:]))
-    y_test = np.concatenate(y_test, axis=0) if y_test else np.empty((0,))
+        print(json.dumps({"type": "info", "message": "No metadata found. Using temporal slice..."}), flush=True)
+        if y.ndim > 1 or np.issubdtype(y.dtype, np.floating):
+            # Regression - chronological slice to prevent leakage
+            val_split = int(len(y) * 0.8)
+            test_split = int(len(y) * 0.9)
+            X_train, y_train = X[:val_split], y[:val_split]
+            X_val, y_val = X[val_split:test_split], y[val_split:test_split]
+            X_test, y_test = X[test_split:], y[test_split:]
+        else:
+            # Classification - stratified temporal slice
+            X_train_list, y_train_list, X_val_list, y_val_list, X_test_list, y_test_list = [], [], [], [], [], []
+            for cls in np.unique(y):
+                idx = np.where(y == cls)[0]
+                val_split = int(len(idx) * 0.8)
+                test_split = int(len(idx) * 0.9)
+                X_train_list.append(X[idx[:val_split]])
+                y_train_list.append(y[idx[:val_split]])
+                X_val_list.append(X[idx[val_split:test_split]])
+                y_val_list.append(y[idx[val_split:test_split]])
+                X_test_list.append(X[idx[test_split:]])
+                y_test_list.append(y[idx[test_split:]])
+            
+            X_train = np.concatenate(X_train_list, axis=0) if X_train_list else np.empty((0, *X.shape[1:]))
+            y_train = np.concatenate(y_train_list, axis=0) if y_train_list else np.empty((0,))
+            X_val = np.concatenate(X_val_list, axis=0) if X_val_list else np.empty((0, *X.shape[1:]))
+            y_val = np.concatenate(y_val_list, axis=0) if y_val_list else np.empty((0,))
+            X_test = np.concatenate(X_test_list, axis=0) if X_test_list else np.empty((0, *X.shape[1:]))
+            y_test = np.concatenate(y_test_list, axis=0) if y_test_list else np.empty((0,))
     
     if len(X_val) == 0 and len(X_train) > 0:
         new_X_train, new_y_train, new_X_val, new_y_val = [], [], [], []
@@ -341,7 +411,10 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     sub_str = f"subs{sub_start}to{sub_end}"
-    num_cls = len(np.unique(y))
+    
+    is_regression = (y.ndim > 1 or np.issubdtype(y.dtype, np.floating))
+    num_cls = y.shape[1] if is_regression else len(np.unique(y))
+    task_type = "regression" if is_regression else "classification"
     
     # --- MODEL EXECUTION SWITCH ---
     if model_name == "MiniRocket":
@@ -372,7 +445,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             samples=X.shape[2],
             epochs=epochs,
             lr=lr,
-            batch_size=64
+            batch_size=64,
+            task_type=task_type
         )
         
         try:
@@ -396,7 +470,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             samples=X.shape[2],
             epochs=epochs,
             lr=lr,
-            batch_size=64
+            batch_size=64,
+            task_type=task_type
         )
         
         try:
@@ -419,7 +494,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             samples=X.shape[2],
             epochs=epochs,
             lr=lr,
-            batch_size=64
+            batch_size=64,
+            task_type=task_type
         )
         
         try:
@@ -524,11 +600,13 @@ if __name__ == "__main__":
         
         # Strip trailing slash or path elements if user passed a path instead of an ID
         ds_id = args.dataset
-        for name in unified_datasets:
-            if name.lower() in args.dataset.lower():
-                ds_id = name
-                break
-                
+        ds_lower = args.dataset.lower()
+        if "kaya" in ds_lower: ds_id = "KayaFingers"
+        elif "way" in ds_lower or "grasp" in ds_lower: ds_id = "WayEEGGAL"
+        elif "high-gamma" in ds_lower or "nemar" in ds_lower or "nm000172" in ds_lower: ds_id = "HighGamma"
+        elif "bci" in ds_lower or "2a" in ds_lower: ds_id = "BNCI2014_001"
+        elif "physionet" in ds_lower: ds_id = "PhysionetMI"
+        
         if ds_id in unified_datasets:
             sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
             from dataset_loader_all import load_dataset
@@ -547,17 +625,23 @@ if __name__ == "__main__":
             if shapeX is None:
                 print(json.dumps({"type": "error", "message": "No data extracted."}), flush=True)
                 sys.exit(1)
-    train_models(
-        mode=args.mode, 
-        group_id=args.group, 
-        data_dir=data_dir, 
-        models_dir=models_dir,
-        dataset_path=args.dataset,
-        model_name=args.model,
-        epochs=args.epochs,
-        lr=args.lr,
-        kernels=args.kernels,
-        train_split=args.partition / 100.0,
-        sub_start=args.sub_start,
-        sub_end=args.sub_end
-    )
+    if args.model == "all":
+        architectures = ["MiniRocket", "CNN-LSTM", "Advanced Transformer", "EEGNet", "Shallow ConvNet"]
+    else:
+        architectures = [args.model]
+        
+    for arch in architectures:
+        train_models(
+            mode=args.mode, 
+            group_id=args.group, 
+            data_dir=data_dir, 
+            models_dir=models_dir,
+            dataset_path=args.dataset,
+            model_name=arch,
+            epochs=args.epochs,
+            lr=args.lr,
+            kernels=args.kernels,
+            train_split=args.partition / 100.0,
+            sub_start=args.sub_start,
+            sub_end=args.sub_end
+        )

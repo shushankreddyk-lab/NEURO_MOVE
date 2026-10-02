@@ -25,6 +25,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         paradigm = MotorImagery(n_classes=4)
         X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[subject_id])
         
+        mask = (y != 'rest')
+        X, y = X[mask], y[mask]
+        
         # Simple split (first 70% train, last 30% test)
         split_idx = int(len(X) * 0.7)
         return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
@@ -38,6 +41,10 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         paradigm = MotorImagery(n_classes=4)
         X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[subject_id])
         
+        # Remove 'rest' class as requested by user
+        mask = (y != 'rest')
+        X, y = X[mask], y[mask]
+        
         split_idx = int(len(X) * 0.7)
         return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
 
@@ -49,6 +56,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         dataset.subject_list = [subject_id]
         paradigm = MotorImagery(n_classes=4)
         X, y, metadata = paradigm.get_data(dataset=dataset, subjects=[subject_id])
+        
+        mask = (y != 'rest')
+        X, y = X[mask], y[mask]
         
         split_idx = int(len(X) * 0.7)
         return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
@@ -94,7 +104,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         
         # Map labels to 0-3 range (if there are more than 4 fingers, clip or group them)
         y_all = np.array(y_list) - 1 
-        y_all = np.clip(y_all, 0, 3) # Keep exactly 4 classes for model compatibility
+        y_all = np.clip(y_all, 0, 3).astype(int) # Keep exactly 4 classes for model compatibility
+        kaya_labels = np.array(["thumb", "index", "middle", "ring"])
+        y_all = kaya_labels[y_all]
         
         split_idx = int(len(X_all) * 0.7)
         return X_all[:split_idx], y_all[:split_idx], X_all[split_idx:], y_all[split_idx:]
@@ -150,7 +162,10 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         # Limit to 4 classes to perfectly match the Transformer/MiniRocket architecture
         valid_indices = y_all < 4
         X_all = X_all[valid_indices]
-        y_all = y_all[valid_indices]
+        y_all = y_all[valid_indices].astype(int)
+        
+        way_labels = np.array(["hand_start", "first_digit_touch", "both_start_load", "lift_off"])
+        y_all = way_labels[y_all]
         
         split_idx = int(len(X_all) * 0.7)
         return X_all[:split_idx], y_all[:split_idx], X_all[split_idx:], y_all[split_idx:]
