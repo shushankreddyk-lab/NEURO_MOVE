@@ -4,7 +4,10 @@ import os
 import numpy as np
 import traceback
 
-from src.csp_engine import CSP_Engine
+try:
+    from src.csp_engine import CSP_Engine
+except ModuleNotFoundError as exc:
+    raise SystemExit("Skipping: legacy src.csp_engine was removed (%s)" % exc)
 
 X = np.random.randn(1, 20, 656) # dummy data
 

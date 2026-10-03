@@ -297,21 +297,10 @@ class ConvNet_Pipeline:
     def load(self, filepath):
         state = torch.load(filepath, map_location=self.device, weights_only=False)
         self.arch = state.get('arch', 'shallow')
-        channels = state.get('channels', 22)
+        channels = state.get('channels', 64)
         num_classes = state.get('num_classes', 4)
-        
-        # Determine samples
-        if 'samples' in state:
-            samples = state['samples']
-        else:
-            # Infer samples by checking fc weight if available
-            sd = state['model_state_dict']
-            if 'fc.weight' in sd:
-                # We can't easily reverse engineer samples for ShallowConvNet due to pooling math, 
-                # but we know it's 481 for our dataset. If it breaks, we just retrain.
-                samples = 481
-            else:
-                samples = 481
+        samples = state.get('samples', 656)
+        self.samples = samples
 
         self.model = ShallowConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
 

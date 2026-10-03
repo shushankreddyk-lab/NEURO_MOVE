@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, r'D:\pip_packages')
+sys.path.insert(0, 'D:\\pip_packages')
 import os
 import torch
 import numpy as np
@@ -9,39 +9,37 @@ from src.advanced_eeg_engine import AdvancedEEGPipeline
 from src.minirocket_engine import MiniRocketPipeline
 from src.eegnet_engine import EEGNet_Pipeline
 from src.convnets_engine import ConvNet_Pipeline
+from src.cnn_lstm_engine import CNN_LSTM_Pipeline
 
-X = np.random.randn(1, 20, 656) # dummy data
+MODEL_DIR = os.path.join('d:\\eeg-minirocket-project\\eeg-mi-bci\\models')
+MODELS = (
+    ("Conformer", AdvancedEEGPipeline(num_classes=4, channels=64, samples=481), ("conformer",)),
+    ("MiniRocket", MiniRocketPipeline(in_channels=64, seq_len=481), ("minirocket",)),
+    ("EEGNet", EEGNet_Pipeline(num_classes=4, channels=64, samples=481), ("eegnet",)),
+    ("Shallow", ConvNet_Pipeline(arch="shallow", num_classes=4, channels=64, samples=481), ("shallow",)),
+    ("CNN-LSTM", CNN_LSTM_Pipeline(num_classes=4, channels=64, samples=481), ("cnn_lstm",)),
+)
 
-models = {
-    "CNN-LSTM": AdvancedEEGPipeline(num_classes=4, channels=20, samples=656),
-    "MiniRocket": MiniRocketPipeline(in_channels=20, seq_len=656),
-    "EEGNet": EEGNet_Pipeline(num_classes=4, channels=20, samples=656),
-    "Shallow": ConvNet_Pipeline(arch="shallow", num_classes=4, channels=20, samples=656),
-    "Deep": ConvNet_Pipeline(arch="deep", num_classes=4, channels=20, samples=656)
-}
+def find_checkpoint(keys):
+    for root, dirs, files in os.walk(MODEL_DIR):
+        for fname in sorted(files):
+            lowered = fname.lower()
+            if fname.endswith(".pth") and any(key in lowered for key in keys):
+                return os.path.join(root, fname)
+    return None
 
-for name, model in models.items():
-    print(f"\n--- Testing {name} ---")
+for name, model, keys in MODELS:
+    print("")
+    print("--- Testing %s ---" % name)
     try:
-        model_path = None
-        for root, dirs, files in os.walk(r'd:\eeg-minirocket-project\eeg-mi-bci\models'):
-            for f in files:
-                if (name.lower() in f.lower() or 
-                    (name == 'Shallow' and 'shallow' in f.lower()) or
-                    (name == 'Deep' and 'deep' in f.lower()) or
-                    (name == 'MiniRocket' and 'minirocket' in f.lower()) or
-                    (name == 'EEGNet' and 'eegnet' in f.lower())):
-                    model_path = os.path.join(root, f)
-                    break
-            if model_path: break
-        
-        if model_path and os.path.exists(model_path):
-            print(f"Loading {model_path}...")
-            model.load(model_path)
-            probs = model.predict_proba(X)
-            print(f"Success! Probs shape: {probs.shape}")
-        else:
-            print(f"No model found for {name}")
-    except Exception as e:
-        print(f"Error: {e}")
+        model_path = find_checkpoint(keys)
+        if model_path is None:
+            print("No model found for %s" % name)
+            continue
+        print("Loading %s..." % model_path)
+        model.load(model_path)
+        probs = model.predict_proba(np.random.randn(1, 64, 481))
+        print("Success! Probs shape: %s" % (probs.shape,))
+    except Exception as exc:
+        print("Error: %s" % exc)
         traceback.print_exc()

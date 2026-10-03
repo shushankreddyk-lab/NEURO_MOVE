@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, r'D:\pip_packages')
+sys.path.insert(0, 'D:\\pip_packages')
 import os
 import torch
 import numpy as np
@@ -8,28 +8,36 @@ from src.advanced_eeg_engine import AdvancedEEGPipeline
 from src.minirocket_engine import MiniRocketPipeline
 from src.eegnet_engine import EEGNet_Pipeline
 from src.convnets_engine import ConvNet_Pipeline
-from src.csp_engine import CSP_Engine
+from src.cnn_lstm_engine import CNN_LSTM_Pipeline
 
-X = np.random.randn(5, 20, 656) # 5 trials, 20 channels, 656 samples
+MODEL_DIR = 'd:\\eeg-minirocket-project\\eeg-mi-bci\\models'
+MODELS = (
+    ("Conformer", AdvancedEEGPipeline(num_classes=4, channels=64, samples=481), ("conformer",)),
+    ("CNN-LSTM", CNN_LSTM_Pipeline(num_classes=4, channels=64, samples=481), ("cnn_lstm",)),
+    ("MiniRocket", MiniRocketPipeline(in_channels=64, seq_len=481), ("minirocket",)),
+    ("EEGNet", EEGNet_Pipeline(num_classes=4, channels=64, samples=481), ("eegnet",)),
+    ("Shallow", ConvNet_Pipeline(arch="shallow", num_classes=4, channels=64, samples=481), ("shallow",)),
+)
 
-models = {
-    "CNN-LSTM": AdvancedEEGPipeline(num_classes=4, channels=20, samples=656),
-    "MiniRocket": MiniRocketPipeline(in_channels=20, seq_len=656),
-    "EEGNet": EEGNet_Pipeline(num_classes=4, channels=20, samples=656),
-    "Shallow": ConvNet_Pipeline(arch="shallow", num_classes=4, channels=20, samples=656),
-    "Deep": ConvNet_Pipeline(arch="deep", num_classes=4, channels=20, samples=656),
-    "CSP": CSP_Engine(classifier_type="lda", n_components=4)
-}
+def find_checkpoint(keys):
+    for fname in sorted(os.listdir(MODEL_DIR)):
+        lowered = fname.lower()
+        if fname.endswith(".pth") and any(key in lowered for key in keys):
+            return os.path.join(MODEL_DIR, fname)
+    return None
 
-for name, model in models.items():
-    print(f"Testing {name}...")
+for name, model, keys in MODELS:
+    print("Testing %s..." % name)
     try:
-        if hasattr(model, 'predict_proba'):
-            probs = model.predict_proba(X)
-            print(f"  Probs shape: {probs.shape}")
-        else:
-            print(f"  No predict_proba method!")
-    except Exception as e:
+        model_path = find_checkpoint(keys)
+        if model_path is None:
+            print("  Skipped: no checkpoint available.")
+            continue
+        model.load(model_path)
+        print("  Loaded checkpoint: %s" % os.path.basename(model_path))
+        probs = model.predict_proba(np.random.randn(1, 64, 481))
+        print("  Probs shape: %s" % (probs.shape,))
+    except Exception as exc:
         import traceback
-        print(f"  Error: {e}")
+        print("  Error: %s" % exc)
         traceback.print_exc()

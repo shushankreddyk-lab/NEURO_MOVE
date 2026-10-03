@@ -1,8 +1,13 @@
 import numpy as np
 import mne
 import os
-from moabb.datasets import BNCI2014_001, PhysionetMI, Schirrmeister2017
-from moabb.paradigms import MotorImagery
+try:
+    from moabb.datasets import BNCI2014_001, PhysionetMI, Schirrmeister2017
+    from moabb.paradigms import MotorImagery
+    _MOABB_IMPORT_ERROR = None
+except Exception as _moabb_exc:
+    BNCI2014_001 = PhysionetMI = Schirrmeister2017 = MotorImagery = None
+    _MOABB_IMPORT_ERROR = _moabb_exc
 
 def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subject_id=1):
     """
@@ -16,6 +21,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
     # Configuration for MOABB to use the correct data directory
     mne.set_config('MNE_DATASETS_MOABB_PATH', data_dir)
     
+    if _MOABB_IMPORT_ERROR is not None and dataset_name in ("BNCI2014_001", "PhysionetMI", "HighGamma"):
+        raise ImportError("moabb is required for dataset '%s': %s" % (dataset_name, _MOABB_IMPORT_ERROR))
+
     # -----------------------------------------------------------------
     # 1. BCI Competition IV 2a (Tongue, Left Hand, Right Hand, Feet)
     # -----------------------------------------------------------------

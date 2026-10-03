@@ -4,7 +4,10 @@ import os
 import torch
 import numpy as np
 
-from src.csp_engine import CSP_Engine
+try:
+    from src.csp_engine import CSP_Engine
+except ModuleNotFoundError as exc:
+    raise SystemExit("Skipping: legacy src.csp_engine was removed (%s)" % exc)
 
 X = np.random.randn(5, 20, 656)
 

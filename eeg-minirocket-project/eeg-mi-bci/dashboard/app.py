@@ -2126,12 +2126,26 @@ if selected_tab == '🎯 Live Inference':
                 # Remove any trailing spaces or hidden characters
                 model_name_clean = str(model_name).strip()
                 model_path = os.path.join(model_dir, model_name_clean)
-                
+
                 # Attempt to extract channel count from filename if present (e.g., _64ch_ or _22ch_)
                 ch_match = re.search(r'_(\d+)ch_', model_name_clean)
                 _n_ch = int(ch_match.group(1)) if ch_match else (22 if 'bci2a' in model_name_clean.lower() else 64)
+
+                # Read the checkpoint's own geometry first so the pipeline is
+                # built at the exact trained shape (avoids fc size mismatches).
+                ckpt_channels = _n_ch
                 target_samples = 656
-                
+                try:
+                    import torch as _torch_ckpt
+                    _ckpt = _torch_ckpt.load(model_path, map_location='cpu', weights_only=False)
+                    if isinstance(_ckpt, dict):
+                        ckpt_channels = int(_ckpt.get('channels', _ckpt.get('in_channels', ckpt_channels)))
+                        target_samples = int(_ckpt.get('samples', _ckpt.get('seq_len', target_samples)))
+                        _n_ch = ckpt_channels
+                    del _ckpt
+                except Exception:
+                    pass
+
                 try:
                     # Dynamically determine num_classes based on dataset hint in model_name
                     # Default is 4 classes (PhysioNet, BCI, Kaya, HighGamma, WAY-EEG-GAL all output 4)

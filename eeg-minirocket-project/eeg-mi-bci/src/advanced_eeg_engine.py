@@ -132,9 +132,10 @@ class AdvancedEEGPipeline:
                  epochs=15, batch_size=256, lr=1e-3, device="cuda", task_type="classification"):
         self.device = get_device()
         try:
-            print(f"[AdvancedEEGPipeline] Using device: {self.device}")
-        except OSError:
-            pass
+            from src.engines_safe_print import safe_print
+        except ModuleNotFoundError:
+            from engines_safe_print import safe_print
+        safe_print(f"[AdvancedEEGPipeline] Using device: {self.device}")
         
         self.num_classes = num_classes
         self.channels = channels
@@ -344,49 +345,35 @@ class AdvancedEEGPipeline:
 
     def load(self, filepath):
         state = torch.load(filepath, map_location=self.device, weights_only=False)
-        self.num_classes = state['num_classes']
-        self.channels = state['channels']
-        self.samples = state['samples']
-        self.task_type = state.get('task_type', 'classification')
+        self.num_classes = state.get('num_classes', getattr(self, 'num_classes', 4))
+        self.channels = state.get('channels', getattr(self, 'channels', 20))
+        self.samples = state.get('samples', getattr(self, 'samples', 656))
+        self.task_type = state.get('task_type', getattr(self, 'task_type', 'classification'))
         self.feat_mean = state.get('feat_mean', None)
         self.feat_std = state.get('feat_std', None)
         
         self.model = EEG_Conformer(self.num_classes, self.channels, self.samples).to(self.device)
-        try:
-            self.model.load_state_dict(state['model'])
-        except RuntimeError as e:
-            if "size mismatch" in str(e) or "Missing key" in str(e) or "Unexpected key" in str(e):
-                try:
-                    print("[AdvancedEEGPipeline] Modern model load failed. Falling back to legacy architecture...", flush=True)
-                except OSError:
-                    pass
-                # Initialize legacy architecture
-                self.model = EEG_Conformer(
-                    self.num_classes, self.channels, self.samples,
-                    F1=40, kernLength=64, pool1=8, F2=40, depthMultiplier=2,
-                    drop_prob=0.5, d_model=40, heads=4, tf_layers=3
-                )
-                # Revert to legacy FC
-                out_len = self.samples // 8
-                self.model.fc = nn.Sequential(
-                    nn.Flatten(),
-                    nn.Linear(40 * out_len, 256),
-                    nn.ELU(),
-                    nn.Dropout(0.5),
-                    nn.Linear(256, self.num_classes)
-                )
-                self.model = self.model.to(self.device)
-                self.model.load_state_dict(state['model'], strict=False)
-                try:
-                    print("[AdvancedEEGPipeline] Legacy architecture loaded successfully.", flush=True)
-                except OSError:
-                    pass
-            else:
-                raise e
-        
-        self.feat_mean = state['feat_mean']
-        self.feat_std = state['feat_std']
-        self.classes_ = state['classes_']
+        sd_key = 'model' if 'model' in state else 'model_state_dict' if 'model_state_dict' in state else None
+        if sd_key is None:
+            raise KeyError("Checkpoint has no model weights (keys: %s)" % sorted(state.keys()))
+        if 'stem.' not in '.'.join(state[sd_key].keys()):
+            try:
+                self.model.load_state_dict(state[sd_key])
+            except RuntimeError as load_error:
+                raise RuntimeError("Conformer checkpoint does not match EEG_Conformer weights: %s" % load_error)
+        else:
+            raise RuntimeError("CNN-LSTM checkpoint was passed to AdvancedEEGPipeline; load it with CNN_LSTM_Pipeline.")
+
+        feat_mean = self.feat_mean
+        feat_std = state.get('feat_std')
+        loaded_classes = state.get('classes_')
+        if feat_mean is not None:
+            self.feat_mean = feat_mean
+        if feat_std is not None:
+            self.feat_std = feat_std
+        if loaded_classes is not None:
+            self.classes_ = loaded_classes
         self.training_time = state.get('training_time', 0.0)
         
         self.model.eval()
+        return self

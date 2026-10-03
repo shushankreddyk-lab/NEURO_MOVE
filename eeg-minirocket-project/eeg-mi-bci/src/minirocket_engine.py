@@ -85,7 +85,14 @@ class MiniRocketPipeline:
         # Ensure we strictly use GPU if requested
         self.device = get_device()
         try:
-            print(f"[MiniRocketPipeline] Using device: {self.device}")
+            from engines_safe_print import safe_print
+        except Exception:
+            try:
+                from src.engines_safe_print import safe_print
+            except Exception:
+                safe_print = print
+        try:
+            safe_print(f"[MiniRocketPipeline] Using device: {self.device}")
         except OSError:
             pass
         

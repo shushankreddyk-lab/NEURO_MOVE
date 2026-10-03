@@ -15,7 +15,7 @@ new_code = """
                                 most_common_pred = counts.most_common(1)[0][0]
                                 predicted_intent_str = class_labels.get(int(most_common_pred), str(most_common_pred))
                                 
-                                match = re.search(r'R(\d+)', inf_file.name, re.IGNORECASE)
+                                match = re.search(r'R(\\d+)', inf_file.name, re.IGNORECASE)
                                 if match:
                                     run_num = int(match.group(1))
                                     target_group = map_run_and_marker_to_group(run_num, '', target_code)

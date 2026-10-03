@@ -359,21 +359,19 @@ class EEGNet_Pipeline:
         state = torch.load(filepath, map_location=self.device, weights_only=False)
         saved_cfg = state.get('model_cfg', {}) or {}
         
-        channels = state.get('channels', 22)
+        channels = state.get('channels', 64)
         num_classes = state.get('num_classes', 4)
-        
-        # Determine samples
-        if 'samples' in state:
-            samples = state['samples']
-        else:
-            # Infer samples from checkpoint fc weight
-            sd = state['model_state_dict']
-            F2 = int(saved_cfg.get('F2', 64))
-            if 'fc.weight' in sd:
-                fc_in = sd['fc.weight'].shape[1]
-                samples = (fc_in // F2) * 32
-            else:
-                samples = 481
+        samples = state.get('samples', 656)
+        sd = state.get('model_state_dict', {})
+        if samples is None and 'fc.weight' in sd:
+            try:
+                fc_in = int(sd['fc.weight'].shape[1])
+                samples = (fc_in // int(saved_cfg.get('F2', 64) or 64)) * 32
+            except Exception:
+                samples = 656
+        if samples is None:
+            samples = 656
+        self.samples = samples
 
         self.model = EEGNet(
             num_classes=num_classes, channels=channels, samples=samples,
@@ -386,9 +384,13 @@ class EEGNet_Pipeline:
             self.model.load_state_dict(state['model_state_dict'])
         except Exception as e:
             try:
-                print("Warning: Could not load state_dict.", e)
-            except OSError:
-                pass
+                from engines_safe_print import safe_print
+            except Exception:
+                try:
+                    from src.engines_safe_print import safe_print
+                except Exception:
+                    safe_print = print
+            safe_print("Warning: Could not load state_dict.", e)
         
         self.mean = state.get('mean', None)
         self.std = state.get('std', None)
