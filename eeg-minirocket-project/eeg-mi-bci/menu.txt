@@ -1,0 +1,21 @@
+option_menu(
+        menu_title=None,
+        options=[
+            "🧠 Overview",
+            "🏗️ Model Architectures",
+            "💻 Live Training Console",
+            "🚀 Live Training",
+            "📊 Training Process",
+            "⚙️ Preprocessing",
+            "📈 Signal Analysis",
+            "🎯 Live Inference", 
+            "🔍 Accuracy Analysis", 
+            "📊 Global Analytics",
+            "📡 Technical Details"
+        ],
+        icons=["house", "building", "terminal", "lightning", "graph-up", "gear", "activity", "cpu", "bullseye", "globe", "gear"],
+        default_index=0,
+        styles={
+            "container": {"padding": "0!important", "background-color": "transparent"},
+            "icon": {"color": "#a855f7", "font-size": "20px"},
+            "nav-link": {"font-size": "15px", "text-align": "left", "margin":"5px 0", "--hover-color": "rgba(255,255,255,0.05)

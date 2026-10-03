@@ -549,7 +549,7 @@ with st.sidebar:
     st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Global Target Dataset</div>", unsafe_allow_html=True)
     selected_dataset_str = st.selectbox(
         "Dataset",
-        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"],
+        ["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"],
         index=0,
         label_visibility="collapsed"
     )

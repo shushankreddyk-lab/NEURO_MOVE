@@ -1,0 +1,37 @@
+{
+    "1": {
+        "Category": "Ocular Baseline",
+        "Runs": "R01, R02",
+        "Intent": "Continuous Windows",
+        "Desc": "Eyes Open vs. Eyes Closed",
+        "Trials": 0
+    },
+    "2": {
+        "Category": "LF / RF (Real Fists)",
+        "Runs": "R03, R07, R11",
+        "Intent": "T1, T2 (Rest T0 dropped)",
+        "Desc": "Left Fist Real (LF) vs. Right Fist Real (RF)",
+        "Trials": 5184
+    },
+    "3": {
+        "Category": "LF / RF (Imagined Fists)",
+        "Runs": "R04, R08, R12",
+        "Intent": "T1, T2 (Rest T0 dropped)",
+        "Desc": "Left Fist Imagined (LF) vs. Right Fist Imagined (RF)",
+        "Trials": 0
+    },
+    "4": {
+        "Category": "BFs / BF (Bilateral Real)",
+        "Runs": "R05, R09, R13",
+        "Intent": "T1, T2 (Rest T0 dropped)",
+        "Desc": "Both Fists Real (BFs) vs. Both Feet Real (BF)",
+        "Trials": 0
+    },
+    "5": {
+        "Category": "BFs / BF (Bilateral Imagined)",
+        "Runs": "R06, R10, R14",
+        "Intent": "T1, T2 (Rest T0 dropped)",
+        "Desc": "Both Fists Imagined (BFs) vs. Both Feet Imagined (BF)",
+        "Trials": 0
+    }
+}
