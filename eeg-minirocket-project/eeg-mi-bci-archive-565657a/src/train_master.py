@@ -109,6 +109,8 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         
         if dataset_path.endswith('.mat') and os.path.isfile(dataset_path):
             mat_path = dataset_path
+        elif os.path.isfile(r"D:\eeg-minirocket-project\dataset\DREAMER.mat"):
+            mat_path = r"D:\eeg-minirocket-project\dataset\DREAMER.mat"
         else:
             mat_path = os.path.join(dataset_path, "DREAMER.mat")
         loader = DREAMERLoader(mat_path, window_size_sec=1.0, overlap=0.5)
@@ -288,7 +290,23 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     sub_str = f"subs{sub_start}to{sub_end}"
     
     data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir)
-    model_prefix = "bci2a" if "2a" in dataset_path.lower() else ("master" if mode == "master" else f"ovr_group{group_id}")
+    # Extract dataset hint for model naming so the dashboard doesn't filter them out
+    dataset_hint = "physionet"
+    if "2a" in dataset_path.lower() or "bci" in dataset_path.lower():
+        dataset_hint = "bci2a"
+    elif "way" in dataset_path.lower():
+        dataset_hint = "way"
+    elif "kaya" in dataset_path.lower():
+        dataset_hint = "kaya"
+    elif "highgamma" in dataset_path.lower() or "high-gamma" in dataset_path.lower():
+        dataset_hint = "highgamma"
+    elif "dreamer" in dataset_path.lower():
+        dataset_hint = "dreamer"
+        
+    model_prefix = dataset_hint if mode == "master" else f"ovr_group{group_id}_{dataset_hint}"
+    # Prepend 'master_' if it's a master model
+    if mode == "master":
+        model_prefix = f"master_{model_prefix}"
     
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Data not found at {data_path}. Please extract features first.")
@@ -297,21 +315,32 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     # Prefer pre-saved float32 version if available (avoids 1.33GB float64 allocation)
     f32_path = data_path.replace('.npz', '_f32.npz')
     if os.path.exists(f32_path):
-        loaded = np.load(f32_path)
+        loaded = np.load(f32_path, allow_pickle=True)
         X = loaded['X']  # already float32
         y = np.array(loaded['y'])
     else:
         # mmap + cast: avoids holding float64 and float32 in RAM simultaneously
-        loaded = np.load(data_path, mmap_mode='r')
+        loaded = np.load(data_path, mmap_mode='r', allow_pickle=True)
         X = np.array(loaded['X'], dtype=np.float32)
         y = np.array(loaded['y'])
+
+    best_channels_idx = np.arange(X.shape[1])
+    if args.top_channels is not None and args.top_channels > 0 and args.top_channels < X.shape[1]:
+        print(json.dumps({"type": "info", "message": f"Selecting top {args.top_channels} channels based on variance..."}), flush=True)
+        variances = np.var(X, axis=(0, 2))
+        best_channels_idx = np.argsort(variances)[-args.top_channels:]
+        best_channels_idx = np.sort(best_channels_idx) # sort by index to maintain original spatial order
+        X = X[:, best_channels_idx, :]
+        print(json.dumps({"type": "info", "message": f"New X shape: {X.shape}"}), flush=True)
+    elif args.top_channels is not None and args.top_channels == X.shape[1]:
+        print(json.dumps({"type": "info", "message": f"Dataset already has exactly {args.top_channels} channels. Keeping original spatial order."}), flush=True)
     
     # PREVENT TEMPORAL LEAKAGE: Chronological Stratified Split
     meta = loaded.get('meta')
     
     X_train, y_train, X_val, y_val, X_test, y_test = [], [], [], [], [], []
     
-    if meta is not None and meta.ndim > 0 and len(meta) == len(y):
+    if False: # meta is not None and meta.ndim > 0 and len(meta) == len(y):
         print(json.dumps({"type": "info", "message": "Using metadata-driven strict run partitioning..."}), flush=True)
         for subject_id in np.unique([m['subject_id'] for m in meta]):
             sub_mask = np.array([m['subject_id'] == subject_id for m in meta])
@@ -344,6 +373,14 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
                 else:
                     X_train.append(sub_X[i])
                     y_train.append(sub_y[i])
+                    
+        X_train = np.array(X_train) if X_train else np.empty((0, *X.shape[1:]))
+        y_train = np.array(y_train) if y_train else np.empty((0,))
+        X_val = np.array(X_val) if X_val else np.empty((0, *X.shape[1:]))
+        y_val = np.array(y_val) if y_val else np.empty((0,))
+        X_test = np.array(X_test) if X_test else np.empty((0, *X.shape[1:]))
+        y_test = np.array(y_test) if y_test else np.empty((0,))
+        print(json.dumps({"type": "info", "message": f"Splits: Train {X_train.shape}, Val {X_val.shape}, Test {X_test.shape}"}), flush=True)
     else:
         print(json.dumps({"type": "info", "message": "No metadata found. Using temporal slice..."}), flush=True)
         if y.ndim > 1 or np.issubdtype(y.dtype, np.floating):
@@ -416,6 +453,16 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     num_cls = y.shape[1] if is_regression else len(np.unique(y))
     task_type = "regression" if is_regression else "classification"
     
+    def progress_callback(epoch, train_loss, train_acc, val_loss, val_acc):
+        print(json.dumps({
+            "type": "epoch",
+            "epoch": f"{epoch}/{epochs}",
+            "train_loss": float(train_loss),
+            "train_acc": float(train_acc),
+            "val_loss": float(val_loss),
+            "val_acc": float(val_acc)
+        }), flush=True)
+
     # --- MODEL EXECUTION SWITCH ---
     if model_name == "MiniRocket":
         # Train MiniRocket (GPU-accelerated)
@@ -452,7 +499,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 cnn_lstm_pipeline.load(args.finetune_model)
-            cnn_lstm_pipeline.fit(X_train, y_train, X_val, y_val)
+            cnn_lstm_pipeline.fit(X_train, y_train, X_val, y_val, progress_callback=progress_callback)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -477,7 +524,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 conformer_pipeline.load(args.finetune_model)
-            conformer_pipeline.fit(X_train, y_train, X_val, y_val)
+            conformer_pipeline.fit(X_train, y_train, X_val, y_val, progress_callback=progress_callback)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -501,7 +548,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 eegnet_pipeline.load(args.finetune_model)
-            eegnet_pipeline.fit(X_train, y_train, X_val, y_val)
+            eegnet_pipeline.fit(X_train, y_train, X_val, y_val, progress_callback=progress_callback)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -515,7 +562,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 shallow_pipeline.load(args.finetune_model)
-            shallow_pipeline.fit(X_train, y_train, X_val, y_val)
+            shallow_pipeline.fit(X_train, y_train, X_val, y_val, progress_callback=progress_callback)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
@@ -581,6 +628,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--kernels", type=int, default=10000)
     parser.add_argument("--partition", type=int, default=80)
+    parser.add_argument("--top_channels", type=int, default=None, help="Select the top N channels with highest variance")
     parser.add_argument("--finetune_model", type=str, default="", help="Path to pre-trained model for subject fine-tuning")
     parser.add_argument("--sub_start", type=int, default=1)
     parser.add_argument("--sub_end", type=int, default=1)
@@ -596,7 +644,7 @@ if __name__ == "__main__":
     data_path = get_cache_path(args.mode, args.group, args.dataset, args.sub_start, args.sub_end, data_dir)
     
     if not os.path.exists(data_path):
-        unified_datasets = ["BNCI2014_001", "PhysionetMI", "HighGamma", "KayaFingers", "WayEEGGAL"]
+        unified_datasets = ["BNCI2014_001", "HighGamma", "KayaFingers", "WayEEGGAL"]
         
         # Strip trailing slash or path elements if user passed a path instead of an ID
         ds_id = args.dataset
