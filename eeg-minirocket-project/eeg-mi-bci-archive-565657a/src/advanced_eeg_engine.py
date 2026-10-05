@@ -80,9 +80,10 @@ class EEG_Conformer(nn.Module):
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=tf_layers)
         
         # 6. Classification Head
+        self.adaptive_pool = nn.AdaptiveAvgPool1d(1)
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(d_model * out_len, 512),
+            nn.Linear(d_model, 512),
             nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Dropout(drop_prob),
@@ -118,6 +119,10 @@ class EEG_Conformer(nn.Module):
         
         x = self.pos_encoder(x)
         x = self.transformer(x)
+        
+        # Adaptive pooling over time dimension
+        x = x.permute(0, 2, 1) # (batch, d_model, seq_len)
+        x = self.adaptive_pool(x) # (batch, d_model, 1)
         
         logits = self.fc(x)
         return logits
@@ -159,7 +164,7 @@ class AdvancedEEGPipeline:
         self.feat_mean = None
         self.feat_std = None
 
-    def fit(self, X, y, X_val=None, y_val=None):
+    def fit(self, X, y, X_val=None, y_val=None, progress_callback=None, incremental=False):
         start_time = time.time()
         
         self.classes_ = np.unique(y) if self.task_type == "classification" else np.arange(y.shape[1] if y.ndim > 1 else 1)
@@ -205,9 +210,8 @@ class AdvancedEEGPipeline:
         
         # Loss
         if self.task_type == "classification":
-            class_counts = np.bincount(yi.numpy())
-            total = len(yi)
-            class_weights = total / (len(self.classes_) * class_counts)
+            from sklearn.utils.class_weight import compute_class_weight
+            class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(yi.numpy()), y=yi.numpy())
             class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
             crit = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
         else:
@@ -268,15 +272,17 @@ class AdvancedEEGPipeline:
                 val_acc = correct / total_val if self.task_type == "classification" else correct / total_val
                 avg_val_loss = val_loss_sum / total_val if total_val > 0 else 0.0
                 avg_train_loss = total_loss / len(dl)
-                print(json.dumps({
-                    "type": "epoch", 
-                    "epoch": epoch + 1, 
-                    "total_epochs": self.epochs,
-                    "train_loss": avg_train_loss, 
-                    "val_loss": avg_val_loss,
-                    "train_acc": train_acc, 
-                    "val_acc": val_acc
-                }), flush=True)
+                if progress_callback:
+                    progress_callback(epoch + 1, avg_train_loss, train_acc, avg_val_loss, val_acc)
+                else:
+                    print(json.dumps({
+                        "type": "epoch",
+                        "epoch": f"{epoch + 1}/{self.epochs}",
+                        "train_loss": avg_train_loss,
+                        "val_loss": avg_val_loss,
+                        "train_acc": train_acc,
+                        "val_acc": val_acc
+                    }), flush=True)
             
         self.training_time = time.time() - start_time
         try:

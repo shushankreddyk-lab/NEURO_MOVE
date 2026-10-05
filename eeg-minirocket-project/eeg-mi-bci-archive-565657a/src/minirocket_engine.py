@@ -149,8 +149,6 @@ class MiniRocketPipeline:
         self.feat_mean = X_transformed.mean(dim=0, keepdim=True)
         self.feat_std = X_transformed.std(dim=0, keepdim=True) + 1e-8
         
-        Zn = (X_transformed - self.feat_mean) / self.feat_std
-        
         # 3) Train GPU MLP Head
         try:
             print("[MiniRocketPipeline] Training GPU MLP Head...")
@@ -161,12 +159,30 @@ class MiniRocketPipeline:
         
         self.gpu_head = GPUMiniRocketHead(self.num_kernels, n_cls, self.hidden, self.dropout).to(self.device)
         
-        ds = torch.utils.data.TensorDataset(Zn, yi)
+        class NormalizingDataset(torch.utils.data.Dataset):
+            def __init__(self, X, y, mean, std):
+                self.X = X
+                self.y = y
+                self.mean = mean.squeeze(0)
+                self.std = std.squeeze(0)
+            def __len__(self):
+                return len(self.X)
+            def __getitem__(self, idx):
+                # Normalize on the fly to save RAM
+                return (self.X[idx] - self.mean) / self.std, self.y[idx]
+                
+        ds = NormalizingDataset(X_transformed, yi, self.feat_mean, self.feat_std)
         dl = torch.utils.data.DataLoader(ds, batch_size=min(self.batch_size, len(ds)), shuffle=True)
         
         opt = torch.optim.AdamW(self.gpu_head.parameters(), lr=self.head_lr, weight_decay=5e-3)
         sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, self.head_epochs), eta_min=1e-6)
-        crit = nn.CrossEntropyLoss(label_smoothing=0.01)
+        
+        # Add class weighting to fix mode collapse (all classes predicting a single class)
+        from sklearn.utils.class_weight import compute_class_weight
+        class_w = compute_class_weight(class_weight='balanced', classes=np.unique(y), y=y)
+        class_w_tensor = torch.tensor(class_w, dtype=torch.float32).to(self.device)
+        
+        crit = nn.CrossEntropyLoss(weight=class_w_tensor, label_smoothing=0.01)
         
         amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda") if amp else None

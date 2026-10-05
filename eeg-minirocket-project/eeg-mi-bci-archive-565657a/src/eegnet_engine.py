@@ -50,10 +50,9 @@ class EEGNet(nn.Module):
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
         # Classifier
-        # Output shape after pool2: (F2, 1, samples // 32)
-        out_samples = samples // 32
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(self.F2 * out_samples, num_classes)
+        self.fc = nn.Linear(self.F2, num_classes)
 
     def forward(self, x):
         # x is (Batch, 1, Channels, Samples)
@@ -85,6 +84,8 @@ class EEGNet(nn.Module):
         x = x.permute(0, 2, 1)   # (batch, F2, time)
         x = x.unsqueeze(2)       # (batch, F2, 1, time)
 
+        x = self.adaptive_pool(x)
+
         # Classifier
         x = self.flatten(x)
         x = self.fc(x)
@@ -110,7 +111,7 @@ class EEGNet_Pipeline:
             self.criterion = nn.MSELoss()
         else:
             self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.0)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
         
         self.training_time = 0.0
@@ -246,6 +247,9 @@ class EEGNet_Pipeline:
                     v_loss = self.criterion(val_outputs, val_y_t)
                     val_loss = v_loss.item()
                     _, v_pred = torch.max(val_outputs.data, 1)
+                    if epoch == self.epochs - 1:
+                        print(f"EEGNet Val Preds: {v_pred.tolist()}")
+                        print(f"EEGNet Val Truth: {val_y_t.tolist()}")
                     val_acc = (v_pred == val_y_t).sum().item() / val_y_t.size(0)
                     
             self.history["loss"].append(train_loss)

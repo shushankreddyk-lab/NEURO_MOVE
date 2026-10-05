@@ -52,17 +52,22 @@ def load_local_eeg_data(subject_id, runs, data_dir=r'd:\eeg-minirocket-project\p
     - events_list: list of event arrays
     - event_id_mappings: list of dicts mapping integer event IDs to string labels
     """
-    subject_str = f"S{subject_id:03d}"
-    subject_dir = os.path.join(data_dir, subject_str)
+    from mne.datasets import eegbci
     
     raws = []
     events_list = []
     event_id_mappings = []
     
-    for r in runs:
-        run_str = f"R{r:02d}"
-        edf_file = os.path.join(subject_dir, f"{subject_str}{run_str}.edf")
-        if not os.path.exists(edf_file):
+    try:
+        # Fetch file paths using mne datasets (caches automatically)
+        edf_files = eegbci.load_data(subject_id, runs)
+    except Exception as e:
+        print(f"Failed to fetch data via MNE for subject {subject_id}: {e}")
+        edf_files = [None] * len(runs)
+        
+    for i, r in enumerate(runs):
+        edf_file = edf_files[i] if i < len(edf_files) else None
+        if edf_file is None or not os.path.exists(edf_file):
             print(f"File not found: {edf_file}")
             raws.append(None)
             events_list.append(None)

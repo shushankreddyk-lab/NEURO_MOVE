@@ -33,22 +33,8 @@ class ShallowConvNet(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(d_model=60, nhead=4, dim_feedforward=120, batch_first=True, dropout=drop_prob)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
         
-        # calculate dummy shape for fc
-        dummy = torch.randn(1, 1, channels, samples)
-        dummy = self.conv_time(dummy)
-        dummy = self.conv_spat(dummy)
-        dummy = self.batchnorm1(dummy)
-        dummy = dummy ** 2
-        dummy = self.pool(dummy)
-        dummy = torch.log(torch.clamp(dummy, min=1e-6))
-        dummy = self.dropout(dummy)
-        
-        dummy = dummy.squeeze(2).permute(0, 2, 1)
-        dummy = self.transformer(dummy)
-        dummy = dummy.permute(0, 2, 1).unsqueeze(2)
-        
-        out_dim = dummy.reshape(-1).shape[0]
-        self.fc = nn.Linear(out_dim, num_classes)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(60, num_classes)
 
     def forward(self, x):
         if x.dim() == 3:
@@ -72,6 +58,8 @@ class ShallowConvNet(nn.Module):
         x = self.transformer(x)             # Self-Attention
         x = x.permute(0, 2, 1).unsqueeze(2) # (batch, 60, 1, time)
         
+        x = self.adaptive_pool(x)
+        
         x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         return x
@@ -91,9 +79,10 @@ class ConvNet_Pipeline:
         self.samples = samples
         self.model = ShallowConvNet(channels=channels, samples=samples, num_classes=num_classes).to(self.device)
             
-        self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        self.criterion = None # Configured in fit()
         self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.01)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs), eta_min=1e-6)
+        self.label_smoothing = label_smoothing
         
         self.training_time = 0.0
         self.mean = None
@@ -170,6 +159,11 @@ class ConvNet_Pipeline:
             X_val = (X_val - self.mean) / self.std
             val_X_t = torch.tensor(X_val, dtype=torch.float32).to(self.device)
             val_y_t = torch.tensor(y_val, dtype=torch.long).to(self.device)
+
+        from sklearn.utils.class_weight import compute_class_weight
+        class_w = compute_class_weight(class_weight='balanced', classes=np.unique(y), y=y)
+        class_w_tensor = torch.tensor(class_w, dtype=torch.float32).to(self.device)
+        self.criterion = nn.CrossEntropyLoss(weight=class_w_tensor, label_smoothing=self.label_smoothing)
 
         start_time = time.time()
         

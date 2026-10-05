@@ -37,8 +37,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         X, y = X[mask], y[mask]
         
         # Simple split (first 70% train, last 30% test)
-        split_idx = int(len(X) * 0.7)
-        return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+        return X_train, y_train, X_test, y_test
         
     # -----------------------------------------------------------------
     # 2. PhysioNet MI (Up, Down, Left, Right - Fists/Feet)
@@ -53,8 +54,13 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         mask = (y != 'rest')
         X, y = X[mask], y[mask]
         
-        split_idx = int(len(X) * 0.7)
-        return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
+        # Map labels to 0=Left Fist, 1=Right Fist, 2=Both Fists, 3=Both Feet
+        mapping = {'left_hand': 0, 'right_hand': 1, 'hands': 2, 'feet': 3}
+        y = np.array([mapping.get(val, val) for val in y])
+        
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+        return X_train, y_train, X_test, y_test
 
     # -----------------------------------------------------------------
     # 3. High-Gamma / Schirrmeister 2017 (Spread Fingers vs Fist)
@@ -68,8 +74,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         mask = (y != 'rest')
         X, y = X[mask], y[mask]
         
-        split_idx = int(len(X) * 0.7)
-        return X[:split_idx], y[:split_idx], X[split_idx:], y[split_idx:]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+        return X_train, y_train, X_test, y_test
         
     # -----------------------------------------------------------------
     # 4. Kaya Finger Movements (Thumb, Index, Middle, etc.)
@@ -116,8 +123,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         kaya_labels = np.array(["thumb", "index", "middle", "ring"])
         y_all = kaya_labels[y_all]
         
-        split_idx = int(len(X_all) * 0.7)
-        return X_all[:split_idx], y_all[:split_idx], X_all[split_idx:], y_all[split_idx:]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.3, stratify=y_all, random_state=42)
+        return X_train, y_train, X_test, y_test
         
     # -----------------------------------------------------------------
     # 5. WAY-EEG-GAL (Grasp and Lift)
@@ -175,8 +183,9 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         way_labels = np.array(["hand_start", "first_digit_touch", "both_start_load", "lift_off"])
         y_all = way_labels[y_all]
         
-        split_idx = int(len(X_all) * 0.7)
-        return X_all[:split_idx], y_all[:split_idx], X_all[split_idx:], y_all[split_idx:]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.3, stratify=y_all, random_state=42)
+        return X_train, y_train, X_test, y_test
 
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")

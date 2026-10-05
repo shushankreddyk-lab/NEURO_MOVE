@@ -71,57 +71,51 @@ class PositionalEncoding(nn.Module):
 
 class CNN_LSTM_Network(nn.Module):
     def __init__(self, num_classes=4, channels=20, samples=656,
-                 cnn_width=128, lstm_hidden=128, tf_layers=2, tf_heads=4, p_drop=0.25):
+                 cnn_width=64, lstm_hidden=64, tf_layers=2, tf_heads=4, p_drop=0.1):
         super().__init__()
         self.num_classes = num_classes
         self.in_channels = channels
+        
+        # Simplified lightweight CNN stem for easy overfitting
         self.stem = nn.Sequential(
-            MultiScaleConvBlock(channels, 64, 0.10),
+            nn.Conv1d(channels, 32, kernel_size=7, padding=3),
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
             nn.MaxPool1d(2),
-            MultiScaleConvBlock(64, 128, 0.15, 0.05),
+            
+            nn.Conv1d(32, cnn_width, kernel_size=5, padding=2),
+            nn.BatchNorm1d(cnn_width),
+            nn.ReLU(),
             nn.MaxPool1d(2),
-            MultiScaleConvBlock(128, cnn_width, 0.20, 0.10),
-            nn.MaxPool1d(2))
-        self.conv1 = self.stem[0].b1[0]
-        self.bn1 = nn.BatchNorm1d(64)
-        self.relu1 = nn.SiLU()
-        self.pool1 = nn.MaxPool1d(2)
-        self.conv2 = self.stem[2].b1[0]
-        self.bn2 = nn.BatchNorm1d(128)
-        self.relu2 = nn.SiLU()
-        self.pool2 = nn.MaxPool1d(2)
+        )
+        
         self.lstm = nn.LSTM(input_size=cnn_width, hidden_size=lstm_hidden,
-                            num_layers=2, batch_first=True, bidirectional=True, dropout=p_drop)
+                            num_layers=1, batch_first=True, bidirectional=True, dropout=0.0)
+                            
         d = lstm_hidden * 2
-        self.pos = PositionalEncoding(d)
-        lyr = nn.TransformerEncoderLayer(d_model=d, nhead=tf_heads, dim_feedforward=d * 4,
-                                         dropout=p_drop, batch_first=True, activation="gelu")
-        self.transformer = nn.TransformerEncoder(lyr, num_layers=tf_layers)
-        self.norm = nn.LayerNorm(d)
-        self.attn = nn.Sequential(nn.Linear(d, d // 2), nn.Tanh(), nn.Linear(d // 2, 1))
-        self.fc1 = nn.Linear(d, 128)
-        self.relu3 = nn.SiLU()
         self.dropout = nn.Dropout(p_drop)
-        self.fc2 = nn.Linear(128, 64)
-        self.relu4 = nn.SiLU()
+        self.fc1 = nn.Linear(d, 64)
+        self.relu = nn.ReLU()
         self.fc3 = nn.Linear(64, num_classes)
+        
+        # Keep aliases for older save compatibility (save/load mapping)
+        self.conv1 = self.stem[0]
+
     def forward(self, x):
         if x.dim() == 4:
             x = x.squeeze(1)
         x = self.stem(x)
-        x = x.permute(0, 2, 1)
-        x, _ = self.lstm(x)
-        x = self.norm(self.transformer(self.pos(x)))
-        w = torch.softmax(self.attn(x), dim=1)
-        x = (x * w).sum(dim=1)
-        x = self.dropout(self.relu3(self.fc1(x)))
-        x = self.relu4(self.fc2(x))
+        x = x.permute(0, 2, 1)  # (B, T, C)
+        x, _ = self.lstm(x)     # (B, T, D)
+        # Global average pooling over time
+        x = x.mean(dim=1)
+        x = self.dropout(self.relu(self.fc1(x)))
         return self.fc3(x)
 
 class CNN_LSTM_Pipeline:
     def __init__(self, epochs=100, batch_size=64, lr=3e-3, channels=10, samples=656, num_classes=4,
-                 device="auto", amp=True, patience=12,
-                 cnn_width=128, lstm_hidden=128, tf_layers=2, tf_heads=4,
+                 device="auto", amp=True, patience=50,
+                 cnn_width=64, lstm_hidden=64, tf_layers=2, tf_heads=4,
                  dropout=0.25, label_smoothing=0.05, task_type="classification"):
         self.epochs = epochs
         self.batch_size = batch_size
@@ -133,9 +127,9 @@ class CNN_LSTM_Pipeline:
         self.model = CNN_LSTM_Network(
             num_classes=num_classes, channels=channels, cnn_width=cnn_width,
             lstm_hidden=lstm_hidden, tf_layers=tf_layers, tf_heads=tf_heads,
-            p_drop=dropout).to(self.device)
-        self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-2)
+            p_drop=0.1).to(self.device)
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.0)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=max(1, epochs))
         # NOTE: raw LR 3e-3 is for normalized data; effective LR is warmed up in fit()
         self.training_time = 0.0
@@ -197,7 +191,7 @@ class CNN_LSTM_Pipeline:
             for c in range(len(class_counts)):
                 if class_counts[c] > 0:
                     class_weights[c] = total_samples / (len(class_counts) * class_counts[c])
-            self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device), label_smoothing=0.1)
+            self.criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(self.device), label_smoothing=0.0)
         else:
             # Regression task
             self.label_classes_ = np.arange(n_out) # Dummy for dashboard compatibility
@@ -391,14 +385,9 @@ class CNN_LSTM_Pipeline:
             'sfreq': getattr(self, 'sfreq', 160.0),
             'num_classes': self.model.fc3.out_features,
             'task_type': getattr(self, 'task_type', 'classification'),
-            'arch': 'multiscale-bilstm-transformer',
             'model_cfg': {
-                'cnn_width': self.model.stem[4].short.out_channels
-                    if hasattr(self.model.stem[4], 'short') and hasattr(self.model.stem[4].short, 'out_channels')
-                    else 128,
+                'cnn_width': self.model.lstm.input_size,
                 'lstm_hidden': self.model.lstm.hidden_size,
-                'tf_layers': len(self.model.transformer.layers),
-                'tf_heads': self.model.transformer.layers[0].self_attn.num_heads,
             },
         }
         torch.save(state, filepath)
@@ -425,16 +414,12 @@ class CNN_LSTM_Pipeline:
         # Dynamically reconstruct model with correct shape + saved hyper-params
         self.model = CNN_LSTM_Network(
             num_classes=num_classes, channels=channels,
-            cnn_width=int(saved_cfg.get('cnn_width', 128)),
-            lstm_hidden=int(saved_cfg.get('lstm_hidden', 128)),
-            tf_layers=int(saved_cfg.get('tf_layers', 2)),
-            tf_heads=int(saved_cfg.get('tf_heads', 4)),
+            cnn_width=int(saved_cfg.get('cnn_width', 64)),
+            lstm_hidden=int(saved_cfg.get('lstm_hidden', 64)),
         ).to(self.device)
 
         try:
             self.model.load_state_dict(state['model_state_dict'])
-            if saved_arch not in ('multiscale-bilstm-transformer',):
-                print(f"Note: loaded '{saved_arch}' checkpoint into current arch; outputs may be off. Please retrain.")
         except Exception as e:
             print("Warning: Could not load state_dict, likely due to architecture change. Please retrain.", e)
         
