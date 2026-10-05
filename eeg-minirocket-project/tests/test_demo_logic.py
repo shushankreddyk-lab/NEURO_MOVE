@@ -1,41 +1,61 @@
-import sys
 import os
+import sys
+import time
+import unittest
+import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "eeg-mi-bci")))
 
 from src.minirocket_engine import MiniRocketPipeline
 from src.cnn_lstm_engine import CNN_LSTM_Pipeline
-from src.dataset_loader_all import load_dataset
+from src.advanced_eeg_engine import AdvancedEEGPipeline
+from src.eegnet_engine import EEGNet_Pipeline
+from src.convnets_engine import ConvNet_Pipeline
 from src.preprocessing import apply_bandpass_filter, apply_car
-import numpy as np
-import time
 
-try:
-    X_raw, y, ch_names = generate_synthetic_eeg(n_epochs=2, n_channels=64, n_times=576, sfreq=128.0)
-    X_proc, y = preprocess_eeg_dataset(X_raw, y, sfreq=128.0)
-    
-    mr = MiniRocketPipeline(num_kernels=200, random_state=42)
-    mr.fit(X_proc, y)
-    
-    cnn = CNNLSTMPipeline(in_channels=64, n_classes=4, arch_type="primary", device="cpu")
-    cnn.fit(X_proc, y, epochs=1, batch_size=2, verbose=False)
+class DemoLogicTest(unittest.TestCase):
+    def test_pipelines_predict(self):
+        rng = np.random.default_rng(42)
+        trials, channels, samples = (12, 16, 256)
+        X = rng.standard_normal((trials, channels, samples)).astype(np.float32)
+        y = rng.integers(0, 4, size=(trials,))
+        mr_pipeline = MiniRocketPipeline(num_kernels=200, in_channels=channels, seq_len=samples, head_epochs=2)
+        mr_pipeline.sfreq = 128.0
+        mr_pipeline.channel_names = ["EEG_" + str(i) for i in range(channels)]
+        mr_pipeline.fit(X, y)
+        mr_predictions = mr_pipeline.predict(X)
+        mr_probabilities = mr_pipeline.predict_proba(X)
+        self.assertEqual(len(mr_predictions), trials)
+        self.assertEqual(mr_probabilities.shape, (trials, 4))
+        cnn_pipeline = CNN_LSTM_Pipeline(channels=channels, samples=samples, num_classes=4, epochs=1, batch_size=4)
+        cnn_pipeline.fit(X, y)
+        cnn_predictions = cnn_pipeline.predict(X)
+        cnn_probabilities = cnn_pipeline.predict_proba(X)
+        self.assertEqual(len(cnn_predictions), trials)
+        self.assertEqual(cnn_probabilities.shape, (trials, 4))
+        
+        # Test Advanced EEGPipeline
+        adv_pipeline = AdvancedEEGPipeline(channels=channels, samples=samples, num_classes=4, epochs=1, batch_size=4)
+        adv_pipeline.fit(X, y)
+        adv_predictions = adv_pipeline.predict(X)
+        adv_probabilities = adv_pipeline.predict_proba(X)
+        self.assertEqual(len(adv_predictions), trials)
+        self.assertEqual(adv_probabilities.shape, (trials, 4))
+        
+        # Test EEGNet Pipeline
+        eegnet_pipeline = EEGNet_Pipeline(channels=channels, samples=samples, num_classes=4, epochs=1, batch_size=4)
+        eegnet_pipeline.fit(X, y)
+        eegnet_predictions = eegnet_pipeline.predict(X)
+        eegnet_probabilities = eegnet_pipeline.predict_proba(X)
+        self.assertEqual(len(eegnet_predictions), trials)
+        self.assertEqual(eegnet_probabilities.shape, (trials, 4))
+        
+        # Test ShallowConvNet Pipeline
+        convnet_pipeline = ConvNet_Pipeline(arch="shallow", channels=channels, samples=samples, num_classes=4, epochs=1, batch_size=4)
+        convnet_pipeline.fit(X, y)
+        convnet_predictions = convnet_pipeline.predict(X)
+        convnet_probabilities = convnet_pipeline.predict_proba(X)
+        self.assertEqual(len(convnet_predictions), trials)
+        self.assertEqual(convnet_probabilities.shape, (trials, 4))
 
-    print("Models fitted. Testing inference logic from app.py...")
-
-    single_trial = X_proc[0:1]
-    
-    t0 = time.perf_counter()
-    mr_pred = mr.predict(single_trial)[0]
-    mr_probs = mr.predict_proba(single_trial)[0]
-    
-    print(f"MR Pred: {mr_pred}, type: {type(mr_pred)}")
-    print(f"MR Probs: {mr_probs}, shape: {mr_probs.shape}")
-
-    cnn_pred = cnn.predict(single_trial)[0]
-    cnn_probs = cnn.predict_proba(single_trial)[0]
-
-    print(f"CNN Pred: {cnn_pred}, type: {type(cnn_pred)}")
-    print(f"CNN Probs: {cnn_probs}, shape: {cnn_probs.shape}")
-    print("Success!")
-except Exception as e:
-    import traceback
-    traceback.print_exc()
+if __name__ == '__main__':
+    unittest.main()
