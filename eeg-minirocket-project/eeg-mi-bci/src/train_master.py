@@ -33,6 +33,8 @@ def get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir):
         dataset_name = "bci2a"
     elif "physionet" in dataset_path.lower():
         dataset_name = "physionetmi"
+    elif "nemar" in dataset_path.lower():
+        dataset_name = "nemar"
     
     # Include dataset identity and preprocessing settings (e.g. v3)
     config_str = f"{mode}_{group_id}_{sub_str}_{dataset_name}_v3"
