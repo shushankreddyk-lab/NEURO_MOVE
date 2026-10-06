@@ -549,7 +549,7 @@ with st.sidebar:
     st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Global Target Dataset</div>", unsafe_allow_html=True)
     selected_dataset_str = st.selectbox(
         "Dataset",
-        ["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"],
+        ["PhysioNet Motor Imagery", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion", "NEMAR Finger MI"],
         index=0,
         label_visibility="collapsed"
     )
@@ -671,6 +671,8 @@ if selected_tab == '🧠 Overview':
             ds_sampling = "1000 Hz"
         elif "WAY" in selected_dataset_str:
             ds_name = "WAY-EEG-GAL"
+        elif "NEMAR" in selected_dataset_str:
+            ds_name = "NEMAR Finger MI"
             ds_classes = "Grasp/Lift events"
             ds_channels = "32 channels"
             ds_sampling = "500 Hz"
@@ -761,9 +763,13 @@ if selected_tab == '🧠 Overview':
         c_icons = ["👍", "👆", "🖕", "🖖"]
         c_names = ["Thumb", "Index", "Middle", "Ring/Pinky"]
     elif "WAY" in selected_dataset_str:
-        num_c = 6
-        c_icons = ["🚀", "👆", "👐", "🛫", "🛬", "🙌"]
-        c_names = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
+        num_c = 2
+        c_icons = ["✊", "🖐️"]
+        c_names = ["Grasp", "Lift"]
+    elif "NEMAR" in selected_dataset_str:
+        num_c = 5
+        c_icons = ["👍", "👆", "🖕", "🖖", "🖐️"]
+        c_names = ["Thumb", "Index", "Middle", "Ring", "Little"]
     elif "DREAMER" in selected_dataset_str:
         num_c = 3
         c_icons = ["😄", "⚡", "👑"]
@@ -943,6 +949,9 @@ if selected_tab == '💻 Live Training Console':
         elif "WAY" in selected_dataset_str:
             default_path = st.session_state.get('way_data_dir', r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection")
             folder_hint = "Enter root path to WAY-EEG-GAL folder:"
+        elif "NEMAR" in selected_dataset_str:
+            default_path = st.session_state.get('nemar_data_dir', r"D:\eeg-minirocket-project\dataset\NEMAR_on008446")
+            folder_hint = "Enter root path to NEMAR folder:"
         elif "DREAMER" in selected_dataset_str:
             default_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\dataset")
             folder_hint = "Enter root path to DREAMER folder (.mat):"
@@ -965,6 +974,7 @@ if selected_tab == '💻 Live Training Console':
             elif "High-Gamma" in selected_dataset_str: dataset_type = "high-gamma"
             elif "Kaya" in selected_dataset_str: dataset_type = "kaya"
             elif "WAY" in selected_dataset_str: dataset_type = "way"
+            elif "NEMAR" in selected_dataset_str: dataset_type = "nemar"
             elif "DREAMER" in selected_dataset_str: dataset_type = "dreamer"
             else: dataset_type = "physionet"
             generate_dataset_toc(dataset_path, dataset_type=dataset_type)
@@ -1132,6 +1142,9 @@ if selected_tab == '🚀 Live Training':
     elif "WAY" in selected_dataset_str:
         dataset_path = "WayEEGGAL"
         st.info("Using WAY-EEG-GAL Dataset. Architecture adapts to 32 Channels automatically.")
+    elif "NEMAR" in selected_dataset_str:
+        dataset_path = "NEMAR"
+        st.info("Using NEMAR Dataset. Architecture adapts to 65 Channels automatically.")
     elif "DREAMER" in selected_dataset_str:
         dataset_path = "DREAMER"
         st.info("Using DREAMER Dataset. Architecture adapts to 14 Channels automatically.")
@@ -1167,6 +1180,7 @@ if selected_tab == '🚀 Live Training':
         elif "High-Gamma" in selected_dataset_str: max_subs = 14
         elif "Kaya" in selected_dataset_str: max_subs = 10
         elif "WAY" in selected_dataset_str: max_subs = 12
+        elif "NEMAR" in selected_dataset_str: max_subs = 1
         elif "DREAMER" in selected_dataset_str: max_subs = 23
         else: max_subs = 10
         
@@ -1223,13 +1237,18 @@ if selected_tab == '🚀 Live Training':
         ]
     elif "WAY" in selected_dataset_str:
         training_modes = [
-            '🎯 6-Class Master Model (Recommended)',
-            'OVR: HandStart (Group 0)',
-            'OVR: FirstDigitTouch (Group 1)',
-            'OVR: BothStartLoadPhase (Group 2)',
-            'OVR: LiftOff (Group 3)',
-            'OVR: Replace (Group 4)',
-            'OVR: BothReleased (Group 5)'
+            '🎯 2-Class Master Model (Recommended)',
+            'OVR: Grasp (Group 0)',
+            'OVR: Lift (Group 1)'
+        ]
+    elif "NEMAR" in selected_dataset_str:
+        training_modes = [
+            '🎯 5-Class Master Model (Recommended)',
+            'OVR: Thumb (Group 0)',
+            'OVR: Index (Group 1)',
+            'OVR: Middle (Group 2)',
+            'OVR: Ring (Group 3)',
+            'OVR: Little (Group 4)'
         ]
     else:
         training_modes = [
@@ -2075,13 +2094,13 @@ if selected_tab == '🎯 Live Inference':
     st.markdown('### 1. Select Pre-Trained Models for Inference Comparison')
     import glob
     model_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
-    models = glob.glob(os.path.join(model_dir, '*.pkl')) + glob.glob(os.path.join(model_dir, '*.pth'))
+    models = glob.glob(os.path.join(model_dir, '**', '*.pkl'), recursive=True) + glob.glob(os.path.join(model_dir, '**', '*.pth'), recursive=True)
     
     model_options = [os.path.relpath(p, model_dir) for p in models]
     
     # Filter models strictly based on the global target dataset
     if "PhysioNet" in selected_dataset_str:
-        model_options = [m for m in model_options if 'master_' in m.lower() or 'physionet' in m.lower()]
+        model_options = [m for m in model_options if 'physionet' in m.lower()]
     elif "BCI" in selected_dataset_str:
         model_options = [m for m in model_options if 'bci2a' in m.lower() or 'bci' in m.lower()]
     elif "High-Gamma" in selected_dataset_str:
@@ -2090,6 +2109,8 @@ if selected_tab == '🎯 Live Inference':
         model_options = [m for m in model_options if 'kaya' in m.lower()]
     elif "WAY" in selected_dataset_str:
         model_options = [m for m in model_options if 'way' in m.lower()]
+    elif "NEMAR" in selected_dataset_str:
+        model_options = [m for m in model_options if 'nemar' in m.lower()]
     elif "DREAMER" in selected_dataset_str:
         model_options = [m for m in model_options if 'dreamer' in m.lower()]
     conformer_models = [m for m in model_options if 'conformer' in m.lower()]
@@ -2201,7 +2222,9 @@ if selected_tab == '🎯 Live Inference':
     elif "High-Gamma" in selected_dataset_str:
         target_options = ['Right Hand', 'Left Hand', 'Both Feet']
     elif "WAY" in selected_dataset_str:
-        target_options = ['HandStart', 'FirstDigitTouch', 'BothStartLoadPhase', 'LiftOff', 'Replace', 'BothReleased']
+        target_options = ['Grasp', 'Lift']
+    elif "NEMAR" in selected_dataset_str:
+        target_options = ['Thumb', 'Index', 'Middle', 'Ring', 'Little']
     elif "DREAMER" in selected_dataset_str:
         target_options = ['Valence', 'Arousal', 'Dominance']
     else:

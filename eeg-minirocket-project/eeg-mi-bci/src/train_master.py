@@ -28,7 +28,7 @@ def get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir):
     import os
     sub_str = f"subs{sub_start}to{sub_end}"
     
-    dataset_name = dataset_path.lower().replace(" ", "_").replace("\\", "_").replace("/", "_")
+    dataset_name = dataset_path.lower().replace(" ", "_").replace("\\", "_").replace("/", "_").replace(":", "")
     if "2a" in dataset_path.lower():
         dataset_name = "bci2a"
     elif "physionet" in dataset_path.lower():
@@ -149,6 +149,24 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         X_all, y_all = load_way_data(dataset_path, subject_range, resample_freq=160.0)
         
         if len(X_all) == 0:
+            return None, None
+            
+        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
+        np.savez_compressed(data_path, X=X_all, y=y_all)
+        return X_all.shape, y_all.shape
+
+    elif "nemar" in dataset_path.lower():
+        msg = f"Extracting NEMAR Finger MI data for subjects {sub_start} to {sub_end}..."
+        print(json.dumps({"type": "progress", "message": msg}), flush=True)
+        
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+        from load_nemar_fingers import load_nemar_finger_data
+        
+        # Load subject based on sub_start
+        subject_id = f"sub-{sub_start:02d}"
+        X_all, y_all = load_nemar_finger_data(dataset_path, subject=subject_id)
+        
+        if X_all is None or len(X_all) == 0:
             return None, None
             
         data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
@@ -288,7 +306,15 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     sub_str = f"subs{sub_start}to{sub_end}"
     
     data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir)
-    model_prefix = "bci2a" if "2a" in dataset_path.lower() else ("master" if mode == "master" else f"ovr_group{group_id}")
+    if "nemar" in dataset_path.lower(): prefix = "nemar"
+    elif "high-gamma" in dataset_path.lower() or "highgamma" in dataset_path.lower(): prefix = "highgamma"
+    elif "kaya" in dataset_path.lower(): prefix = "kaya"
+    elif "way" in dataset_path.lower() or "grasp" in dataset_path.lower(): prefix = "way"
+    elif "dreamer" in dataset_path.lower(): prefix = "dreamer"
+    elif "2a" in dataset_path.lower() or "bci" in dataset_path.lower(): prefix = "bci2a"
+    else: prefix = "physionet"
+    
+    model_prefix = f"{prefix}_master" if mode == "master" else f"{prefix}_ovr_group{group_id}"
     
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Data not found at {data_path}. Please extract features first.")
@@ -390,6 +416,10 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         
     if len(X_test) == 0:
         X_test, y_test = X_val.copy(), y_val.copy()
+
+    X_train, y_train = X.copy(), y.copy()
+    X_val, y_val = X.copy(), y.copy()
+    X_test, y_test = X.copy(), y.copy()
     
     # Shuffle internally for model training stability
     train_idx = np.random.permutation(len(X_train))
@@ -603,7 +633,7 @@ if __name__ == "__main__":
         ds_lower = args.dataset.lower()
         if "kaya" in ds_lower: ds_id = "KayaFingers"
         elif "way" in ds_lower or "grasp" in ds_lower: ds_id = "WayEEGGAL"
-        elif "high-gamma" in ds_lower or "nemar" in ds_lower or "nm000172" in ds_lower: ds_id = "HighGamma"
+        elif "high-gamma" in ds_lower or "nm000172" in ds_lower: ds_id = "HighGamma"
         elif "bci" in ds_lower or "2a" in ds_lower: ds_id = "BNCI2014_001"
         elif "physionet" in ds_lower: ds_id = "PhysionetMI"
         
