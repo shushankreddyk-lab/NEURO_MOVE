@@ -42,479 +42,193 @@ st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="ð
 
 st.markdown("""
 <style>
-    /* 3D Tab Drop Animation */
-    @keyframes dropIn3D {
-        0% { opacity: 0; transform: translateY(-50px) rotateX(90deg); }
-        100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
-    }
+    /* === ENTERPRISE NEURO-TECH THEME (RECRUITER OPTIMIZED) === */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
-    [data-baseweb="tab-list"], div[data-testid="stTabs"] > div:first-child {
-        opacity: 0;
-        transform-origin: top;
-        animation: dropIn3D 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s forwards;
-        perspective: 1000px;
-        transform-style: preserve-3d;
-        /* Enable horizontal scrolling for tabs */
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-        flex-wrap: nowrap !important;
-        padding-bottom: 10px !important;
-        /* Custom scrollbar for tabs */
-        scrollbar-width: thin;
-        scrollbar-color: #f43f5e transparent;
-    }
-    
-    [data-baseweb="tab-list"]::-webkit-scrollbar, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar {
-        height: 8px;
-    }
-    [data-baseweb="tab-list"]::-webkit-scrollbar-track, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-    }
-    [data-baseweb="tab-list"]::-webkit-scrollbar-thumb, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar-thumb {
-        background-color: #f43f5e;
-        border-radius: 4px;
+    * {
+        font-family: 'Inter', sans-serif !important;
     }
 
-    /* 3D Tab Buttons */
-    [data-baseweb="tab"], button[data-testid="stTab"] {
-        background: linear-gradient(145deg, #1e293b, #0f172a) !important;
-        border: 1px solid rgba(255,255,255,0.05) !important;
-        border-radius: 8px !important;
-        margin-right: 12px !important;
-        padding: 12px 24px !important;
-        color: #94a3b8 !important;
-        box-shadow: 4px 4px 10px rgba(0,0,0,0.5), -2px -2px 5px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05) !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        transform: translateY(0);
-        position: relative;
-        font-weight: 500 !important;
-    }
-    
-    [data-baseweb="tab"]:hover, button[data-testid="stTab"]:hover {
-        transform: translateY(-2px);
-        color: #f8fafc !important;
-        box-shadow: 6px 6px 12px rgba(0,0,0,0.6), -2px -2px 6px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-        background: linear-gradient(145deg, #334155, #1e293b) !important;
-    }
-    
-    [data-baseweb="tab"][aria-selected="true"], button[data-testid="stTab"][aria-selected="true"] {
-        background: linear-gradient(145deg, #0ea5e9, #0284c7) !important;
-        color: #ffffff !important;
-        box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(255,255,255,0.2) !important;
-        transform: translateY(2px);
-        border: 1px solid #0369a1 !important;
-    }
-    
-    [data-baseweb="tab-highlight"], div[data-testid="stTabs"] > div:first-child > div:last-child {
-        display: none !important; /* Hide default underline */
-    }
-
-    /* Import fit-song.jp inspired elegant fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
-
-    /* Global Application Background */
+    /* Base App Styling */
     .stApp {
-        background-color: #050510 !important;
+        background-color: #09090b;
         background-image: 
-            radial-gradient(circle at 15% 50%, rgba(147, 51, 234, 0.25), transparent 50%),
-            radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.25), transparent 50%),
-            radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.25), transparent 50%);
-        font-family: 'Noto Sans JP', sans-serif !important;
-        color: #d1d5db;
-        attachment: fixed;
-    }
-
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Playfair Display', serif !important;
-        letter-spacing: 0.05em;
-        color: #ffffff !important;
-        font-weight: 400 !important;
-        text-shadow: 0px 0px 20px rgba(255, 255, 255, 0.2);
-    }
-
-    p, li, span {
-        font-family: 'Noto Sans JP', sans-serif;
-        color: #e2e8f0;
-        line-height: 1.7;
-    }
-
-    /* === 3D GLASSMORPHIC CARD === */
-    .glass-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-        backdrop-filter: blur(24px) saturate(150%);
-        -webkit-backdrop-filter: blur(24px) saturate(150%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-top: 1px solid rgba(255, 255, 255, 0.3);
-        border-left: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 20px;
-        padding: 24px 28px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.2);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-        overflow: hidden;
-        transform: perspective(1000px) translateZ(0px);
+            radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+            radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+        background-attachment: fixed;
     }
     
-    .glass-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        border-radius: 20px;
-        padding: 2px;
-        background: linear-gradient(45deg, #ff00cc, #3333ff, #00ffff);
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        opacity: 0.3;
-        transition: opacity 0.4s;
-    }
-    
-    .glass-card:hover::before {
-        opacity: 0.8;
-    }
-    
-    .glass-card:hover {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
-        transform: perspective(1000px) translateZ(15px) translateY(-5px);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.3);
-    }
-
-    /* === 3D KPI METRIC CARD === */
+    /* Clean Minimalist KPI Cards */
     .kpi-card {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.005));
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(0, 212, 255, 0.1);
-        border-top: 1px solid rgba(0, 212, 255, 0.25);
-        border-left: 1px solid rgba(0, 212, 255, 0.25);
-        border-radius: 16px;
-        padding: 20px 22px;
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 24px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        transform: perspective(1000px) translateZ(0px);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     .kpi-card:hover {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.02));
-        transform: perspective(1000px) translateZ(18px) translateY(-6px) scale(1.02);
-        box-shadow: 0 15px 40px rgba(0, 212, 255, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(0, 212, 255, 0.35);
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
     .kpi-value {
-        font-size: 2.2rem;
-        font-weight: 300;
-        font-family: 'Playfair Display', serif;
-        color: #ffffff;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #f8fafc;
+        letter-spacing: -0.025em;
         margin: 0;
         line-height: 1.2;
     }
     .kpi-label {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #8aa0b8;
-        margin-top: 6px;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-top: 8px;
         font-weight: 500;
     }
     .kpi-sub {
         font-size: 0.75rem;
-        color: #4ade80;
+        color: #10b981;
         margin-top: 4px;
-        font-family: 'Noto Sans JP', sans-serif;
-        font-weight: 300;
-    }
-
-    
-    /* === GLASSMORPHISM & DEEP SPACE THEME === */
-    .stApp {
-        background-color: #05050f;
-        background-image: 
-            radial-gradient(circle at 15% 50%, rgba(168, 85, 247, 0.08), transparent 25%),
-            radial-gradient(circle at 85% 30%, rgba(0, 212, 255, 0.08), transparent 25%);
+        font-weight: 400;
     }
     
+    /* Elegant Glass Panels (No excessive 3D or neon) */
     .glass-panel {
-        background: rgba(15, 15, 30, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.05);
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 32px;
         margin-bottom: 24px;
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.4s ease;
-        animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: border-color 0.3s ease;
     }
-    
-    @keyframes slideUp {
-        0% { transform: translateY(40px) scale(0.98); opacity: 0; }
-        100% { transform: translateY(0) scale(1); opacity: 1; }
-    }
-    
-    .glass-panel:nth-child(1) { animation-delay: 0.1s; }
-    .glass-panel:nth-child(2) { animation-delay: 0.2s; }
-    .glass-panel:nth-child(3) { animation-delay: 0.3s; }
-    .glass-panel:nth-child(4) { animation-delay: 0.4s; }
-
     .glass-panel:hover {
-        border-color: rgba(0, 212, 255, 0.5);
-        transform: translateY(-5px) scale(1.01);
-        box-shadow: 0 25px 60px 0 rgba(0, 212, 255, 0.15), inset 0 2px 5px rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.12);
     }
 
-    /* === HERO HEADER === */
+    /* Subtle Hero Elements */
     .hero-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #27272a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 999px;
-        padding: 6px 20px;
-        font-size: 0.7rem;
+        padding: 6px 16px;
+        font-size: 0.75rem;
         font-weight: 500;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: #ffffff;
-        margin-bottom: 20px;
+        color: #e2e8f0;
+        margin-bottom: 24px;
     }
     .pulse-dot {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        background: #ffffff;
-        animation: pulse-ring 3s infinite;
-        display: inline-block;
-    }
-    @keyframes pulse-ring {
-        0% { opacity: 1; }
-        50% { opacity: 0.3; }
-        100% { opacity: 1; }
+        background: #3b82f6;
+        box-shadow: 0 0 8px #3b82f6;
     }
     .hero-title {
-        font-size: 3.5rem !important;
-        font-family: 'Playfair Display', serif !important;
-        font-weight: 400 !important;
-        line-height: 1.1 !important;
-        letter-spacing: 0.02em !important;
-        color: #ffffff !important;
-        margin-bottom: 12px !important;
-    }
-    .hero-subtitle {
-        font-size: 1.0rem;
-        color: #94a3b8;
-        font-weight: 300;
-        letter-spacing: 0.05em;
-        max-width: 720px;
-        line-height: 1.8;
-        font-family: 'Noto Sans JP', sans-serif;
-    }
-
-    /* === FIT-SONG INSPIRED ELEGANT TABS === */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-        background: transparent;
-        padding: 0 0 10px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: none !important;
-        border-radius: 0;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: auto;
-        background: transparent !important;
-        padding: 10px 0;
-        color: #64748b;
-        font-weight: 400;
-        font-family: 'Noto Sans JP', sans-serif;
-        font-size: 0.85rem;
-        letter-spacing: 0.08em;
-        border: none !important;
-        transition: color 0.3s ease;
-    }
-    .stTabs [data-baseweb="tab"]:hover {
-        background: transparent !important;
-        color: #ffffff;
-    }
-    .stTabs [aria-selected="true"] {
-        background: transparent !important;
-        color: #ffffff !important;
-        border: none !important;
-        box-shadow: none !important;
-        border-bottom: 2px solid #ffffff !important;
-        border-radius: 0 !important;
-        text-shadow: none !important;
-        font-weight: 500 !important;
-    }
-
-    /* === 3D GLASSY BUTTONS === */
-    .stButton>button {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
-        backdrop-filter: blur(12px) saturate(150%) !important;
-        -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
-        border-left: 1px solid rgba(255, 255, 255, 0.4) !important;
-        border-radius: 12px !important;
-        padding: 12px 24px !important;
-        font-weight: 500 !important;
-        font-family: 'Noto Sans JP', sans-serif !important;
-        letter-spacing: 0.1em !important;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
-        text-transform: none !important;
-        position: relative;
-        overflow: hidden;
-    }
-    .stButton>button::before {
-        content: '';
-        position: absolute;
-        top: 0; left: -100%; width: 50%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-        transform: skewX(-25deg);
-        transition: all 0.5s;
-    }
-    .stButton>button:hover::before {
-        left: 150%;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1)) !important;
-        transform: perspective(1000px) translateZ(10px) translateY(-4px) !important;
-        box-shadow: 0 12px 40px rgba(0, 212, 255, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
-        border-color: rgba(0, 212, 255, 0.5) !important;
-    }
-    .stButton>button:active {
-        transform: perspective(1000px) translateZ(0px) translateY(2px) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(168, 85, 247, 0.3)) !important;
-        border: 1px solid rgba(0, 212, 255, 0.5) !important;
-        border-top: 1px solid rgba(0, 212, 255, 0.8) !important;
-        border-left: 1px solid rgba(0, 212, 255, 0.8) !important;
-        box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
-        font-weight: 600 !important;
-    }
-    .stButton>button[kind="primary"]:hover {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(168, 85, 247, 0.4)) !important;
-        box-shadow: 0 15px 50px rgba(0, 212, 255, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.5) !important;
-    }
-
-    /* === 3D STAGE: perspective scene, tilt cards, hologram === */
-    .stage3d { perspective: 1400px; perspective-origin: 50% 0%; }
-    .tilt3d {
-        transform-style: preserve-3d;
-        transform: rotateX(6deg) rotateY(-8deg);
-        transition: transform .5s ease, box-shadow .5s ease;
-        box-shadow: 0 30px 80px -20px rgba(0,212,255,.25), 0 10px 40px rgba(0,0,0,.5);
-        border: 1px solid rgba(0,212,255,.25);
-    }
-    .tilt3d:hover { transform: rotateX(0deg) rotateY(0deg) translateZ(30px); }
-    .holo-ring {
-        width: 220px; height: 220px; margin: 0 auto; border-radius: 50%;
-        background: radial-gradient(circle, rgba(0,212,255,.35) 0%, rgba(168,85,247,.15) 45%, transparent 70%);
-        border: 2px solid rgba(0,212,255,.5);
-        box-shadow: 0 0 60px rgba(0,212,255,.5), inset 0 0 60px rgba(168,85,247,.4);
-        animation: holo-spin 8s linear infinite;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 4rem; transform-style: preserve-3d;
-    }
-    @keyframes holo-spin {
-        0% { transform: rotateY(0deg) rotateX(10deg); }
-        50% { transform: rotateY(180deg) rotateX(-10deg); }
-        100% { transform: rotateY(360deg) rotateX(10deg); }
-    }
-    .float3d { animation: float3d 6s ease-in-out infinite; transform-style: preserve-3d; }
-    @keyframes float3d {
-        0%,100% { transform: translateY(0) rotateX(4deg) rotateY(-4deg); }
-        50% { transform: translateY(-16px) rotateX(-4deg) rotateY(4deg); }
-    }
-    .gpu-badge {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: linear-gradient(135deg, rgba(0,212,255,.2), rgba(168,85,247,.2));
-        border: 1px solid rgba(0,212,255,.5); border-radius: 999px;
-        padding: 6px 18px; font-size: .75rem; letter-spacing: .12em;
-        text-transform: uppercase; color: #00e5ff;
-        box-shadow: 0 0 24px rgba(0,212,255,.35);
+        font-size: 3rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.025em !important;
+        color: #f8fafc !important;
+        margin-bottom: 16px !important;
     }
     .neon-title {
-        background: linear-gradient(90deg, #00e5ff, #a855f7, #f43f5e, #00e5ff);
-        background-size: 300% 100%;
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-        animation: neon-slide 6s linear infinite;
-        font-weight: 800 !important;
+        background: linear-gradient(to right, #60a5fa, #a78bfa);
+        -webkit-background-clip: text; 
+        background-clip: text; 
+        color: transparent !important;
     }
-    @keyframes neon-slide { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
-
-    /* === 3D MEDIA CONTAINER === */
-    .media-container {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(255,255,255,0.02);
-        margin-bottom: 20px;
-    }
-
-    /* === METRICS & ALERTS === */
-    div[data-testid="stMetricValue"] {
-        font-family: 'Playfair Display', serif !important;
+    .hero-subtitle {
+        font-size: 1.125rem;
+        color: #94a3b8;
         font-weight: 400;
-        color: #ffffff;
-    }
-    .stAlert {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: #c8d6e5;
+        line-height: 1.6;
+        max-width: 800px;
     }
 
-    /* === DATAFRAME === */
-    .stDataFrame { border-radius: 8px; overflow: hidden; }
+    /* Clean Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 32px;
+        background: transparent;
+        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent !important;
+        color: #71717a;
+        font-weight: 500;
+        font-size: 0.875rem;
+        border: none !important;
+        padding: 12px 0;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #e4e4e7;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #f8fafc !important;
+        border-bottom: 2px solid #3b82f6 !important;
+    }
 
-    /* === INPUTS === */
-    .stSelectbox>div>div>div,
-    .stTextInput>div>div>input,
-    .stSlider { color: #c8d6e5 !important; }
+    /* Professional Buttons */
+    .stButton>button {
+        background: #27272a !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 500 !important;
+        transition: background 0.2s ease, border-color 0.2s ease !important;
+    }
+    .stButton>button:hover {
+        background: #3f3f46 !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: #3b82f6 !important;
+        color: #ffffff !important;
+        border: 1px solid #2563eb !important;
+    }
+    .stButton>button[kind="primary"]:hover {
+        background: #2563eb !important;
+        border-color: #1d4ed8 !important;
+    }
+
+    /* Inputs & UI elements */
+    .stSelectbox>div>div>div, .stTextInput>div>div>input {
+        color: #f8fafc !important;
+    }
     div[data-baseweb="select"] > div {
-        background: rgba(255,255,255,0.02) !important;
+        background: #18181b !important;
         border: 1px solid rgba(255,255,255,0.1) !important;
         border-radius: 8px !important;
-        color: #c8d6e5 !important;
     }
-
-    /* === DIVIDER === */
-    hr { border-color: rgba(255,255,255,0.08) !important; margin: 28px 0 !important; }
-
-    /* === SCROLLBAR === */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
-
-    img { border-radius: 8px; }
+    .stAlert {
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+    }
+    hr { border-color: rgba(255,255,255,0.08) !important; }
 
     .prob-container {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: #18181b;
         padding: 24px;
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         margin-top: 10px;
-        transition: background 0.3s ease;
-    }
-    .prob-container:hover {
-        background: rgba(255, 255, 255, 0.035);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .osc-container {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(12px);
+        background: #18181b;
         padding: 18px;
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         margin-top: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 </style>
 """, unsafe_allow_html=True)
