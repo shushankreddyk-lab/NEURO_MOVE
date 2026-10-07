@@ -117,10 +117,10 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
                 
         X_all = np.array(X_list, dtype=np.float32)
         
-        # Map labels to 0-3 range (if there are more than 4 fingers, clip or group them)
+        # Map labels to 0-4 range (5 fingers)
         y_all = np.array(y_list) - 1 
-        y_all = np.clip(y_all, 0, 3).astype(int) # Keep exactly 4 classes for model compatibility
-        kaya_labels = np.array(["thumb", "index", "middle", "ring"])
+        y_all = np.clip(y_all, 0, 4).astype(int)
+        kaya_labels = np.array(["Thumb", "Index", "Middle", "Ring", "Little"])
         y_all = kaya_labels[y_all]
         
         from sklearn.model_selection import train_test_split
@@ -175,13 +175,37 @@ def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subje
         X_all = np.array(X_list, dtype=np.float32)
         y_all = np.array(y_list)
         
-        # Limit to 4 classes to perfectly match the Transformer/MiniRocket architecture
-        valid_indices = y_all < 4
+        # Limit to 5 classes to match user request
+        valid_indices = y_all < 5
         X_all = X_all[valid_indices]
         y_all = y_all[valid_indices].astype(int)
         
-        way_labels = np.array(["hand_start", "first_digit_touch", "both_start_load", "lift_off"])
+        way_labels = np.array(["HandStart", "FirstDigitTouch", "LiftOff", "Replace", "BothReleased"])
         y_all = way_labels[y_all]
+        
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.3, stratify=y_all, random_state=42)
+        return X_train, y_train, X_test, y_test
+        
+    # -----------------------------------------------------------------
+    # 6. NEMAR Finger Movements
+    # -----------------------------------------------------------------
+    elif dataset_name == "NemarFingers":
+        import sys
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+        from load_nemar_fingers import load_nemar_finger_data
+        
+        # Nemar is located in dataset/NEMAR_on008446
+        nemar_path = os.path.abspath(os.path.join(data_dir, "..", "dataset", "NEMAR_on008446"))
+        
+        subject_str = f"sub-{subject_id:02d}"
+        X_all, y_all = load_nemar_finger_data(dataset_path=nemar_path, subject=subject_str)
+        
+        if X_all is None:
+            raise ValueError(f"No NEMAR data extracted for {subject_str}")
+            
+        nemar_labels = np.array(["Thumb", "Index", "Middle", "Ring", "Little"])
+        y_all = nemar_labels[y_all]
         
         from sklearn.model_selection import train_test_split
         X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, test_size=0.3, stratify=y_all, random_state=42)

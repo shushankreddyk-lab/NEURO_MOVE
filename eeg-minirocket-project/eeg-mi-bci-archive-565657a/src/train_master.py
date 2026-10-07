@@ -644,16 +644,18 @@ if __name__ == "__main__":
     data_path = get_cache_path(args.mode, args.group, args.dataset, args.sub_start, args.sub_end, data_dir)
     
     if not os.path.exists(data_path):
-        unified_datasets = ["BNCI2014_001", "HighGamma", "KayaFingers", "WayEEGGAL"]
+        unified_datasets = ["BNCI2014_001", "HighGamma", "KayaFingers", "WayEEGGAL", "NemarFingers"]
         
         # Strip trailing slash or path elements if user passed a path instead of an ID
         ds_id = args.dataset
         ds_lower = args.dataset.lower()
         if "kaya" in ds_lower: ds_id = "KayaFingers"
         elif "way" in ds_lower or "grasp" in ds_lower: ds_id = "WayEEGGAL"
-        elif "high-gamma" in ds_lower or "nemar" in ds_lower or "nm000172" in ds_lower: ds_id = "HighGamma"
+        elif "nemar" in ds_lower or "nm000172" in ds_lower: ds_id = "NemarFingers"
+        elif "high-gamma" in ds_lower: ds_id = "HighGamma"
         elif "bci" in ds_lower or "2a" in ds_lower: ds_id = "BNCI2014_001"
         elif "physionet" in ds_lower: ds_id = "PhysionetMI"
+        
         
         if ds_id in unified_datasets:
             sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))

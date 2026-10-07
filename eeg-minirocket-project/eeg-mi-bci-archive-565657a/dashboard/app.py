@@ -235,19 +235,32 @@ st.markdown("""
     }
     
     .glass-panel {
-        background: rgba(15, 15, 30, 0.6);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        background: rgba(15, 15, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.05);
         margin-bottom: 24px;
-        transition: transform 0.3s ease, border-color 0.3s ease;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.4s ease;
+        animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
     }
+    
+    @keyframes slideUp {
+        0% { transform: translateY(40px) scale(0.98); opacity: 0; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    
+    .glass-panel:nth-child(1) { animation-delay: 0.1s; }
+    .glass-panel:nth-child(2) { animation-delay: 0.2s; }
+    .glass-panel:nth-child(3) { animation-delay: 0.3s; }
+    .glass-panel:nth-child(4) { animation-delay: 0.4s; }
+
     .glass-panel:hover {
-        border-color: rgba(0, 212, 255, 0.3);
-        transform: translateY(-2px);
+        border-color: rgba(0, 212, 255, 0.5);
+        transform: translateY(-5px) scale(1.01);
+        box-shadow: 0 25px 60px 0 rgba(0, 212, 255, 0.15), inset 0 2px 5px rgba(255, 255, 255, 0.1);
     }
 
     /* === HERO HEADER === */
@@ -554,7 +567,7 @@ with st.sidebar:
     st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Global Target Dataset</div>", unsafe_allow_html=True)
     selected_dataset_str = st.selectbox(
         "Dataset",
-        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"],
+        ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion", "NEMAR Finger MI"],
         index=0,
         label_visibility="collapsed"
     )
@@ -679,6 +692,11 @@ if selected_tab == '🧠 Overview':
             ds_classes = "Grasp/Lift events"
             ds_channels = "32 channels"
             ds_sampling = "500 Hz"
+        elif "NEMAR" in selected_dataset_str:
+            ds_name = "NEMAR Finger MI"
+            ds_classes = "5 Finger classes"
+            ds_channels = "65 channels"
+            ds_sampling = "1000 Hz"
         elif "DREAMER" in selected_dataset_str:
             ds_name = "DREAMER Emotion Dataset · 23 subjects"
             ds_classes = "Continuous Regression (Valence, Arousal, Dominance)"
@@ -769,6 +787,10 @@ if selected_tab == '🧠 Overview':
         num_c = 6
         c_icons = ["🚀", "👆", "👐", "🛫", "🛬", "🙌"]
         c_names = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
+    elif "NEMAR" in selected_dataset_str:
+        num_c = 5
+        c_icons = ["👍", "👆", "🖕", "🖖", "🖐️"]
+        c_names = ["Thumb", "Index", "Middle", "Ring", "Little"]
     elif "DREAMER" in selected_dataset_str:
         num_c = 3
         c_icons = ["😄", "⚡", "👑"]
@@ -948,6 +970,9 @@ if selected_tab == '💻 Live Training Console':
         elif "WAY" in selected_dataset_str:
             default_path = st.session_state.get('way_data_dir', r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection")
             folder_hint = "Enter root path to WAY-EEG-GAL folder:"
+        elif "NEMAR" in selected_dataset_str:
+            default_path = st.session_state.get('nemar_data_dir', r"D:\eeg-minirocket-project\dataset\NEMAR_on008446")
+            folder_hint = "Enter root path to NEMAR folder:"
         elif "DREAMER" in selected_dataset_str:
             default_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\dataset")
             folder_hint = "Enter root path to DREAMER folder (.mat):"
@@ -970,6 +995,7 @@ if selected_tab == '💻 Live Training Console':
             elif "High-Gamma" in selected_dataset_str: dataset_type = "high-gamma"
             elif "Kaya" in selected_dataset_str: dataset_type = "kaya"
             elif "WAY" in selected_dataset_str: dataset_type = "way"
+            elif "NEMAR" in selected_dataset_str: dataset_type = "nemar"
             elif "DREAMER" in selected_dataset_str: dataset_type = "dreamer"
             else: dataset_type = "physionet"
             generate_dataset_toc(dataset_path, dataset_type=dataset_type)
@@ -1401,6 +1427,9 @@ elif selected_tab == '🚀 Live Training':
     elif "WAY" in selected_dataset_str:
         dataset_path = "WayEEGGAL"
         st.info("Using WAY-EEG-GAL Dataset. Architecture adapts to 32 Channels automatically.")
+    elif "NEMAR" in selected_dataset_str:
+        dataset_path = "NEMAR"
+        st.info("Using NEMAR Dataset. Architecture adapts to 65 Channels automatically.")
     elif "DREAMER" in selected_dataset_str:
         dataset_path = "DREAMER"
         st.info("Using DREAMER Dataset. Architecture adapts to 14 Channels automatically.")
@@ -1436,6 +1465,7 @@ elif selected_tab == '🚀 Live Training':
         elif "High-Gamma" in selected_dataset_str: max_subs = 14
         elif "Kaya" in selected_dataset_str: max_subs = 10
         elif "WAY" in selected_dataset_str: max_subs = 12
+        elif "NEMAR" in selected_dataset_str: max_subs = 1
         elif "DREAMER" in selected_dataset_str: max_subs = 23
         else: max_subs = 10
         
@@ -1499,6 +1529,15 @@ elif selected_tab == '🚀 Live Training':
             'OVR: LiftOff (Group 3)',
             'OVR: Replace (Group 4)',
             'OVR: BothReleased (Group 5)'
+        ]
+    elif "NEMAR" in selected_dataset_str:
+        training_modes = [
+            '🎯 5-Class Master Model (Recommended)',
+            'OVR: Thumb (Group 0)',
+            'OVR: Index (Group 1)',
+            'OVR: Middle (Group 2)',
+            'OVR: Ring (Group 3)',
+            'OVR: Little (Group 4)'
         ]
     else:
         training_modes = [
@@ -1578,6 +1617,22 @@ elif selected_tab == '🚀 Live Training':
         final_inference_lat = None
 
         if selected_training:
+            # Map dataset to specific "best channels" according to user request
+            if "BNCI2014_001" in dataset_path or "2a" in dataset_path.lower():
+                best_channels = '22'
+            elif "Physionet" in dataset_path:
+                best_channels = '64'
+            elif "HighGamma" in dataset_path:
+                best_channels = '40' # Select top 40 for HighGamma (from 128)
+            elif "WayEEGGAL" in dataset_path:
+                best_channels = '32'
+            elif "Kaya" in dataset_path:
+                best_channels = '16'
+            elif "Nemar" in dataset_path:
+                best_channels = '16'
+            else:
+                best_channels = '20'
+
             if selected_training == 'batch_all':
                 script_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'train_batch_all.py')
                 args = [
@@ -1587,7 +1642,7 @@ elif selected_tab == '🚀 Live Training':
                     '--lr', str(lr_val),
                     '--kernels', str(mr_kernels),
                     '--partition', str(train_partition),
-                    '--top_channels', '20'
+                    '--top_channels', best_channels
                 ]
                 if finetune_model_path:
                     args.extend(['--finetune_model', finetune_model_path])
@@ -1603,7 +1658,7 @@ elif selected_tab == '🚀 Live Training':
                     '--partition', str(train_partition),
                     '--sub_start', str(sub_start),
                     '--sub_end', str(sub_end),
-                    '--top_channels', '20'
+                    '--top_channels', best_channels
                 ]
                 if finetune_model_path:
                     args.extend(['--finetune_model', finetune_model_path])
@@ -2362,6 +2417,8 @@ if selected_tab == '🎯 Live Inference':
         model_options = [m for m in model_options if 'kaya' in m.lower()]
     elif "WAY" in selected_dataset_str:
         model_options = [m for m in model_options if 'way' in m.lower()]
+    elif "NEMAR" in selected_dataset_str:
+        model_options = [m for m in model_options if 'nemar' in m.lower()]
     elif "DREAMER" in selected_dataset_str:
         model_options = [m for m in model_options if 'dreamer' in m.lower()]
     conformer_models = [m for m in model_options if 'conformer' in m.lower()]
@@ -2474,6 +2531,8 @@ if selected_tab == '🎯 Live Inference':
         target_options = ['Right Hand', 'Left Hand', 'Both Feet']
     elif "WAY" in selected_dataset_str:
         target_options = ['HandStart', 'FirstDigitTouch', 'BothStartLoadPhase', 'LiftOff', 'Replace', 'BothReleased']
+    elif "NEMAR" in selected_dataset_str:
+        target_options = ['Thumb', 'Index', 'Middle', 'Ring', 'Little']
     elif "DREAMER" in selected_dataset_str:
         target_options = ['Valence', 'Arousal', 'Dominance']
     else:
@@ -2612,7 +2671,7 @@ if selected_tab == '🎯 Live Inference':
                     expected_channels = getattr(pipeline, 'channel_names', None)
                     target_samples = getattr(pipeline, 'seq_len', getattr(pipeline, 'samples', 656))
                     sfreq = getattr(pipeline, 'sfreq', 160.0)
-                    model_classes = getattr(pipeline, 'label_classes', getattr(pipeline, 'classes_', None))
+                    model_classes = getattr(pipeline, 'label_classes_', getattr(pipeline, 'classes_', getattr(pipeline, 'label_classes', None)))
                     
                     if expected_channels is None:
                         is_bci2a = 'bci2a' in model_name.lower()
@@ -2634,7 +2693,7 @@ if selected_tab == '🎯 Live Inference':
                         elif is_bci2a:
                             expected_channels = list(raw.ch_names[:22])
                         elif 'physionet' in model_name.lower() and model_ch_count == 20:
-                            expected_channels = ['FC3', 'FC4', 'C3', 'C4', 'CP3', 'CP4', 'C1', 'C2', 'C5', 'C6', 'CZ', 'FCZ', 'CPZ', 'F3', 'F4', 'P3', 'P4', 'O1', 'O2', 'OZ']
+                            expected_channels = list(raw.ch_names[:20])
                         else:
                             # Fallback: take whatever channels are in the file, up to model_ch_count
                             n_take = min(len(raw.ch_names), model_ch_count or len(raw.ch_names))
@@ -2852,6 +2911,8 @@ if selected_tab == '🎯 Live Inference':
                                 default_list = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
                             elif 'kaya' in dataset_hint:
                                 default_list = ["Thumb", "Index", "Middle", "Ring"]
+                            elif 'nemar' in dataset_hint:
+                                default_list = ["Thumb", "Index", "Middle", "Ring", "Little"]
                             elif 'dreamer' in dataset_hint:
                                 default_list = ["Valence", "Arousal", "Dominance"]
                             elif 'highgamma' in dataset_hint:
@@ -2870,6 +2931,7 @@ if selected_tab == '🎯 Live Inference':
                         hint = 'physionet'
                         if 'way' in model_name.lower(): hint = 'way'
                         elif 'kaya' in model_name.lower(): hint = 'kaya'
+                        elif 'nemar' in model_name.lower(): hint = 'nemar'
                         elif 'highgamma' in model_name.lower(): hint = 'highgamma'
                         elif 'bci2a' in model_name.lower() or is_gdf: hint = 'bci2a'
                         elif 'dreamer' in model_name.lower(): hint = 'dreamer'
@@ -2877,9 +2939,11 @@ if selected_tab == '🎯 Live Inference':
                         model_class_labels[model_name] = _labels_from_classes(model_classes, dataset_hint=hint)
                     else:
                         if 'way' in model_name.lower():
-                            model_class_labels[model_name] = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
+                            model_class_labels[model_name] = ["HandStart", "FirstDigitTouch", "LiftOff", "Replace", "BothReleased"]
                         elif 'kaya' in model_name.lower():
-                            model_class_labels[model_name] = ["thumb", "index", "middle", "ring"]
+                            model_class_labels[model_name] = ["Thumb", "Index", "Middle", "Ring", "Little"]
+                        elif 'nemar' in model_name.lower():
+                            model_class_labels[model_name] = ["Thumb", "Index", "Middle", "Ring", "Little"]
                         elif 'dreamer' in model_name.lower():
                             model_class_labels[model_name] = ["Valence", "Arousal", "Dominance"]
                         elif 'highgamma' in model_name.lower():
@@ -2888,6 +2952,7 @@ if selected_tab == '🎯 Live Inference':
                             model_class_labels[model_name] = ["Left hand", "Right hand", "Both feet", "Tongue"]
                         else:
                             model_class_labels[model_name] = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+
 
 
                 if len(model_Xs) == 0:
@@ -3110,6 +3175,8 @@ if selected_tab == '🎯 Live Inference':
                                 target_order = ["HandStart", "FirstDigitTouch", "BothStartLoadPhase", "LiftOff", "Replace", "BothReleased"]
                             elif 'kaya' in model_name.lower():
                                 target_order = ["thumb", "index", "middle", "ring"]
+                            elif 'nemar' in model_name.lower():
+                                target_order = ["Thumb", "Index", "Middle", "Ring", "Little"]
                             elif 'dreamer' in model_name.lower():
                                 target_order = ["Valence", "Arousal", "Dominance"]
                             elif 'highgamma' in model_name.lower():
