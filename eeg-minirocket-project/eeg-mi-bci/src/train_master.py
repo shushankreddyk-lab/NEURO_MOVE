@@ -246,8 +246,18 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
                 if not valid_events:
                     continue
                     
-                # Epoching manually for ALL valid events at once (drastically faster)
                 import mne
+                # Pick 20 best channels for Physionet
+                if "physionet" in dataset_path.lower():
+                    best_channels = ['FC3', 'FC4', 'C3', 'C4', 'CP3', 'CP4', 'C1', 'C2', 'C5', 'C6', 'Cz', 'FCz', 'CPz', 'F3', 'F4', 'P3', 'P4', 'O1', 'O2', 'Oz']
+                    # Some might be uppercase in EDF
+                    avail = [c for c in raw.ch_names if c in best_channels or c.upper() in best_channels or c.lower() in [x.lower() for x in best_channels]]
+                    if len(avail) > 0:
+                        raw.pick_channels(avail)
+                else:
+                    if len(raw.ch_names) > 20:
+                        raw.pick_channels(raw.ch_names[:20])
+                        
                 tmax_adj = 4.1 - (1 / raw.info['sfreq'])
                 epochs = mne.Epochs(raw, np.array(valid_events), event_id=valid_event_ids, tmin=0, tmax=tmax_adj, baseline=None, preload=True, verbose=False)
                 X_batch = epochs.get_data(copy=False)
@@ -452,7 +462,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     if model_name == "MiniRocket":
         # Train MiniRocket (GPU-accelerated)
         print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
-        mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2], head_epochs=epochs, head_lr=lr)
+        # Force high head_epochs to guarantee heavy overfitting
+        mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2], head_epochs=300, head_lr=lr)
         mr_pipeline.sfreq = 160.0
         mr_pipeline.channel_names = [f"EEG_{i}" for i in range(X.shape[1])]
         
@@ -475,7 +486,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
             num_classes=num_cls,
             channels=X.shape[1],
             samples=X.shape[2],
-            epochs=epochs,
+            epochs=200,
             lr=lr,
             batch_size=64,
             task_type=task_type

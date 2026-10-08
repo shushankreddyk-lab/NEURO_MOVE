@@ -4,7 +4,7 @@
         "Runs": "R01, R02",
         "Intent": "Continuous Windows",
         "Desc": "Eyes Open vs. Eyes Closed",
-        "Trials": 400
+        "Trials": 21800
     },
     "2": {
         "Category": "LF / RF (Real Fists)",

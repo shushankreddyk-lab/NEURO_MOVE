@@ -79,7 +79,7 @@ def load_nemar_finger_data(dataset_path=r"D:\eeg-minirocket-project\dataset\NEMA
     # Filter and Epoch
     raw_concat.filter(8., 30., fir_design='firwin') # Standard Alpha/Beta MI band
     epochs = mne.Epochs(raw_concat, events_concat, event_id, tmin=-0.5, tmax=2.0, 
-                        baseline=(None, 0), preload=True)
+                        baseline=(None, 0), preload=True, event_repeated='drop')
                         
     return epochs.get_data(), epochs.events[:, 2] - 3
 

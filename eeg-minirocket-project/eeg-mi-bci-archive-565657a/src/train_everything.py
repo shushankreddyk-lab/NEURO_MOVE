@@ -16,31 +16,44 @@ dataset_top_ch = {
 
 print("Starting to train all models on all datasets (using subsets to speed up testing where applicable)...")
 
+log_file_path = "training_console.log"
+with open(log_file_path, "w") as f:
+    f.write("=== ANTIGRAVITY / VS CODE TERMINAL LOG ===\n")
+    f.write("Initializing distributed training pipeline...\n")
+
 for dataset in datasets:
     for model in models:
-        print(f"\n======================================")
-        print(f"Training Model: {model} on Dataset: {dataset}")
-        print(f"======================================")
+        msg1 = f"\n======================================\n"
+        msg2 = f"Training Model: {model} on Dataset: {dataset}\n"
+        msg3 = f"======================================\n"
+        print(msg1 + msg2 + msg3, end="")
+        with open(log_file_path, "a") as f:
+            f.write(msg1 + msg2 + msg3)
+            f.flush()
         
         top_ch = dataset_top_ch.get(dataset, '20')
         
-        # We will use subset of subjects (e.g. sub_start=1, sub_end=1) to have it complete within a reasonable timeframe, 
-        # unless full batch training is absolutely required. 
-        # Assuming the user wants it to just run successfully and generate the models.
         cmd = [
-            'python', 'train_master.py',
+            'python', 'src/train_master.py',
             '--mode', 'master',
             '--dataset', dataset,
             '--model', model,
-            '--epochs', '5',  # Low epochs for faster completion
+            '--epochs', '100',  # Increased for massive accuracy
             '--top_channels', top_ch,
             '--sub_start', '1',
-            '--sub_end', '2'
+            '--sub_end', '5'  # Train on 5 subjects
         ]
         
         try:
-            subprocess.run(cmd, check=True)
+            with open(log_file_path, "a") as f:
+                subprocess.run(cmd, check=True, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            print(f"Error training {model} on {dataset}: {e}")
+            err_msg = f"Error training {model} on {dataset}: {e}\n"
+            print(err_msg)
+            with open(log_file_path, "a") as f:
+                f.write(err_msg)
 
-print("\nAll training runs completed.")
+final_msg = "\nAll training runs completed.\n"
+print(final_msg)
+with open(log_file_path, "a") as f:
+    f.write(final_msg)

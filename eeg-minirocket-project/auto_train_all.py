@@ -45,3 +45,9 @@ for start, end in physio_batches:
     run_training(physionet_path, start, end, "PhysioNet")
 
 print("ALL TRAINING JOBS SUCCESSFULLY COMPLETED!")
+
+# Train on NEMAR
+nemar_path = r"D:\eeg-minirocket-project\dataset\NEMAR_on008446"
+nemar_batches = [(1, 1)] # testing 1 subject first
+for start, end in nemar_batches:
+    run_training(nemar_path, start, end, "NEMAR Finger MI")
