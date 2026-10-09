@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-datasets = ['PhysionetMI', 'BCI2a', 'HighGamma', 'WayEEGGAL', 'KayaFingers', 'NemarFingers', 'Dreamer']
+datasets = ['PhysionetMI', 'BCI2a', 'HighGamma', 'WayEEGGAL', 'KayaFingers', 'NemarFingers']
 models = ['MiniRocket', 'CNN-LSTM', 'Advanced Transformer', 'EEGNet', 'Shallow ConvNet']
 
 dataset_top_ch = {
@@ -10,8 +10,7 @@ dataset_top_ch = {
     'HighGamma': '40',
     'WayEEGGAL': '32',
     'KayaFingers': '16',
-    'NemarFingers': '16',
-    'Dreamer': '14'
+    'NemarFingers': '16'
 }
 
 print("Starting to train all models on all datasets (using subsets to speed up testing where applicable)...")

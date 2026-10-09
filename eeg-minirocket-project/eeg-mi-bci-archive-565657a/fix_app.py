@@ -42,11 +42,6 @@ elif ext == '.mat':
         data = mat['o'][0,0]['data'].T
         info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=1000.0, ch_types='eeg')
         raw = mne.io.RawArray(data, info)
-    elif 'DREAMER' in mat:
-        data = mat['DREAMER'][0,0]['Data'][0,0]['EEG'][0,0]['stimuli'][0,0].T
-        sfreq = int(mat['DREAMER'][0,0]['EEG_SamplingRate'][0,0])
-        info = mne.create_info(ch_names=[str(i) for i in range(data.shape[0])], sfreq=sfreq, ch_types='eeg')
-        raw = mne.io.RawArray(data, info)
     else:
         raise ValueError("Unknown .mat format")
 else:

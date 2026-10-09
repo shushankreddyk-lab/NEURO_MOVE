@@ -19,9 +19,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from binary_parser import load_local_eeg_data
 from preprocessing import apply_car, apply_bandpass_filter, spatial_channel_augmentation, epoch_and_segment
 from minirocket_engine import MiniRocketPipeline
-from advanced_eeg_engine import AdvancedEEGPipeline
 from eegnet_engine import EEGNet_Pipeline
-from convnets_engine import ConvNet_Pipeline
+from transformer_engine import CNN_Transformer_Pipeline
 
 def get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir):
     import hashlib
@@ -502,12 +501,11 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     
         cnn_lstm_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_lstm_{sub_str}_{timestamp}.pth"))
 
-    elif model_name == "Advanced Transformer":
-        # Train Pure Transformer (Conformer)
-        print(json.dumps({"type": "progress", "message": "Training Advanced Transformer (Conformer)..."}), flush=True)
+    elif model_name == "CNN+TRANSFORMER":
+        print(json.dumps({"type": "progress", "message": "Training CNN+TRANSFORMER..."}), flush=True)
         print(json.dumps({"type": "reset_chart"}), flush=True)
         
-        conformer_pipeline = AdvancedEEGPipeline(
+        cnn_tf_pipeline = CNN_Transformer_Pipeline(
             num_classes=num_cls,
             channels=X.shape[1],
             samples=X.shape[2],
@@ -519,50 +517,13 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         
         try:
             if args.finetune_model:
-                conformer_pipeline.load(args.finetune_model)
-            conformer_pipeline.fit(X_train, y_train, X_val, y_val)
+                cnn_tf_pipeline.load(args.finetune_model)
+            cnn_tf_pipeline.fit(X_train, y_train, X_val, y_val)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)
     
-        conformer_pipeline.save(os.path.join(models_dir, f"{model_prefix}_conformer_{sub_str}_{timestamp}.pth"))
-
-    elif model_name == "EEGNet":
-        print(json.dumps({"type": "progress", "message": "Training EEGNet..."}), flush=True)
-        print(json.dumps({"type": "reset_chart"}), flush=True)
-        
-        eegnet_pipeline = EEGNet_Pipeline(
-            num_classes=num_cls,
-            channels=X.shape[1],
-            samples=X.shape[2],
-            epochs=epochs,
-            lr=lr,
-            batch_size=64,
-            task_type=task_type
-        )
-        
-        try:
-            if args.finetune_model:
-                eegnet_pipeline.load(args.finetune_model)
-            eegnet_pipeline.fit(X_train, y_train, X_val, y_val)
-        except Exception as e:
-            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
-            sys.exit(1)
-    
-        eegnet_pipeline.save(os.path.join(models_dir, f"{model_prefix}_eegnet_{sub_str}_{timestamp}.pth"))
-
-    elif model_name == "Shallow ConvNet":
-        print(json.dumps({"type": "progress", "message": "Training Shallow ConvNet..."}), flush=True)
-        print(json.dumps({"type": "reset_chart"}), flush=True)
-        shallow_pipeline = ConvNet_Pipeline(arch="shallow", num_classes=num_cls, channels=X.shape[1], samples=X.shape[2], epochs=epochs, lr=lr)
-        try:
-            if args.finetune_model:
-                shallow_pipeline.load(args.finetune_model)
-            shallow_pipeline.fit(X_train, y_train, X_val, y_val)
-        except Exception as e:
-            print(json.dumps({"type": "error", "message": str(e)}), flush=True)
-            sys.exit(1)
-        shallow_pipeline.save(os.path.join(models_dir, f"{model_prefix}_shallow_{sub_str}_{timestamp}.pth"))
+        cnn_tf_pipeline.save(os.path.join(models_dir, f"{model_prefix}_cnn_transformer_{sub_str}_{timestamp}.pth"))
 
     # Removed Deep ConvNet and CSP+LDA as requested
 
@@ -575,9 +536,8 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         pipeline_to_eval = None
         if model_name == "MiniRocket": pipeline_to_eval = mr_pipeline
         elif model_name == "CNN-LSTM": pipeline_to_eval = cnn_lstm_pipeline
-        elif model_name == "Advanced Transformer": pipeline_to_eval = conformer_pipeline
+        elif model_name == "CNN+TRANSFORMER": pipeline_to_eval = cnn_tf_pipeline
         elif model_name == "EEGNet": pipeline_to_eval = eegnet_pipeline
-        elif model_name == "Shallow ConvNet": pipeline_to_eval = shallow_pipeline
         
         if pipeline_to_eval:
             # Measure latency on 1 sample to simulate real-time BCI latency
@@ -669,7 +629,7 @@ if __name__ == "__main__":
                 print(json.dumps({"type": "error", "message": "No data extracted."}), flush=True)
                 sys.exit(1)
     if args.model == "all":
-        architectures = ["MiniRocket", "CNN-LSTM", "Advanced Transformer", "EEGNet", "Shallow ConvNet"]
+        architectures = ["MiniRocket", "CNN-LSTM", "EEGNet", "CNN+TRANSFORMER"]
     else:
         architectures = [args.model]
         

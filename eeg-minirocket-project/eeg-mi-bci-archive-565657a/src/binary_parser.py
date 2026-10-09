@@ -349,35 +349,6 @@ def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\physionet', datase
                 except Exception as e:
                     print(f"Error parsing {gdf_file} for TOC: {e}")
                     
-    elif dataset_type == "dreamer":
-        import glob
-        mat_files = glob.glob(os.path.join(data_dir, "DREAMER.mat"))
-        if not mat_files:
-            mat_files = glob.glob(os.path.join(data_dir, "**", "DREAMER.mat"), recursive=True)
-            
-        if mat_files:
-            detailed_toc.append({
-                "Subject": "All Subjects",
-                "EDF_File": os.path.basename(mat_files[0]),
-                "Run": "N/A",
-                "Task_Type": "DREAMER Emotion",
-                "T0": "Valence",
-                "T1": "Arousal",
-                "T2": "Dominance",
-                "T3": "",
-                "T4": "",
-                "Status": "VALID - PROTOCOL CLASSIFIED",
-                "Quality_Flag": "",
-                "Group": "Emotion",
-                "Trials": 414,  # 23 subjects * 18 trials
-                "Trials_T0": 414,
-                "Trials_T1": 414,
-                "Trials_T2": 414,
-                "Trials_T3": 0,
-                "Trials_T4": 0
-            })
-            toc_data["1"]["Trials"] += 414
-
     elif dataset_type == "high-gamma":
         import glob
         all_files = []

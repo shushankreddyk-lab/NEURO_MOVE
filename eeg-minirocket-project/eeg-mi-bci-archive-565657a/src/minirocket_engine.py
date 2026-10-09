@@ -58,6 +58,17 @@ class TorchMiniRocket(nn.Module):
         # Initialize biases to cover a broad range of quantiles
         nn.init.uniform_(self.conv.bias, a=-5.0, b=5.0)
 
+    def fit_biases(self, x):
+        with torch.no_grad():
+            self.conv.bias.data.zero_()
+            out = self.conv(x)
+            out = out.transpose(0, 1).reshape(self.num_kernels, -1)
+            mins = out.min(dim=1)[0]
+            maxs = out.max(dim=1)[0]
+            rand_vals = torch.rand(self.num_kernels, device=out.device)
+            new_biases = mins + rand_vals * (maxs - mins)
+            self.conv.bias.data = -new_biases
+
     def forward(self, x):
         # x: (batch, in_channels, seq_len)
         out = self.conv(x)  # (batch, num_kernels, seq_len)
@@ -114,7 +125,7 @@ class MiniRocketPipeline:
         self.classes_ = None
         self.training_time = 0.0
 
-    def fit(self, X, y):
+    def fit(self, X, y, X_val=None, y_val=None, progress_callback=None):
         """
         X shape: (n_instances, n_channels, n_timepoints)
         y shape: (n_instances,)
@@ -127,12 +138,21 @@ class MiniRocketPipeline:
         self.classes_ = np.unique(y)
         n_cls = len(self.classes_)
         
+        # 0) Fit Biases from a subset of data
+        try:
+            print("[MiniRocketPipeline] Fitting biases from training data...")
+        except OSError:
+            pass
+        self.extractor.eval()
+        subset_idx = np.random.choice(len(X), min(len(X), 128), replace=False)
+        X_sub = torch.tensor(X[subset_idx], dtype=torch.float32).to(self.device)
+        self.extractor.fit_biases(X_sub)
+        
         # 1) Extract PPV features in batches using GPU
         try:
             print("[MiniRocketPipeline] Extracting PPV features on GPU...")
         except OSError:
             pass
-        self.extractor.eval()
         
         X_t = torch.tensor(X, dtype=torch.float32)
         ppv_features = []
@@ -190,6 +210,10 @@ class MiniRocketPipeline:
         self.gpu_head.train()
         for epoch in range(self.head_epochs):
             total_loss = 0.0
+            correct = 0
+            total = 0
+            
+            self.gpu_head.train()
             for bx, by in dl:
                 bx, by = bx.to(self.device), by.to(self.device)
                 opt.zero_grad()
@@ -206,7 +230,34 @@ class MiniRocketPipeline:
                     loss.backward()
                     opt.step()
                 total_loss += loss.item()
+                preds = torch.argmax(logits, dim=1)
+                correct += (preds == by).sum().item()
+                total += by.size(0)
             sched.step()
+            
+            train_acc = correct / total if total > 0 else 0.0
+            train_loss_avg = total_loss / len(dl) if len(dl) > 0 else 0.0
+            
+            val_loss_avg = 0.0
+            val_acc = 0.0
+            if X_val is not None and y_val is not None:
+                self.gpu_head.eval()
+                with torch.no_grad():
+                    # Predict validation
+                    # Note: for large validation sets we should batch, but for EEG it might fit
+                    # Let's use predict_proba which handles batching internally
+                    y_val_pred_probs = self.predict_proba(X_val)
+                    y_val_pred = np.argmax(y_val_pred_probs, axis=1)
+                    val_acc = float((y_val_pred == y_val).mean())
+                    # Approx val loss (cross entropy):
+                    # probabilities for true classes
+                    true_probs = y_val_pred_probs[np.arange(len(y_val)), y_val]
+                    # clip to avoid log(0)
+                    true_probs = np.clip(true_probs, 1e-7, 1.0)
+                    val_loss_avg = float(-np.mean(np.log(true_probs)))
+            
+            if progress_callback:
+                progress_callback(epoch + 1, train_loss_avg, train_acc, val_loss_avg, val_acc)
             
         self.training_time = time.time() - start_time
         try:

@@ -8,13 +8,13 @@ if selected_tab == '📊 Training Process':
     </div>
     """, unsafe_allow_html=True)
     
-    selected_dataset_tab1 = st.selectbox("Select Dataset:", ["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"], key="dataset_sel_tab1")
+    selected_dataset_tab1 = st.selectbox("Select Dataset:", ["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL"], key="dataset_sel_tab1")
     # Map dataset name to folder name
 ds_folder_map = {
     "High-Gamma Dataset": "HighGamma",
     "Kaya Finger Movements": "Kaya",
     "WAY-EEG-GAL": "WAY",
-    "DREAMER Emotion": "DREAMER"
+    "": ""
 }
 mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
 models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)

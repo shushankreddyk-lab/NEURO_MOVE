@@ -64,8 +64,6 @@ for df in data_files:
     elif "highgamma" in name: key = "highgamma"
     elif "kaya" in name: key = "kaya"
     elif "way" in name: key = "way"
-    elif "dreamer" in name: key = "dreamer"
-    
     if key:
         # Prefer 1to10 over 1to1
         if key not in best_files:

@@ -19,7 +19,7 @@ with open(r'D:\eeg-minirocket-project\eeg-mi-bci-archive-565657a\training_proces
     snippet = f.read()
 
 # Replace selected_dataset_tab1 with 'Physionet' and 'BCI2a' options
-snippet = snippet.replace('["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "DREAMER Emotion"]', '["Physionet", "BCI2a"]')
+snippet = snippet.replace('["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL"]', '["Physionet", "BCI2a"]')
 
 # Remove the ds_folder_map code if it exists (since we patched it in the main app, but we extracted it from the patched main app)
 snippet = snippet.replace('''# Map dataset name to folder name
@@ -27,7 +27,7 @@ ds_folder_map = {
     "High-Gamma Dataset": "HighGamma",
     "Kaya Finger Movements": "Kaya",
     "WAY-EEG-GAL": "WAY",
-    "DREAMER Emotion": "DREAMER"
+    "": ""
 }
 mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
 models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)''', 

@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-datasets = ["BNCI2014_001", "PhysionetMI", "HighGamma", "KayaFingers", "WayEEGGAL", "DREAMER"]
+datasets = ["BNCI2014_001", "PhysionetMI", "HighGamma", "KayaFingers", "WayEEGGAL"]
 
 for dataset in datasets:
     print(f"===========================================================")

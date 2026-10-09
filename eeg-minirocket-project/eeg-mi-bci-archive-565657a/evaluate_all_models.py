@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, r"D:\pip_packages")
 import os
 import json
 import glob
@@ -88,8 +90,6 @@ def evaluate_models():
         elif "highgamma" in name: key = "highgamma"
         elif "kaya" in name: key = "kaya"
         elif "way" in name: key = "way"
-        elif "dreamer" in name: key = "dreamer"
-        
         if key:
             if key not in dataset_to_datafiles: dataset_to_datafiles[key] = []
             dataset_to_datafiles[key].append(df)

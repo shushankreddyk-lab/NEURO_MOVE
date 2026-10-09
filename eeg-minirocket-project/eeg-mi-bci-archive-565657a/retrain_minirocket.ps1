@@ -9,8 +9,7 @@ python src/train_master.py --mode master --dataset "D:\eeg-minirocket-project\da
 Write-Host "Retraining MiniRocket on WAY-EEG-GAL..."
 python src/train_master.py --mode master --dataset "way" --model MiniRocket --epochs 30 --sub_start 1 --sub_end 10
 
-Write-Host "Retraining MiniRocket on DREAMER..."
-python src/train_master.py --mode master --dataset "dreamer" --model MiniRocket --epochs 30 --sub_start 1 --sub_end 10
+python src/train_master.py --mode master --dataset "" --model MiniRocket --epochs 30 --sub_start 1 --sub_end 10
 
 Write-Host "Retraining MiniRocket on High-Gamma..."
 python src/train_master.py --mode master --dataset "high-gamma" --model MiniRocket --epochs 30 --sub_start 1 --sub_end 10

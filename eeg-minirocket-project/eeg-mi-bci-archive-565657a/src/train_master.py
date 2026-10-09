@@ -100,29 +100,6 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
         np.savez_compressed(data_path, X=X_all, y=y_all)
         return X_all.shape, y_all.shape
 
-    elif "dreamer" in dataset_path.lower():
-        msg = f"Extracting DREAMER data for subjects {sub_start} to {sub_end}..."
-        print(json.dumps({"type": "progress", "message": msg}), flush=True)
-        
-        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-        from dreamer_loader import DREAMERLoader
-        
-        if dataset_path.endswith('.mat') and os.path.isfile(dataset_path):
-            mat_path = dataset_path
-        elif os.path.isfile(r"D:\eeg-minirocket-project\dataset\DREAMER.mat"):
-            mat_path = r"D:\eeg-minirocket-project\dataset\DREAMER.mat"
-        else:
-            mat_path = os.path.join(dataset_path, "DREAMER.mat")
-        loader = DREAMERLoader(mat_path, window_size_sec=1.0, overlap=0.5)
-        X_all, y_all = loader.load_data()
-        
-        if len(X_all) == 0:
-            return None, None
-            
-        data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, output_dir)
-        np.savez_compressed(data_path, X=X_all, y=y_all)
-        return X_all.shape, y_all.shape
-        
     elif "high-gamma" in dataset_path.lower():
         msg = f"Extracting High-Gamma data for subjects {sub_start} to {sub_end}..."
         print(json.dumps({"type": "progress", "message": msg}), flush=True)
@@ -300,9 +277,6 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         dataset_hint = "kaya"
     elif "highgamma" in dataset_path.lower() or "high-gamma" in dataset_path.lower():
         dataset_hint = "highgamma"
-    elif "dreamer" in dataset_path.lower():
-        dataset_hint = "dreamer"
-        
     model_prefix = dataset_hint if mode == "master" else f"ovr_group{group_id}_{dataset_hint}"
     # Prepend 'master_' if it's a master model
     if mode == "master":
@@ -467,6 +441,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
     if model_name == "MiniRocket":
         # Train MiniRocket (GPU-accelerated)
         print(json.dumps({"type": "progress", "message": "Training GPU-Accelerated MiniRocket..."}), flush=True)
+        print(json.dumps({"type": "reset_chart"}), flush=True)
         mr_pipeline = MiniRocketPipeline(num_kernels=kernels, in_channels=X.shape[1], seq_len=X.shape[2], head_epochs=epochs, head_lr=lr)
         mr_pipeline.sfreq = 160.0
         mr_pipeline.channel_names = [f"EEG_{i}" for i in range(X.shape[1])]
@@ -474,7 +449,7 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         try:
             if args.finetune_model:
                 mr_pipeline.load(args.finetune_model)
-            mr_pipeline.fit(X_train, y_train)
+            mr_pipeline.fit(X_train, y_train, X_val, y_val, progress_callback=progress_callback)
         except Exception as e:
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
             sys.exit(1)

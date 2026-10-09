@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'
 
 from minirocket_engine import MiniRocketPipeline
 from dataset_loader_all import load_dataset
-from dreamer_loader import DREAMERLoader
 import datetime
 
 def overfit_targets():
@@ -17,7 +16,6 @@ def overfit_targets():
     # 1. BCI (BNCI2014)
     # 2. Kaya
     # 3. WayEEGGAL
-    # 4. Dreamer
     # 5. HighGamma
     datasets_to_overtrain = [
         ("BNCI2014_001", "bci2a"),
@@ -44,22 +42,15 @@ def overfit_targets():
         except Exception as e:
             print(f"Error overtraining {ds_name}: {e}")
             
-    # Dreamer
-    print(f"--- OVERTRAINING: Dreamer ---")
     try:
-        mat_path = r"D:\eeg-minirocket-project\dataset\DREAMER.mat"
         if not os.path.exists(mat_path):
-            mat_path = r"D:\eeg-minirocket-project\data\DREAMER.mat" # fallback
             
-        loader = DREAMERLoader(mat_path, sub_start=1, sub_end=2)
         X_all, y_all = loader.load_data()
         pipeline = MiniRocketPipeline()
         pipeline.fit(X_all, y_all)
-        model_path = os.path.join(models_dir, f"master_dreamer_gpu_minirocket_overfit_{timestamp}.pth")
         pipeline.save(model_path)
         print(f"Saved to: {model_path}")
     except Exception as e:
-        print(f"Error overtraining Dreamer: {e}")
 
 if __name__ == '__main__':
     overfit_targets()
