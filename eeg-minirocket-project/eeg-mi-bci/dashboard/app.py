@@ -449,16 +449,116 @@ st.markdown("""
     .prob-container:hover {
         background: rgba(255, 255, 255, 0.035);
     }
-    .osc-container {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(12px);
-        padding: 18px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 10px;
+    .stApp {
+        background-color: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# =============================================================================
+# GLOBAL FULLSCREEN THREE.JS WEBGL 3D NEURAL SYNAPSE BACKGROUND CANVAS
+# =============================================================================
+components.html("""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background: #070a13;
+        }
+        #webgl-bg-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -9999; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webgl-bg-canvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const canvas = document.getElementById('webgl-bg-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 35;
+
+        // Neural Particle Field
+        const count = 3000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = [];
+
+        for(let i = 0; i < count; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 80;
+            positions[i*3+1] = (Math.random() - 0.5) * 80;
+            positions[i*3+2] = (Math.random() - 0.5) * 60;
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.03,
+                y: (Math.random() - 0.5) * 0.03,
+                z: (Math.random() - 0.5) * 0.03
+            });
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const material = new THREE.PointsMaterial({
+            color: 0x38bdf8,
+            size: 0.28,
+            transparent: true,
+            opacity: 0.65,
+            blending: THREE.AdditiveBlending
+        });
+        const particleMesh = new THREE.Points(geometry, material);
+        scene.add(particleMesh);
+
+        // Ambient Rotating Neural Rings
+        const ringGeo = new THREE.TorusGeometry(18, 0.06, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.25 });
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.rotation.x = Math.PI / 3;
+        scene.add(ring1);
+
+        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(24, 0.05, 16, 100), new THREE.MeshBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.2 }));
+        ring2.rotation.y = Math.PI / 4;
+        scene.add(ring2);
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Mouse Parallax
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            particleMesh.rotation.y += 0.0008;
+            particleMesh.rotation.x += 0.0004;
+            ring1.rotation.z += 0.0015;
+            ring2.rotation.x += 0.0012;
+
+            camera.position.x += (mouseX * 10 - camera.position.x) * 0.03;
+            camera.position.y += (-mouseY * 10 - camera.position.y) * 0.03;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
+""", height=0)
 
 # ======================================================
 # HERO HEADER
@@ -469,12 +569,11 @@ st.markdown("""
         <div style="flex:1; min-width:280px;">
             <div class="hero-badge">
                 <span class="pulse-dot"></span>
-                Neural Decoding System &nbsp;·&nbsp; 5 Global Datasets &nbsp;·&nbsp; Universal BCI Engine
+                Neural Decoding System &nbsp;·&nbsp; 7 Benchmark Datasets &nbsp;·&nbsp; Real-time Telemetry
             </div>
-            <h1 class="hero-title neon-title">NeuroDecoder MI-BCI</h1>
+            <h1 class="hero-title">NEURO_MOVE · Advanced MI-BCI Platform</h1>
             <p class="hero-subtitle">
-                A high-performance Brain-Computer Interface engine benchmarking <strong style="color:#00d4ff">5 State-of-the-Art Architectures</strong> 
-                (including <strong style="color:#10b981">MiniRocket</strong>, <strong style="color:#a855f7">CNN-LSTM</strong>, <strong style="color:#0ea5e9">EEGNet</strong>, and <strong style="color:#64748b">Transformer</strong>) for real-time Motor Imagery &amp; Execution decoding across diverse non-invasive scalp EEG datasets.
+                Enterprise Brain-Computer Interface benchmarking suite evaluating <strong style="color:#38bdf8">MiniRocket</strong>, <strong style="color:#818cf8">CNN-LSTM</strong>, <strong style="color:#0284c7">EEGNet</strong>, and <strong style="color:#34d399">Conformer/Transformer</strong> models for sub-millisecond Motor Imagery neural signal classification.
             </p>
         </div>
     </div>
