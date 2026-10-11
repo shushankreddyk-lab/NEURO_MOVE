@@ -149,33 +149,54 @@ st.markdown("""
         line-height: 1.65;
     }
 
-    /* === CLINICAL PRECISION CARD === */
-    .glass-card {
-        background: #0d1322;
-        border: 1px solid #1e293b;
-        border-radius: 10px;
-        padding: 22px 26px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    /* === 3D PRECISION CHASSIS CARD (REPLACING GLASSMORPISM) === */
+    .glass-card, .neuro-3d-card {
+        background: linear-gradient(165deg, #131b2e 0%, #090e1a 100%) !important;
+        border: 1px solid #1e293b !important;
+        border-top: 1px solid rgba(56, 189, 248, 0.35) !important;
+        border-left: 1px solid rgba(56, 189, 248, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 24px 28px !important;
+        box-shadow: 
+            0 14px 35px -5px rgba(0, 0, 0, 0.7),
+            0 2px 4px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.5) !important;
+        transform: perspective(1000px) translateZ(0);
+        transform-style: preserve-3d;
+        transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
         position: relative;
         overflow: hidden;
     }
     
-    .glass-card:hover {
-        border-color: #38bdf8;
+    .glass-card:hover, .neuro-3d-card:hover {
+        transform: perspective(1000px) translateY(-5px) translateZ(12px) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 
+            0 22px 45px -8px rgba(0, 0, 0, 0.85),
+            0 0 25px rgba(14, 165, 233, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* === CLINICAL KPI METRIC CARD === */
+    /* === 3D HARDWARE KPI METRIC CHASSIS === */
     .kpi-card {
-        background: #0d1322;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-        padding: 16px 18px;
-        text-align: left;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        transition: border-color 0.2s ease;
+        background: linear-gradient(165deg, #131b2e 0%, #090e18 100%) !important;
+        border: 1px solid #1e293b !important;
+        border-top: 1px solid rgba(56, 189, 248, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 18px 20px !important;
+        text-align: left !important;
+        box-shadow: 
+            0 8px 20px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.4) !important;
+        transform: perspective(800px) translateZ(0);
+        transition: all 0.25s ease !important;
     }
     .kpi-card:hover {
-        border-color: #0284c7;
+        border-color: #38bdf8 !important;
+        transform: perspective(800px) translateY(-3px) translateZ(6px) !important;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.65), 0 0 15px rgba(56, 189, 248, 0.18) !important;
     }
     .kpi-value {
         font-size: 1.7rem;
@@ -200,18 +221,24 @@ st.markdown("""
         font-family: 'JetBrains Mono', monospace;
     }
 
-    /* === DATA PANELS === */
-    .glass-panel {
-        background: #0d1322;
-        border: 1px solid #1e293b;
-        border-radius: 10px;
-        padding: 22px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        margin-bottom: 20px;
+    /* === 3D DATA PANELS === */
+    .glass-panel, .neuro-3d-panel {
+        background: linear-gradient(165deg, #111827 0%, #080d1a 100%) !important;
+        border: 1px solid #1f2937 !important;
+        border-top: 1px solid rgba(56, 189, 248, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 24px !important;
+        box-shadow: 
+            0 12px 30px rgba(0, 0, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        margin-bottom: 22px !important;
+        transform: perspective(1000px) translateZ(0);
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
     }
-    .glass-panel:hover {
-        border-color: rgba(0, 212, 255, 0.3);
-        transform: translateY(-2px);
+    .glass-panel:hover, .neuro-3d-panel:hover {
+        border-color: #0ea5e9 !important;
+        transform: perspective(1000px) translateY(-3px) translateZ(8px) !important;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(14, 165, 233, 0.15) !important;
     }
 
     /* === HERO HEADER === */
