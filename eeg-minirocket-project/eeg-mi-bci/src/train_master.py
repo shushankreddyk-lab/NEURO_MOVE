@@ -313,7 +313,7 @@ def extract_and_save_data(mode, group_id, output_dir, dataset_path, sub_start=1,
     
     return X_all.shape, y_all.shape
 
-def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_name="MiniRocket", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1):
+def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_name="MiniRocket", epochs=10, lr=1e-3, kernels=10000, train_split=0.8, sub_start=1, sub_end=1, dataset_name=""):
     sub_str = f"subs{sub_start}to{sub_end}"
     
     data_path = get_cache_path(mode, group_id, dataset_path, sub_start, sub_end, data_dir)
@@ -427,10 +427,6 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         
     if len(X_test) == 0:
         X_test, y_test = X_val.copy(), y_val.copy()
-
-    X_train, y_train = X.copy(), y.copy()
-    X_val, y_val = X.copy(), y.copy()
-    X_test, y_test = X.copy(), y.copy()
     
     # Shuffle internally for model training stability
     train_idx = np.random.permutation(len(X_train))
@@ -574,12 +570,40 @@ def train_models(mode, group_id, data_dir, models_dir, dataset_path="", model_na
         "latency_ms": latency_ms
     }), flush=True)
 
+    # Append to training results CSV
+    try:
+        import pandas as pd
+        artifacts_dir = os.path.join(os.path.dirname(__file__), '..', 'artifacts')
+        os.makedirs(artifacts_dir, exist_ok=True)
+        results_csv = os.path.join(artifacts_dir, 'training_results.csv')
+        
+        ds_name = dataset_name if dataset_name else (os.path.basename(dataset_path) if dataset_path else "Unknown")
+        new_row = pd.DataFrame([{
+            "Date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Model": model_name,
+            "Dataset": ds_name,
+            "Subject_Range": f"{sub_start}-{sub_end}",
+            "Accuracy": f"{final_acc*100:.2f}%",
+            "Latency (ms)": f"{latency_ms:.2f}"
+        }])
+        
+        if os.path.exists(results_csv):
+            df = pd.read_csv(results_csv)
+            df = pd.concat([df, new_row], ignore_index=True)
+        else:
+            df = new_row
+            
+        df.to_csv(results_csv, index=False)
+    except Exception as e:
+        print(f"Error saving to CSV: {e}", file=sys.stderr)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, required=True, choices=["master", "ovr"])
     parser.add_argument("--model", type=str, default="MiniRocket", help="The architecture to train.")
     parser.add_argument("--group", type=str, default=None)
     parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--dataset_name", type=str, default="")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--kernels", type=int, default=10000)
@@ -646,5 +670,6 @@ if __name__ == "__main__":
             kernels=args.kernels,
             train_split=args.partition / 100.0,
             sub_start=args.sub_start,
-            sub_end=args.sub_end
+            sub_end=args.sub_end,
+            dataset_name=args.dataset_name
         )

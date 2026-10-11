@@ -1,0 +1,66 @@
+{
+  "name": "oxalpha-chat",
+  "displayName": "Ox Alpha Chat",
+  "description": "Ox Alpha stealth reasoning model chat integrated into Antigravity IDE sidebar and editor.",
+  "version": "1.0.0",
+  "publisher": "oxalpha-custom",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onView:oxalpha.chatView",
+    "onCommand:oxalpha.openChatTab"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "oxalpha-sidebar",
+          "title": "Ox Alpha",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "oxalpha-sidebar": [
+        {
+          "type": "webview",
+          "id": "oxalpha.chatView",
+          "name": "Ox Alpha Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "oxalpha.openChatTab",
+        "title": "Ox Alpha: Open Chat in Editor Tab",
+        "category": "Ox Alpha"
+      },
+      {
+        "command": "oxalpha.refreshChat",
+        "title": "Ox Alpha: Refresh Chat",
+        "category": "Ox Alpha",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "oxalpha.openChatTab",
+          "when": "view == oxalpha.chatView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "oxalpha.refreshChat",
+          "when": "view == oxalpha.chatView",
+          "group": "navigation@2"
+        }
+      ]
+    }
+  }
+}

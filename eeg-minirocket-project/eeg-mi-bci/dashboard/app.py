@@ -22,7 +22,13 @@ if _D_PKGS not in sys.path:
 # Ensure src is in path to import modules, prioritizing it over the root src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import torch
+try:
+    import torch
+except RuntimeError as e:
+    if "already has a docstring" in str(e):
+        pass  # Ignore Streamlit hot-reload conflict with PyTorch C-extensions
+    else:
+        raise
 
 @st.cache_resource
 def get_model_pipelines():
@@ -1118,6 +1124,20 @@ if selected_tab == '🚀 Live Training':
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("### 📈 Historical Training Accuracies")
+    hist_csv_path = os.path.join(os.path.dirname(__file__), '..', 'artifacts', 'training_results.csv')
+    if os.path.exists(hist_csv_path):
+        try:
+            hist_df = pd.read_csv(hist_csv_path)
+            hist_df = hist_df.iloc[::-1].reset_index(drop=True)
+            st.dataframe(hist_df, use_container_width=True)
+        except Exception as e:
+            st.warning("Could not load historical training results.")
+    else:
+        st.info("No historical training results found yet. Run training to generate data.")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
     # --- Model Selection & Controls ---
     st.markdown("### 🧬 Select Model to Train")
     selected_bench_model = st.selectbox(
@@ -1534,6 +1554,19 @@ if selected_tab == '🚀 Live Training':
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+        st.markdown('<div style="color:#0ea5e9; font-weight:700; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.08em; margin-top:24px; margin-bottom:12px;">📈 Historical Training Accuracies</div>', unsafe_allow_html=True)
+        
+        results_csv_path = os.path.join(os.path.dirname(__file__), '..', 'artifacts', 'training_results.csv')
+        if os.path.exists(results_csv_path):
+            try:
+                hist_df = pd.read_csv(results_csv_path)
+                hist_df = hist_df.iloc[::-1].reset_index(drop=True)
+                st.dataframe(hist_df, use_container_width=True)
+            except Exception as e:
+                st.warning("Could not load historical training results.")
+        else:
+            st.info("No historical training results found yet. Run training to generate data.")
 
         if st.button("🗑 Clear Results"):
             del st.session_state.last_training_result
@@ -2417,13 +2450,57 @@ if selected_tab == '🎯 Live Inference':
                     model_Xs[model_name] = X_model
                     
                     # Store class labels from the checkpoint
+                    def _labels_from_classes(raw_classes, dataset_hint='physionet'):
+                        """Return display labels in model-output-index order."""
+                        if raw_classes is None:
+                            return None
+                        rc = [str(c).strip().lower() for c in raw_classes]
+                        
+                        # Generic normalisation for any other dataset
+                        _NORM = {
+                            'left_hand': 'Left Fist', 'right_hand': 'Right Fist',
+                            'feet': 'Both Feet',      'both_feet': 'Both Feet',
+                            'hands': 'Both Fists',    'both_fists': 'Both Fists',
+                            'both_hands': 'Both Fists','rest': 'Rest',
+                            'left': 'Left Fist',      'right': 'Right Fist',
+                            'tongue': 'Tongue',        'foot': 'Both Feet',
+                            'right hand': 'Right Fist','left hand': 'Left Fist'
+                        }
+                        
+                        # Fix sklearn alphabetical sorting for old physionet models
+                        if dataset_hint == 'physionet' and rc == ['feet', 'hands', 'left_hand', 'right_hand']:
+                            return ["Both Feet", "Both Fists", "Left Fist", "Right Fist"]
+                            
+                        # If the pipeline exported raw integers
+                        if rc == ['0', '1', '2', '3']:
+                            if dataset_hint == 'bci2a':
+                                return ["Left Fist", "Right Fist", "Both Feet", "Tongue"]
+                            else:
+                                return ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
+                                
+                        if dataset_hint == 'nemar' and rc == ['0', '1', '2', '3', '4']:
+                            return ["Thumb", "Index", "Middle", "Ring", "Little"]
+                                
+                        return [_NORM.get(c, c.title()) for c in rc]
+
                     if model_classes is not None:
-                        model_class_labels[model_name] = [str(c) for c in model_classes]
+                        if 'bci2a' in model_name.lower() or is_gdf:
+                            dataset_hint = 'bci2a'
+                        elif 'nemar' in model_name.lower():
+                            dataset_hint = 'nemar'
+                        else:
+                            dataset_hint = 'physionet'
+                            
+                        norm_labels = _labels_from_classes(model_classes, dataset_hint)
+                        model_class_labels[model_name] = norm_labels
                     else:
                         # Fallback heuristic if not exported
-                        if is_gdf:
-                            model_class_labels[model_name] = ["Left Hand", "Right Hand", "Both Feet", "Tongue"]
+                        if is_gdf or 'bci2a' in model_name.lower():
+                            model_class_labels[model_name] = ["Left Fist", "Right Fist", "Both Feet", "Tongue"]
+                        elif 'nemar' in model_name.lower():
+                            model_class_labels[model_name] = ["Thumb", "Index", "Middle", "Ring", "Little"]
                         else:
+                            # Assume old physionet default order if we don't know
                             model_class_labels[model_name] = ["Left Fist", "Right Fist", "Both Fists", "Both Feet"]
 
                 if len(model_Xs) == 0:

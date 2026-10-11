@@ -19,10 +19,11 @@ def run_training(dataset_path, start, end, prefix):
     args = [
         python_exe, script_path,
         '--dataset', dataset_path,
+        '--dataset_name', prefix,
         '--mode', 'master',
-        '--epochs', '50',      # Reduced epochs for faster completion
+        '--epochs', '80',
         '--lr', '0.001',
-        '--kernels', '5000',   # Reduced kernels for faster completion
+        '--kernels', '5000',
         '--partition', '80',
         '--sub_start', str(start),
         '--sub_end', str(end)
@@ -51,3 +52,16 @@ nemar_path = r"D:\eeg-minirocket-project\dataset\NEMAR_on008446"
 nemar_batches = [(1, 1)] # testing 1 subject first
 for start, end in nemar_batches:
     run_training(nemar_path, start, end, "NEMAR Finger MI")
+
+print("ALL TRAINING JOBS SUCCESSFULLY COMPLETED!")
+
+print("Pushing updates to git...")
+try:
+    import datetime
+    commit_msg = f"Automated training update: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    subprocess.run(["git", "add", "-f", "eeg-mi-bci/artifacts/training_results.csv"], cwd=r"D:\eeg-minirocket-project", check=True)
+    subprocess.run(["git", "commit", "-m", commit_msg], cwd=r"D:\eeg-minirocket-project", check=True)
+    subprocess.run(["git", "push"], cwd=r"D:\eeg-minirocket-project", check=True)
+    print("Successfully pushed training results to git!")
+except Exception as e:
+    print(f"Error pushing to git: {e}")
