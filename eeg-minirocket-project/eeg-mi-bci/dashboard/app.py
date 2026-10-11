@@ -60,32 +60,23 @@ st.markdown("""
         100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
     }
     
+    /* ZERO HORIZONTAL SCROLLING - Clean Responsive Flex-Wrap Tabs */
     [data-baseweb="tab-list"], div[data-testid="stTabs"] > div:first-child {
         opacity: 0;
         transform-origin: top;
         animation: dropIn3D 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s forwards;
         perspective: 1000px;
         transform-style: preserve-3d;
-        /* Enable horizontal scrolling for tabs */
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-        flex-wrap: nowrap !important;
-        padding-bottom: 10px !important;
-        /* Custom scrollbar for tabs */
-        scrollbar-width: thin;
-        scrollbar-color: #f43f5e transparent;
+        overflow-x: hidden !important;
+        white-space: normal !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        padding-bottom: 14px !important;
+        scrollbar-width: none !important;
     }
     
     [data-baseweb="tab-list"]::-webkit-scrollbar, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar {
-        height: 8px;
-    }
-    [data-baseweb="tab-list"]::-webkit-scrollbar-track, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-    }
-    [data-baseweb="tab-list"]::-webkit-scrollbar-thumb, div[data-testid="stTabs"] > div:first-child::-webkit-scrollbar-thumb {
-        background-color: #f43f5e;
-        border-radius: 4px;
+        display: none !important;
     }
 
     /* 3D Tab Buttons */
@@ -125,6 +116,17 @@ st.markdown("""
     /* Import clean aerospace/medical typography */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
+    /* Prevent any accidental horizontal window overflow */
+    html, body, .stApp {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    .main .block-container {
+        max-width: 1380px !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        overflow-x: hidden !important;
+    }
     /* Global Application Background - High-end clinical matte dark */
     .stApp {
         background-color: #070a13 !important;
