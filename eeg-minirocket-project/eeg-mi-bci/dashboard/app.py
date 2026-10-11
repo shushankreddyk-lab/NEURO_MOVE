@@ -149,54 +149,90 @@ st.markdown("""
         line-height: 1.65;
     }
 
-    /* === 3D PRECISION CHASSIS CARD (REPLACING GLASSMORPISM) === */
-    .glass-card, .neuro-3d-card {
-        background: linear-gradient(165deg, #131b2e 0%, #090e1a 100%) !important;
-        border: 1px solid #1e293b !important;
-        border-top: 1px solid rgba(56, 189, 248, 0.35) !important;
-        border-left: 1px solid rgba(56, 189, 248, 0.2) !important;
-        border-radius: 12px !important;
-        padding: 24px 28px !important;
-        box-shadow: 
-            0 14px 35px -5px rgba(0, 0, 0, 0.7),
-            0 2px 4px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.08),
-            inset 0 -2px 4px rgba(0, 0, 0, 0.5) !important;
-        transform: perspective(1000px) translateZ(0);
-        transform-style: preserve-3d;
-        transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .glass-card:hover, .neuro-3d-card:hover {
-        transform: perspective(1000px) translateY(-5px) translateZ(12px) !important;
-        border-color: #38bdf8 !important;
-        box-shadow: 
-            0 22px 45px -8px rgba(0, 0, 0, 0.85),
-            0 0 25px rgba(14, 165, 233, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    /* === LIQUID 3D NEURAL SURFACE SYSTEM === */
+    @keyframes liquidFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
-    /* === 3D HARDWARE KPI METRIC CHASSIS === */
+    @keyframes liquidRipple {
+        0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+        50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.08); }
+        100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+    }
+
+    .glass-card, .neuro-3d-card, .liquid-card {
+        background: radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+                    radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 40%),
+                    linear-gradient(135deg, #0e1526 0%, #060a14 100%) !important;
+        background-size: 200% 200% !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        border-radius: 16px !important;
+        padding: 24px 28px !important;
+        position: relative;
+        overflow: hidden;
+        transform: perspective(1200px) translateZ(0);
+        transform-style: preserve-3d;
+        box-shadow: 
+            0 16px 40px -8px rgba(0, 0, 0, 0.8),
+            0 0 20px rgba(14, 165, 233, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.15),
+            inset 0 -3px 6px rgba(0, 0, 0, 0.6) !important;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        animation: liquidFlow 14s ease infinite;
+    }
+
+    /* Ambient Liquid Mercury Specular Sheen */
+    .glass-card::before, .neuro-3d-card::before, .liquid-card::before {
+        content: "";
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.04) 30%, transparent 60%);
+        pointer-events: none;
+        animation: liquidRipple 20s linear infinite;
+        opacity: 0.6;
+        z-index: 0;
+    }
+
+    .glass-card > *, .neuro-3d-card > *, .liquid-card > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .glass-card:hover, .neuro-3d-card:hover, .liquid-card:hover {
+        transform: perspective(1200px) translateY(-6px) translateZ(16px) rotateX(1deg) !important;
+        border-color: rgba(56, 189, 248, 0.6) !important;
+        box-shadow: 
+            0 28px 60px -10px rgba(0, 0, 0, 0.9),
+            0 0 35px rgba(14, 165, 233, 0.3),
+            inset 0 2px 4px rgba(255, 255, 255, 0.25) !important;
+    }
+
+    /* === LIQUID 3D METRIC CHASSIS === */
     .kpi-card {
-        background: linear-gradient(165deg, #131b2e 0%, #090e18 100%) !important;
-        border: 1px solid #1e293b !important;
-        border-top: 1px solid rgba(56, 189, 248, 0.3) !important;
-        border-radius: 10px !important;
+        background: radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+                    linear-gradient(150deg, #101828 0%, #070c17 100%) !important;
+        border: 1px solid rgba(56, 189, 248, 0.2) !important;
+        border-top: 1px solid rgba(56, 189, 248, 0.45) !important;
+        border-radius: 12px !important;
         padding: 18px 20px !important;
         text-align: left !important;
         box-shadow: 
-            0 8px 20px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.08),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.4) !important;
+            0 10px 24px rgba(0, 0, 0, 0.6),
+            0 0 15px rgba(14, 165, 233, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.12),
+            inset 0 -2px 3px rgba(0, 0, 0, 0.5) !important;
         transform: perspective(800px) translateZ(0);
-        transition: all 0.25s ease !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        position: relative;
+        overflow: hidden;
     }
     .kpi-card:hover {
         border-color: #38bdf8 !important;
-        transform: perspective(800px) translateY(-3px) translateZ(6px) !important;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.65), 0 0 15px rgba(56, 189, 248, 0.18) !important;
+        transform: perspective(800px) translateY(-4px) translateZ(10px) !important;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.75), 0 0 25px rgba(56, 189, 248, 0.3) !important;
     }
     .kpi-value {
         font-size: 1.7rem;
@@ -221,24 +257,25 @@ st.markdown("""
         font-family: 'JetBrains Mono', monospace;
     }
 
-    /* === 3D DATA PANELS === */
-    .glass-panel, .neuro-3d-panel {
-        background: linear-gradient(165deg, #111827 0%, #080d1a 100%) !important;
-        border: 1px solid #1f2937 !important;
-        border-top: 1px solid rgba(56, 189, 248, 0.3) !important;
-        border-radius: 12px !important;
+    /* === LIQUID 3D DATA PANELS === */
+    .glass-panel, .neuro-3d-panel, .liquid-panel {
+        background: radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.07) 0%, transparent 45%),
+                    linear-gradient(145deg, #0e1627 0%, #060a15 100%) !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        border-top: 1px solid rgba(56, 189, 248, 0.4) !important;
+        border-radius: 14px !important;
         padding: 24px !important;
         box-shadow: 
-            0 12px 30px rgba(0, 0, 0, 0.6),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+            0 14px 34px rgba(0, 0, 0, 0.65),
+            inset 0 1px 2px rgba(255, 255, 255, 0.1) !important;
         margin-bottom: 22px !important;
         transform: perspective(1000px) translateZ(0);
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
-    .glass-panel:hover, .neuro-3d-panel:hover {
-        border-color: #0ea5e9 !important;
-        transform: perspective(1000px) translateY(-3px) translateZ(8px) !important;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(14, 165, 233, 0.15) !important;
+    .glass-panel:hover, .neuro-3d-panel:hover, .liquid-panel:hover {
+        border-color: #38bdf8 !important;
+        transform: perspective(1000px) translateY(-4px) translateZ(10px) !important;
+        box-shadow: 0 22px 48px rgba(0, 0, 0, 0.8), 0 0 25px rgba(14, 165, 233, 0.25) !important;
     }
 
     /* === HERO HEADER === */
