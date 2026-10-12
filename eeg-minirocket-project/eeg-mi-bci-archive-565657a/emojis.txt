@@ -1,0 +1,5 @@
+"💻 Live Training Console",
+"🚀 Live Training",
+if selected_tab == '💻 Live Training Console':
+if selected_tab == '🚀 Live Training':
+letter-spacing:0.08em; margin-bottom:10px;">📡 Live Training Telemetry</div>
