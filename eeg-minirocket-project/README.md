@@ -17,6 +17,8 @@ eeg-minirocket-project/
 │   ├── artifacts/          # Benchmarking metrics, evaluation results, and training caches
 │   └── tests/              # Unit & integration tests for BCI pipelines
 │
+├── eeg-mi-bci-archive-565657a/ # Historical archive & baseline checkpoint snapshots (commit 565657a)
+│
 ├── neuro-move-release/     # Standalone Production Web Platform (FastAPI Backend + React 18 / Three.js Frontend)
 │   ├── backend/            # High-throughput FastAPI REST API & real-time WebSocket inference server
 │   └── frontend/           # Modern 3D glassmorphic/liquid UI with Three.js EEG scalp topology

@@ -12,10 +12,6 @@
     "Other"
   ],
   "main": "./extension.js",
-  "activationEvents": [
-    "onView:oxalpha.chatView",
-    "onCommand:oxalpha.openChatTab"
-  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -31,7 +27,8 @@
         {
           "type": "webview",
           "id": "oxalpha.chatView",
-          "name": "Ox Alpha Chat"
+          "name": "Ox Alpha Chat",
+          "icon": "icon.svg"
         }
       ]
     },
