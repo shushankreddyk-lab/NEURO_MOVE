@@ -1,0 +1,6 @@
+[server]
+port = 8502
+folderWatchBlacklist = ['D:/pip_packages']
+
+[browser]
+gatherUsageStats = false
