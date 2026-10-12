@@ -19,5 +19,9 @@ eeg-mi-bci/results/
 results/
 logs/
 *.log
+datasets/
+data/
 dataset/
+tools/
+*.exe
 .DS_Store

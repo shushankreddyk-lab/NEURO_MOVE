@@ -5,8 +5,8 @@ import sys
 # Paths
 python_exe = sys.executable
 script_path = os.path.join("eeg-mi-bci", "src", "train_master.py")
-physionet_path = r"D:\eeg-minirocket-project\physionet"
-bci_path = r"D:\eeg-minirocket-project\BCICIV_2a_gdf"
+physionet_path = r"D:\eeg-minirocket-project\datasets\physionet"
+bci_path = r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf"
 
 # Define training batches to keep memory usage low but finish fast
 physio_batches = [(1, 20), (21, 40), (41, 60), (61, 80), (81, 100), (101, 109)]
@@ -48,7 +48,7 @@ for start, end in physio_batches:
 print("ALL TRAINING JOBS SUCCESSFULLY COMPLETED!")
 
 # Train on NEMAR
-nemar_path = r"D:\eeg-minirocket-project\dataset\NEMAR_on008446"
+nemar_path = r"D:\eeg-minirocket-project\datasets\nemar_on008446"
 nemar_batches = [(1, 1)] # testing 1 subject first
 for start, end in nemar_batches:
     run_training(nemar_path, start, end, "NEMAR Finger MI")

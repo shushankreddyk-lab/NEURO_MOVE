@@ -101,7 +101,7 @@ if __name__ == "__main__":
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     print(json.dumps({"type": "info", "message": f"GPU Training Mode: device={device}"}), flush=True)
 
-    dataset_path = r"d:\eeg-minirocket-project\physionet"
+    dataset_path = r"d:\eeg-minirocket-project\datasets\physionet"
     models_dir = r"d:\eeg-minirocket-project\eeg-mi-bci\models"
     os.makedirs(models_dir, exist_ok=True)
     

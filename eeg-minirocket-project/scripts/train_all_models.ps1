@@ -2,7 +2,7 @@ $env:PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True"
 $base = "D:\eeg-minirocket-project"
 $python = "$base\.venv\Scripts\python.exe"
 $script = "$base\eeg-mi-bci\src\train_master.py"
-$dataset = "D:\eeg-minirocket-project\physionet"
+$dataset = "D:\eeg-minirocket-project\datasets\physionet"
 $models = @(
     @{ model = "CSP+LDA"; epochs = 1 },
     @{ model = "MiniRocket"; epochs = 150 },

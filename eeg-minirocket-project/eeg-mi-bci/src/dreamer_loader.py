@@ -80,5 +80,5 @@ class DREAMERLoader:
         return X, y
 
 if __name__ == "__main__":
-    loader = DREAMERLoader(r"d:\eeg-minirocket-project\dataset\DREAMER.mat", window_size_sec=1.0)
+    loader = DREAMERLoader(r"d:\eeg-minirocket-project\datasets\dreamer\DREAMER.mat", window_size_sec=1.0)
     X, y = loader.load_data()

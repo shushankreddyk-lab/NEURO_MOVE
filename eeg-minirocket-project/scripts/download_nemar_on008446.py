@@ -9,7 +9,7 @@ def install_openneuro():
 
 def download_dataset():
     dataset_id = "ds008446"
-    target_dir = r"D:\eeg-minirocket-project\dataset\NEMAR_on008446"
+    target_dir = r"D:\eeg-minirocket-project\datasets\nemar_on008446"
     
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)

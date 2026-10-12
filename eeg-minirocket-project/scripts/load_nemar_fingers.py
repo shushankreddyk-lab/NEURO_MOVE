@@ -9,7 +9,7 @@ try:
 except ImportError:
     MNE_AVAILABLE = False
 
-def load_nemar_finger_data(dataset_path=r"D:\eeg-minirocket-project\dataset\NEMAR_on008446", subject="sub-01"):
+def load_nemar_finger_data(dataset_path=r"D:\eeg-minirocket-project\datasets\nemar_on008446", subject="sub-01"):
     """
     Loads EDF and Event TSV files for the NEMAR Finger Movement Dataset.
     If mne is not installed or dataset is incomplete, returns high-quality synthetic data for demonstration.

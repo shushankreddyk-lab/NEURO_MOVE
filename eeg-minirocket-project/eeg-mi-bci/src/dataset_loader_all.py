@@ -9,7 +9,7 @@ except Exception as _moabb_exc:
     BNCI2014_001 = PhysionetMI = Schirrmeister2017 = MotorImagery = None
     _MOABB_IMPORT_ERROR = _moabb_exc
 
-def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\data", subject_id=1):
+def load_dataset(dataset_name, data_dir=r"D:\eeg-minirocket-project\datasets", subject_id=1):
     """
     Unified loader for all 5 EEG datasets.
     Returns:

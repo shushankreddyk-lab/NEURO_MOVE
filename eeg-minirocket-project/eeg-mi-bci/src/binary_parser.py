@@ -43,7 +43,7 @@ def normalize_channel_names(ch_names):
     """
     return {ch: ch.upper().strip().replace('.', '') for ch in ch_names}
 
-def load_local_eeg_data(subject_id, runs, data_dir=r'd:\eeg-minirocket-project\physionet'):
+def load_local_eeg_data(subject_id, runs, data_dir=r'd:\eeg-minirocket-project\datasets\physionet'):
     """
     Loads local EDF files for a given subject and run list.
     
@@ -152,7 +152,7 @@ def load_eegbci_data(subject_id, runs):
     raw, events = load_eegbci_data(1, [4])
     print(raw.info['nchan'], events.shape)
 
-def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\physionet', dataset_type="physionet"):
+def generate_dataset_toc(data_dir=r'd:\eeg-minirocket-project\datasets\physionet', dataset_type="physionet"):
     import json
     import glob
     

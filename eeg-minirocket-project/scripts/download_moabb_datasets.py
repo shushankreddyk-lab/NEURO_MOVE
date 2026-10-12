@@ -8,7 +8,7 @@ from moabb.datasets import (
     Cho2017,            # Left vs Right Hand MI (64 channels)
 )
 
-DATA_DIR = r"D:\eeg-minirocket-project\data"
+DATA_DIR = r"D:\eeg-minirocket-project\datasets"
 os.makedirs(DATA_DIR, exist_ok=True)
 mne.set_config('MNE_DATASETS_MOABB_PATH', DATA_DIR)
 

@@ -3,7 +3,7 @@ import json
 import time
 
 models = ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Deep ConvNet", "CSP + LDA"]
-dataset_dir = r"d:\eeg-minirocket-project\physionet"
+dataset_dir = r"d:\eeg-minirocket-project\datasets\physionet"
 
 print("==================================================")
 print("     BCI MODEL COMPARISON (QUICK BENCHMARK)       ")

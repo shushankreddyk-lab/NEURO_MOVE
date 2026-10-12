@@ -40,12 +40,12 @@ def run_training(dataset_name, dataset_path, model_name, sub_start=1, sub_end=5)
 
 if __name__ == "__main__":
     datasets = {
-        "DREAMER": r"D:\eeg-minirocket-project\dataset\DREAMER.mat",
-        "HIGH-GAMMA": r"D:\eeg-minirocket-project\dataset\pone.0218181.s001",
-        "WAY-EEG-GAL": r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection",
-        "BCI Competition IV 2a": r"D:\eeg-minirocket-project\dataset\bci_competition",
-        "PhysioNet": r"D:\eeg-minirocket-project\physionet",
-        "KAYA (Finger Movements)": r"D:\eeg-minirocket-project\dataset"
+        "DREAMER": r"D:\eeg-minirocket-project\datasets\dreamer\DREAMER.mat",
+        "HIGH-GAMMA": r"D:\eeg-minirocket-project\datasets\high_gamma",
+        "WAY-EEG-GAL": r"D:\eeg-minirocket-project\datasets\way_eeg_gal",
+        "BCI Competition IV 2a": r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf",
+        "PhysioNet": r"D:\eeg-minirocket-project\datasets\physionet",
+        "KAYA (Finger Movements)": r"D:\eeg-minirocket-project\datasets\kaya"
     }
     
     models = ["MiniRocket", "CNN-LSTM", "EEGNet", "Shallow ConvNet", "Advanced Transformer"]

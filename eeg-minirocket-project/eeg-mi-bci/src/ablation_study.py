@@ -55,8 +55,8 @@ def run_ablation(data_dir, group_id):
     return {'baseline_acc': float(orig_acc), 'augmented_acc': float(aug_acc), 'delta': float(aug_acc - orig_acc)}
 
 def main():
-    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'processed'))
-    results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'results'))
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'datasets', 'processed'))
+    results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'results'))
     os.makedirs(results_dir, exist_ok=True)
     
     print("Running Ablation Study on Group 2 and Group 3...")

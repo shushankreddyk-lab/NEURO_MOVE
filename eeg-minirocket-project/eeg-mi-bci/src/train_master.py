@@ -614,7 +614,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed')
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'datasets', 'processed'))
     models_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
     
     os.makedirs(data_dir, exist_ok=True)

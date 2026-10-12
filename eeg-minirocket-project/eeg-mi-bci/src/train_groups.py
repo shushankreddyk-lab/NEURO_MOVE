@@ -27,7 +27,7 @@ def archive_old_models(models_dir):
             shutil.move(os.path.join(models_dir, f), os.path.join(archive_dir, f))
         print(f"Archived {len(files_to_archive)} old models to {archive_dir}")
 
-def extract_and_save_group_data(group_id, output_dir, subject_range=range(1, 110), dataset_path=r'd:\eeg-minirocket-project\physionet'):
+def extract_and_save_group_data(group_id, output_dir, subject_range=range(1, 110), dataset_path=r'd:\eeg-minirocket-project\datasets\physionet'):
     """
     Extracts all trials for a given group, saving them iteratively to avoid RAM issues.
     """
@@ -147,10 +147,10 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--group', type=int, help='Group ID to train (1-5)')
-    parser.add_argument('--dataset', type=str, default=r'd:\eeg-minirocket-project\physionet', help='Path to the PhysioNet dataset')
+    parser.add_argument('--dataset', type=str, default=r'd:\eeg-minirocket-project\datasets\physionet', help='Path to the PhysioNet dataset')
     args = parser.parse_args()
 
-    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'processed'))
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'datasets', 'processed'))
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models'))
     os.makedirs(models_dir, exist_ok=True)
     

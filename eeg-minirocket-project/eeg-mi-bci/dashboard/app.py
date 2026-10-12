@@ -1463,25 +1463,25 @@ if selected_tab == '💻 Live Training Console':
         st.info(f"Targeting global dataset: {selected_dataset_str}")
         
         if "BCI" in selected_dataset_str:
-            default_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
+            default_path = st.session_state.get('bci_data_dir', r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf" if os.path.exists(r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf") else r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
             folder_hint = "Enter root path to the 9-subject BCI 2a folder:"
         elif "High-Gamma" in selected_dataset_str:
-            default_path = st.session_state.get('hg_data_dir', r"D:\eeg-minirocket-project\data\NEMAR\nm000172")
+            default_path = st.session_state.get('hg_data_dir', r"D:\eeg-minirocket-project\datasets\high_gamma" if os.path.exists(r"D:\eeg-minirocket-project\datasets\high_gamma") else r"D:\eeg-minirocket-project\data\NEMAR\nm000172")
             folder_hint = "Enter root path to High-Gamma folder:"
         elif "Kaya" in selected_dataset_str:
-            default_path = st.session_state.get('kaya_data_dir', r"D:\eeg-minirocket-project\data\Kaya_Finger_Movements")
+            default_path = st.session_state.get('kaya_data_dir', r"D:\eeg-minirocket-project\datasets\kaya" if os.path.exists(r"D:\eeg-minirocket-project\datasets\kaya") else r"D:\eeg-minirocket-project\data\Kaya_Finger_Movements")
             folder_hint = "Enter root path to Kaya folder:"
         elif "WAY" in selected_dataset_str:
-            default_path = st.session_state.get('way_data_dir', r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection")
+            default_path = st.session_state.get('way_data_dir', r"D:\eeg-minirocket-project\datasets\way_eeg_gal" if os.path.exists(r"D:\eeg-minirocket-project\datasets\way_eeg_gal") else r"D:\eeg-minirocket-project\dataset\grasp-and-lift-eeg-detection")
             folder_hint = "Enter root path to WAY-EEG-GAL folder:"
         elif "NEMAR" in selected_dataset_str:
-            default_path = st.session_state.get('nemar_data_dir', r"D:\eeg-minirocket-project\dataset\NEMAR_on008446")
+            default_path = st.session_state.get('nemar_data_dir', r"D:\eeg-minirocket-project\datasets\nemar_on008446" if os.path.exists(r"D:\eeg-minirocket-project\datasets\nemar_on008446") else r"D:\eeg-minirocket-project\dataset\NEMAR_on008446")
             folder_hint = "Enter root path to NEMAR folder:"
         elif "DREAMER" in selected_dataset_str:
-            default_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\dataset")
+            default_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\datasets\dreamer" if os.path.exists(r"D:\eeg-minirocket-project\datasets\dreamer") else r"D:\eeg-minirocket-project\dataset")
             folder_hint = "Enter root path to DREAMER folder (.mat):"
         else:
-            default_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\physionet")
+            default_path = st.session_state.get('scanned_data_dir', r"D:\eeg-minirocket-project\datasets\physionet" if os.path.exists(r"D:\eeg-minirocket-project\datasets\physionet") else r"D:\eeg-minirocket-project\physionet")
             folder_hint = "Enter root path to the 109-subject PhysioNet folder:"
             
         dataset_path = st.text_input(folder_hint, value=default_path)
@@ -3376,13 +3376,13 @@ if selected_tab == '🔍 Accuracy Analysis':
     """, unsafe_allow_html=True)
     
     if "PhysioNet" in selected_dataset_str:
-        data_path = st.session_state.get('physionet_data_dir', r"D:\eeg-minirocket-project\physionet")
+        data_path = st.session_state.get('physionet_data_dir', r"D:\eeg-minirocket-project\datasets\physionet" if os.path.exists(r"D:\eeg-minirocket-project\datasets\physionet") else r"D:\eeg-minirocket-project\physionet")
     elif "BCI" in selected_dataset_str:
-        data_path = st.session_state.get('bci2a_data_dir', r"D:\eeg-minirocket-project\bci2a")
+        data_path = st.session_state.get('bci2a_data_dir', r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf" if os.path.exists(r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf") else r"D:\eeg-minirocket-project\BCICIV_2a_gdf")
     elif "DREAMER" in selected_dataset_str:
-        data_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\DREAMER")
+        data_path = st.session_state.get('dreamer_data_dir', r"D:\eeg-minirocket-project\datasets\dreamer" if os.path.exists(r"D:\eeg-minirocket-project\datasets\dreamer") else r"D:\eeg-minirocket-project\dataset")
     else:
-        data_path = os.path.join(os.path.dirname(__file__), '..', 'data')
+        data_path = r"D:\eeg-minirocket-project\datasets" if os.path.exists(r"D:\eeg-minirocket-project\datasets") else os.path.join(os.path.dirname(__file__), '..', 'data')
 
     test_files_list = []
     if os.path.exists(data_path):

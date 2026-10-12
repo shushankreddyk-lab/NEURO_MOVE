@@ -2,7 +2,7 @@ import os
 import requests
 import time
 
-DATA_DIR = r"D:\eeg-minirocket-project\data\Kaya_Finger_Movements"
+DATA_DIR = r"D:\eeg-minirocket-project\datasets\kaya"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 COLLECTION_ID = 3917698

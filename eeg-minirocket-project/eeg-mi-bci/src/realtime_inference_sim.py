@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, required=True, help="Path to trained .pth model")
     parser.add_argument("--model_type", type=str, default="EEGNet", help="Architecture (EEGNet, MiniRocket)")
-    parser.add_argument("--data_dir", type=str, default=r"D:\eeg-minirocket-project\BCICIV_2a_gdf", help="Path to dataset")
+    parser.add_argument("--data_dir", type=str, default=r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf", help="Path to dataset")
     parser.add_argument("--subject", type=int, default=1, help="Subject ID to stream")
     
     args = parser.parse_args()

@@ -126,6 +126,6 @@ def load_bci_2a_data(data_dir, subjects, tmin=0.5, tmax=4.6, resample_freq=160.0
     return X, y
 
 if __name__ == "__main__":
-    data_dir = r"D:\eeg-minirocket-project\BCICIV_2a_gdf"
+    data_dir = r"D:\eeg-minirocket-project\datasets\BCICIV_2a_gdf"
     X, y = load_bci_2a_data(data_dir, [1], resample_freq=160.0)
     print(f"Loaded X shape: {X.shape}, y shape: {y.shape}")

@@ -11,7 +11,7 @@ def main():
     print("=== DREAMER Dataset Emotion Recognition Training ===")
     
     # 1. Load Data
-    mat_path = r"d:\eeg-minirocket-project\dataset\DREAMER.mat"
+    mat_path = r"d:\eeg-minirocket-project\datasets\dreamer\DREAMER.mat"
     loader = DREAMERLoader(mat_path, window_size_sec=1.0, overlap=0.5)
     X, y_raw = loader.load_data()
     

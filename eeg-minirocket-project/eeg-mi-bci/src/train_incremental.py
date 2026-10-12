@@ -84,7 +84,7 @@ def extract_subject_data(sub, dataset_path):
     return X_all, y_all
 
 if __name__ == "__main__":
-    dataset_path = r"d:\eeg-minirocket-project\physionet"
+    dataset_path = r"d:\eeg-minirocket-project\datasets\physionet"
     models_dir = r"d:\eeg-minirocket-project\eeg-mi-bci\models"
     os.makedirs(models_dir, exist_ok=True)
     
