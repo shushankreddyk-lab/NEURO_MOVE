@@ -19,48 +19,48 @@ ds_folder_map = {
 mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
 models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)
 
-    trained_models = []
-    if os.path.exists(models_dir):
-        trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
-        trained_models.sort()
-        
-    if trained_models:
-        selected_faculty_model = st.selectbox("Select a Trained Model for Defense:", trained_models, key="faculty_model_sel")
-        
-        # Parse the filename
-        arch_type = "Unknown Architecture"
-        if "minirocket" in selected_faculty_model.lower():
-            arch_type = "MiniRocket (MLP Classifier mapped over 10,000 random convolutional features)"
-        elif "conformer" in selected_faculty_model.lower():
-            arch_type = "EEG-Conformer (Deep CNN for local temporal features + Transformer for global spatial attention)"
-        elif "cnn" in selected_faculty_model.lower():
-            arch_type = "13-Layer CNN-LSTM (Deep convolutional spatial filters followed by recurrent temporal tracking)"
-            
-        import re
-        sub_match = re.search(r'subs(\d+)(to)?(\d+)?', selected_faculty_model)
-        if sub_match:
-            if sub_match.group(3):
-                subject_info = f"Subjects {sub_match.group(1)} to {sub_match.group(3)}"
-            else:
-                subject_info = f"Subject {sub_match.group(1)}"
-        else:
-            subject_info = "All 109 Subjects (Global / Generalized)"
-            
-        st.markdown(f"""
-        <div class="glass-card" style="margin-bottom:30px;">
-            <h4 style="color:#a855f7; margin-top:0;">Model Profile: <code>{selected_faculty_model}</code></h4>
-            <ul style="color:#c8d6e5; line-height:1.7;">
-                <li><strong style="color:#10b981;">Architecture:</strong> {arch_type}</li>
-                <li><strong style="color:#10b981;">Training Data (Who):</strong> {subject_info}. <em>Why?</em> By isolating training to this specific batch of subjects, the model optimizes its internal weights for their unique brain topological patterns (handling inter-subject variability) before generalizing.</li>
-                <li><strong style="color:#10b981;">Features Used (What):</strong> 20 Motor-Cortex Channels (e.g., C3, C4, FC3, FC4). <em>Why?</em> We strictly avoided frontal/occipital channels to prevent the model from cheating using eye-blinks (EOG) or visual processing.</li>
-                <li><strong style="color:#10b981;">Preprocessing (How):</strong> 4-38Hz Bandpass filter + Common Average Referencing (CAR) + Z-score normalization per channel to eliminate skull noise.</li>
-            </ul>
-            <p style="color:#c8d6e5; font-size:0.95rem; margin-top:10px; text-align:justify;">
-            <strong>How it was trained:</strong> The model processed 4.0-second raw EEG epochs. It learned to map the Event-Related Desynchronization (ERD) amplitudes in the &mu; (8-12Hz) and &beta; (13-30Hz) bands to the 4 motor classes (Left Hand, Right Hand, Both Feet, Tongue). For neural networks (Conformer/CNN), the AdamW optimizer was used over multiple epochs. For MiniRocket, an MLP Classifier learns the mapping from the extracted convolutional features using gradient descent.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+trained_models = []
+if os.path.exists(models_dir):
+    trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
+    trained_models.sort()
     
+if trained_models:
+    selected_faculty_model = st.selectbox("Select a Trained Model for Defense:", trained_models, key="faculty_model_sel")
+    
+    # Parse the filename
+    arch_type = "Unknown Architecture"
+    if "minirocket" in selected_faculty_model.lower():
+        arch_type = "MiniRocket (MLP Classifier mapped over 10,000 random convolutional features)"
+    elif "conformer" in selected_faculty_model.lower():
+        arch_type = "EEG-Conformer (Deep CNN for local temporal features + Transformer for global spatial attention)"
+    elif "cnn" in selected_faculty_model.lower():
+        arch_type = "13-Layer CNN-LSTM (Deep convolutional spatial filters followed by recurrent temporal tracking)"
+        
+    import re
+    sub_match = re.search(r'subs(\d+)(to)?(\d+)?', selected_faculty_model)
+    if sub_match:
+        if sub_match.group(3):
+            subject_info = f"Subjects {sub_match.group(1)} to {sub_match.group(3)}"
+        else:
+            subject_info = f"Subject {sub_match.group(1)}"
+    else:
+        subject_info = "All 109 Subjects (Global / Generalized)"
+        
+    st.markdown(f"""
+    <div class="glass-card" style="margin-bottom:30px;">
+        <h4 style="color:#a855f7; margin-top:0;">Model Profile: <code>{selected_faculty_model}</code></h4>
+        <ul style="color:#c8d6e5; line-height:1.7;">
+            <li><strong style="color:#10b981;">Architecture:</strong> {arch_type}</li>
+            <li><strong style="color:#10b981;">Training Data (Who):</strong> {subject_info}. <em>Why?</em> By isolating training to this specific batch of subjects, the model optimizes its internal weights for their unique brain topological patterns (handling inter-subject variability) before generalizing.</li>
+            <li><strong style="color:#10b981;">Features Used (What):</strong> 20 Motor-Cortex Channels (e.g., C3, C4, FC3, FC4). <em>Why?</em> We strictly avoided frontal/occipital channels to prevent the model from cheating using eye-blinks (EOG) or visual processing.</li>
+            <li><strong style="color:#10b981;">Preprocessing (How):</strong> 4-38Hz Bandpass filter + Common Average Referencing (CAR) + Z-score normalization per channel to eliminate skull noise.</li>
+        </ul>
+        <p style="color:#c8d6e5; font-size:0.95rem; margin-top:10px; text-align:justify;">
+        <strong>How it was trained:</strong> The model processed 4.0-second raw EEG epochs. It learned to map the Event-Related Desynchronization (ERD) amplitudes in the &mu; (8-12Hz) and &beta; (13-30Hz) bands to the 4 motor classes (Left Hand, Right Hand, Both Feet, Tongue). For neural networks (Conformer/CNN), the AdamW optimizer was used over multiple epochs. For MiniRocket, an MLP Classifier learns the mapping from the extracted convolutional features using gradient descent.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("---")
 
     selected_model_view = st.selectbox(
