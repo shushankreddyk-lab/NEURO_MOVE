@@ -15,9 +15,9 @@ import sys
 
 import sys
 
-# --- Force CUDA torch from D:\pip_packages (overrides system CPU torch) ---
-_D_PKGS = r"D:\pip_packages"
-if _D_PKGS not in sys.path:
+# --- Force CUDA torch from env override (NEUROMOVE_PIP_PACKAGES) ---
+_D_PKGS = os.environ.get("NEUROMOVE_PIP_PACKAGES")
+if _D_PKGS and _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
 # Ensure src is in path to import modules, prioritizing it over the root src
