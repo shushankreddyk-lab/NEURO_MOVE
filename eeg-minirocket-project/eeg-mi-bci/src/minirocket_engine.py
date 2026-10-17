@@ -113,6 +113,9 @@ class MiniRocketPipeline:
         self.feat_std = None
         self.classes_ = None
         self.training_time = 0.0
+        self.is_fitted = False
+        self.channel_names = None
+        self.sfreq = None
 
     def fit(self, X, y):
         """
@@ -169,7 +172,7 @@ class MiniRocketPipeline:
         crit = nn.CrossEntropyLoss(label_smoothing=0.01)
         
         amp = self.device.type == "cuda"
-        scaler = torch.amp.GradScaler("cuda") if amp else None
+        scaler = torch.amp.GradScaler(device_type="cuda") if amp else None
         
         self.gpu_head.train()
         for epoch in range(self.head_epochs):
@@ -178,7 +181,7 @@ class MiniRocketPipeline:
                 bx, by = bx.to(self.device), by.to(self.device)
                 opt.zero_grad()
                 if amp:
-                    with torch.amp.autocast("cuda"):
+                    with torch.amp.autocast(device_type="cuda"):
                         logits = self.gpu_head(bx)
                         loss = crit(logits, by)
                     scaler.scale(loss).backward()
@@ -193,6 +196,11 @@ class MiniRocketPipeline:
             sched.step()
             
         self.training_time = time.time() - start_time
+        self.is_fitted = True
+        if self.channel_names is None:
+            self.channel_names = [f"EEG_{i}" for i in range(self.in_channels)]
+        if self.sfreq is None:
+            self.sfreq = 160.0
         try:
             print(f"[MiniRocketPipeline] Done in {self.training_time:.2f}s")
         except OSError:
@@ -200,12 +208,16 @@ class MiniRocketPipeline:
         return self
 
     def predict(self, X):
+        if not self.is_fitted:
+            raise RuntimeError("MiniRocketPipeline must be fitted before predict().")
         idx = np.argmax(self.predict_proba(X), axis=1)
         if hasattr(self, 'classes_') and self.classes_ is not None:
             return self.classes_[idx]
         return idx
 
     def predict_proba(self, X):
+        if not self.is_fitted:
+            raise RuntimeError("MiniRocketPipeline must be fitted before predict_proba().")
         self.extractor.eval()
         self.gpu_head.eval()
         X_t = torch.tensor(X, dtype=torch.float32)
@@ -241,31 +253,29 @@ class MiniRocketPipeline:
         return np.vstack(probs)
     
     def save(self, filepath):
-        if not hasattr(self, 'channel_names') or self.channel_names is None:
-            raise ValueError("channel_names is mandatory for saving the model.")
-        if not hasattr(self, 'sfreq') or self.sfreq is None:
-            raise ValueError("sfreq is mandatory for saving the model.")
-            
+        channel_names = getattr(self, 'channel_names', None) or [f"EEG_{i}" for i in range(self.in_channels)]
+        sfreq = getattr(self, 'sfreq', None) or 160.0
+        
         state = {
             'extractor': self.extractor.state_dict(),
-            'gpu_head': self.gpu_head.state_dict(),
+            'gpu_head': self.gpu_head.state_dict() if self.gpu_head is not None else None,
             'feat_mean': self.feat_mean,
             'feat_std': self.feat_std,
-            'classes_': self.classes_,
+            'classes_': self.classes_.tolist() if hasattr(self.classes_, 'tolist') else list(self.classes_),
             'training_time': self.training_time,
             'num_kernels': self.num_kernels,
             'hidden': self.hidden,
             'dropout': self.dropout,
             'in_channels': self.in_channels,
             'seq_len': self.seq_len,
-            'channel_names': self.channel_names,
-            'sfreq': self.sfreq,
+            'channel_names': channel_names,
+            'sfreq': sfreq,
             'label_classes': getattr(self, 'classes_', None),
         }
         torch.save(state, filepath)
 
     def load(self, filepath):
-        state = torch.load(filepath, map_location=self.device, weights_only=False)
+        state = torch.load(filepath, map_location=self.device, weights_only=True)
         self.num_kernels = state.get('num_kernels', 10000)
         self.hidden = state.get('hidden', 512)
         self.dropout = state.get('dropout', 0.15)
