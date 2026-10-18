@@ -1,34 +1,30 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import Dashboard from './components/Dashboard'
-import './App.css'
-
-const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
-)
-
-// Add Turnstile token to requests if available
-api.interceptors.request.use((config) => {
-  const token = (window as any).turnstileToken
-  if (token) config.headers['X-Turnstile-Token'] = token
-  return config
-})
+import React from 'react'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
+import { Dashboard } from './pages/Dashboard'
+import { Datasets } from './pages/Datasets'
+import { Training } from './pages/Training'
+import { Inference } from './pages/Inference'
+import { Models } from './pages/Models'
+import { Analytics } from './pages/Analytics'
+import { Settings } from './pages/Settings'
+import './index.css'
 
 function App() {
   return (
-    <div style={styles.app}>
-      <Dashboard />
-    </div>
+    <Router>
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-sky-200 selection:text-slate-900">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/datasets" element={<Datasets />} />
+          <Route path="/training" element={<Training />} />
+          <Route path="/inference" element={<Inference />} />
+          <Route path="/models" element={<Models />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </div>
+    </Router>
   )
 }
 
 export default App
-
-const styles: Record<string, React.CSSProperties> = {
-  app: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-}
