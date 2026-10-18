@@ -39,10 +39,11 @@ function TurnstileWidget({ onTokenReady, theme = 'dark' }: { onTokenReady: (toke
       }
       
       widgetIdRef.current = (window as any).turnstile.render(containerRef.current, {
-        sitekey: process.env.REACT_APP_TURNSTILE_SITEKEY || '1x0000000000000000000000000000000AA', // Demo sitekey
+        sitekey: import.meta.env.VITE_TURNSTILE_SITEKEY || '1x0000000000000000000000000000000AA', // Demo sitekey
         theme: theme,
         callback: (token: string) => {
           onTokenReady(token)
+          ;(window as any).turnstileToken = token
         },
         'expired-callback': () => {
           onTokenReady('')

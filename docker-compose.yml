@@ -1,21 +1,132 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  # ========== DATABASE ==========
+  postgres:
+    image: postgres:15-alpine
+    container_name: neuromove-postgres
+    environment:
+      POSTGRES_DB: neuromove
+      POSTGRES_USER: neuromove
+      POSTGRES_PASSWORD: neuromove
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neuromove"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neuromove-net
+
+  # ========== CACHE ==========
+  redis:
+    image: redis:7-alpine
+    container_name: neuromove-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neuromove-net
+
+  # ========== MESSAGE QUEUE ==========
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: neuromove-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: neuromove
+      RABBITMQ_DEFAULT_PASS: neuromove
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - neuromove-net
+
+  # ========== KEYCLOAK (AUTH) ==========
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: neuromove-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neuromove-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ========== BACKEND ==========
   backend:
     build:
-      context: ./backend
+      context: ./neuro-move-release/backend
       dockerfile: Dockerfile
+    container_name: neuromove-backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
-      - ../eeg-mi-bci:/app/eeg-mi-bci:ro
-      - ../eeg-mi-bci-archive-565657a:/app/eeg-mi-bci-archive-565657a:ro
-      - ../figures:/app/figures:ro
-      - ../reports:/app/reports:ro
     environment:
+      - DATABASE_URL=postgresql+asyncpg://neuromove:neuromove@postgres:5432/neuromove
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://neuromove:neuromove@rabbitmq:5672/
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=neuromove
+      - KEYCLOAK_CLIENT_ID=neuromove-backend
+      - KEYCLOAK_CLIENT_SECRET=neuromove-backend-secret
+      - TURNSTILE_SECRET=
+      - SECRET_KEY=neuromove-secret-key-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
       - NEUROMOVE_ROOT=/app
-      - NEUROMOVE_PIP_PACKAGES=/app/.venv/lib/python3.11/site-packages
+    volumes:
+      - ./neuro-move-release/backend:/app
+      - ./eeg-mi-bci:/app/eeg-mi-bci:ro
+      - ./eeg-mi-bci-archive-565657a:/app/eeg-mi-bci-archive-565657a:ro
+      - ./models:/app/models:rw
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - neuromove-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -23,48 +134,33 @@ services:
       timeout: 10s
       retries: 3
 
+  # ========== FRONTEND ==========
   frontend:
     build:
-      context: ./frontend
+      context: ./neuro-move-release/frontend
       dockerfile: Dockerfile
+    container_name: neuromove-frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000
+      - VITE_KEYCLOAK_URL=http://localhost:8080
+      - VITE_KEYCLOAK_REALM=neuromove
+      - VITE_KEYCLOAK_CLIENT_ID=neuromove-frontend
+    volumes:
+      - ./neuro-move-release/frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
+    networks:
+      - neuromove-net
     restart: unless-stopped
 
-  # Optional: PostgreSQL for production (commented for demo)
-  # postgres:
-  #   image: postgres:15-alpine
-  #   environment:
-  #     POSTGRES_DB: neuromove
-  #     POSTGRES_USER: neuromove
-  #     POSTGRES_PASSWORD: neuromove
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U neuromove"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+networks:
+  neuromove-net:
+    driver: bridge
 
-  # Optional: Redis for caching (commented for demo)
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-# volumes:
-#   postgres_data:
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

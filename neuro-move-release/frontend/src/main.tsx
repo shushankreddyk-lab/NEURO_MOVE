@@ -8,3 +8,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>
 )
+
+// Expose turnstile token globally for dashboard component
+;(window as any).turnstileToken = ''
