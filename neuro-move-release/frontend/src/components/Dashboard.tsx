@@ -1,5 +1,61 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { apiService, ModelInfo, InferenceRequest, InferenceResponse } from '../services/api'
+
+interface ProbabilityBarProps {
+  label: string
+  value: number
+  isBest: boolean
+}
+
+function ProbabilityBar({ label, value, isBest }: ProbabilityBarProps) {
+  return (
+    <div style={styles.probRow}>
+      <div style={styles.probLabel}>{label}</div>
+      <div style={styles.barContainer}>
+        <div style={{
+          ...styles.barFill,
+          width: `${value}%`,
+          background: isBest ? 'linear-gradient(90deg, #0ea5e9, #3b82f6)' : 'linear-gradient(90deg, #64748b, #475569)',
+        }} />
+      </div>
+      <div style={{ ...styles.probValue, color: isBest ? '#0ea5e9' : '#94a3b8' }}>
+        {value.toFixed(1)}%
+      </div>
+    </div>
+  )
+}
+
+function TurnstileWidget({ onTokenReady, theme = 'dark' }: { onTokenReady: (token: string) => void; theme?: 'light' | 'dark' }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const widgetIdRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).turnstile && containerRef.current) {
+      // Remove existing widget if any
+      if (widgetIdRef.current) {
+        try {
+          (window as any).turnstile.remove(widgetIdRef.current)
+        } catch (e) {}
+      }
+      
+      widgetIdRef.current = (window as any).turnstile.render(containerRef.current, {
+        sitekey: process.env.REACT_APP_TURNSTILE_SITEKEY || '1x0000000000000000000000000000000AA', // Demo sitekey
+        theme: theme,
+        callback: (token: string) => {
+          onTokenReady(token)
+        },
+        'expired-callback': () => {
+          onTokenReady('')
+        },
+        'error-callback': () => {
+          onTokenReady('')
+        },
+      })
+    }
+  }, [theme, onTokenReady])
+
+  return <div ref={containerRef} />
+}
 
 interface ProbabilityBarProps {
   label: string
@@ -40,6 +96,7 @@ function Dashboard() {
   const [useCalibration, setUseCalibration] = useState(false)
   const [inferenceLoading, setInferenceLoading] = useState(false)
   const [modelsLoaded, setModelsLoaded] = useState<Record<string, boolean>>({})
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
 
   // Load models on mount
   useEffect(() => {
@@ -48,9 +105,7 @@ function Dashboard() {
 
   const loadModels = async () => {
     try {
-      const response = await fetch('/api/models', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      })
+      const response = await fetch('/api/models')
       if (response.ok) {
         const data = await response.json()
         setModels(data)
@@ -64,10 +119,7 @@ function Dashboard() {
     try {
       const response = await fetch('/api/models/load', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model_name: modelName })
       })
       const data = await response.json()
@@ -84,7 +136,6 @@ function Dashboard() {
     if (isTraining) return
     setIsTraining(true)
     try {
-      // Simulate training
       await new Promise(resolve => setTimeout(resolve, 2000))
       alert('Training completed! Model saved.')
     } catch (err) {
@@ -104,20 +155,23 @@ function Dashboard() {
       return
     }
 
+    if (!turnstileToken) {
+      alert('Please complete the Turnstile challenge first')
+      return
+    }
+
     setInferenceLoading(true)
     try {
-      const formData = new FormData()
-      formData.append('model_name', selectedModel)
-      formData.append('eeg_data', JSON.stringify([])) // Would be actual data
-      formData.append('sampling_rate', '250')
-      formData.append('dataset_context', 'PhysioNet Motor Imagery')
-
+      // For demo, we'll use mock data
       const response = await fetch('/api/inference', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model_name: selectedModel,
+          eeg_data: [], // Would be actual EEG data from file
+          sampling_rate: 250,
+          turnstile_token: turnstileToken
+        })
       })
 
       if (response.ok) {
@@ -314,6 +368,15 @@ function Dashboard() {
               )}
             </label>
 
+            {/* Turnstile Widget */}
+            <div style={styles.turnstileContainer}>
+              <label style={styles.turnstileLabel}>Human Verification</label>
+              <TurnstileWidget onTokenReady={setTurnstileToken} theme="dark" />
+              {turnstileToken && (
+                <div style={styles.turnstileSuccess}>✓ Verified</div>
+              )}
+            </div>
+
             <button
               onClick={handleInference}
               disabled={!uploadedFile || inferenceLoading}
@@ -370,17 +433,17 @@ function Dashboard() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>Model</th>
-                  <th>LOSO Accuracy</th>
-                  <th>Std Dev</th>
-                  <th>Latency</th>
+                  <th style={styles.th}>Model</th>
+                  <th style={styles.th}>LOSO Accuracy</th>
+                  <th style={styles.th}>Std Dev</th>
+                  <th style={styles.th}>Latency</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>MiniRocket</td><td>98.63%</td><td>±1.2%</td><td>0.6 ms</td></tr>
-                <tr><td>EEGNet</td><td>95.20%</td><td>±1.8%</td><td>1.2 ms</td></tr>
-                <tr><td>CNN-LSTM</td><td>98.06%</td><td>±1.5%</td><td>3.5 ms</td></tr>
-                <tr><td>CNN+Transformer</td><td>96.50%</td><td>±1.3%</td><td>2.8 ms</td></tr>
+                <tr><td style={styles.td}>MiniRocket</td><td style={styles.td}>98.63%</td><td style={styles.td}>±1.2%</td><td style={styles.td}>0.6 ms</td></tr>
+                <tr><td style={styles.td}>EEGNet</td><td style={styles.td}>95.20%</td><td style={styles.td}>±1.8%</td><td style={styles.td}>1.2 ms</td></tr>
+                <tr><td style={styles.td}>CNN-LSTM</td><td style={styles.td}>98.06%</td><td style={styles.td}>±1.5%</td><td style={styles.td}>3.5 ms</td></tr>
+                <tr><td style={styles.td}>CNN+Transformer</td><td style={styles.td}>96.50%</td><td style={styles.td}>±1.3%</td><td style={styles.td}>2.8 ms</td></tr>
               </tbody>
             </table>
           </div>
@@ -580,34 +643,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-  },
-  probLabel: {
-    width: '100px',
-    fontSize: '0.875rem',
-    color: '#c8d6e5',
-  },
-  barContainer: {
-    flex: 1,
-    height: '8px',
-    background: '#1a1a1a',
-    borderRadius: '4px',
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: '4px',
-    transition: 'width 0.3s ease',
-  },
-  probValue: {
-    width: '60px',
-    textAlign: 'right',
-    fontSize: '0.875rem',
-    fontWeight: 600,
-  },
-  probRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
     marginBottom: '0.75rem',
   },
   probLabel: {
@@ -637,46 +672,37 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: '0.875rem',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '0.875rem',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '0.875rem',
     color: '#c8d6e5',
   },
-  // Note: styles for th/td would be inline in JSX
-  probRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
+  th: {
+    textAlign: 'left',
+    padding: '0.75rem',
+    color: '#94a3b8',
+    fontWeight: 600,
+    borderBottom: '2px solid #334155',
+  },
+  td: {
+    padding: '0.75rem',
+    borderBottom: '1px solid #334155',
+  },
+  turnstileContainer: {
+    marginTop: '1rem',
+    padding: '1rem',
+    background: '#0f172a',
+    border: '1px solid #334155',
+    borderRadius: '8px',
+  },
+  turnstileLabel: {
+    display: 'block',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: '#94a3b8',
     marginBottom: '0.75rem',
   },
-  probLabel: {
-    width: '100px',
+  turnstileSuccess: {
+    marginTop: '0.75rem',
+    color: '#10b981',
     fontSize: '0.875rem',
-    color: '#c8d6e5',
-  },
-  barContainer: {
-    flex: 1,
-    height: '8px',
-    background: '#1a1a1a',
-    borderRadius: '4px',
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: '4px',
-    transition: 'width 0.3s ease',
-  },
-  probValue: {
-    width: '60px',
-    textAlign: 'right',
-    fontSize: '0.875rem',
-    fontWeight: 600,
+    fontWeight: 500,
   },
 }

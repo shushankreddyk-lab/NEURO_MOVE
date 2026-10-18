@@ -6,21 +6,10 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const turnstileToken = (window as any).turnstileToken
+  if (turnstileToken) config.headers['X-Turnstile-Token'] = turnstileToken
   return config
 })
-
-api.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
 
 export interface ModelInfo {
   name: string
@@ -34,6 +23,7 @@ export interface InferenceRequest {
   eeg_data: number[][][]
   sampling_rate?: number
   channels?: string[]
+  turnstile_token?: string
 }
 
 export interface InferenceResponse {
@@ -56,6 +46,7 @@ export interface PreprocessRequest {
   target_rate?: number
   low_freq?: number
   high_freq?: number
+  turnstile_token?: string
 }
 
 export interface PreprocessResponse {
@@ -66,23 +57,18 @@ export interface PreprocessResponse {
 }
 
 export const apiService = {
-  async login(username: string, password: string) {
-    const res = await axios.post('/api/auth/login', { username, password })
-    return res.data
-  },
-
   async getModels(): Promise<ModelInfo[]> {
-    const res = await axios.get('/models')
+    const res = await api.get('/models')
     return res.data
   },
 
   async loadModel(modelName: string) {
-    const res = await axios.post('/models/load', { model_name: modelName })
+    const res = await api.post('/models/load', { model_name: modelName })
     return res.data
   },
 
   async inference(request: InferenceRequest): Promise<InferenceResponse> {
-    const res = await axios.post('/inference', request)
+    const res = await api.post('/inference', request)
     return res.data
   },
 
@@ -92,33 +78,9 @@ export const apiService = {
     target_rate?: number
     low_freq?: number
     high_freq?: number
-  }): Promise<{
-    processed_data: number[][][]
-    sampling_rate: number
-    channels: number
-    samples: number
-  }> {
-    const res = await axios.post('/preprocess', request)
+  }) {
+    const res = await api.post('/preprocess', request)
     return res.data
-  },
-}
-
-export const authService = {
-  async login(username: string, password: string) {
-    const res = await axios.post('/api/auth/login', { username, password })
-    return res.data
-  },
-
-  logout() {
-    localStorage.removeItem('token')
-  },
-
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('token')
-  },
-
-  getToken(): string | null {
-    return localStorage.getItem('token')
   },
 }
 

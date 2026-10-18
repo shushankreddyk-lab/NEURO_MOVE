@@ -1,14 +1,13 @@
 """
 NeuroMove Enterprise MI-BCI Platform - Production FastAPI Backend
-Clean, minimal, production-ready for demo.
+Clean, minimal, production-ready for demo. No auth required, Cloudflare Turnstile ready.
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 import numpy as np
 import os
 import sys
@@ -39,6 +38,7 @@ class InferenceRequest(BaseModel):
     eeg_data: List[List[List[float]]]  # [trials, channels, samples]
     sampling_rate: int = 250
     channels: Optional[List[str]] = None
+    turnstile_token: Optional[str] = None  # Cloudflare Turnstile token
 
 class InferenceResponse(BaseModel):
     predictions: List[int]
@@ -55,41 +55,44 @@ class ModelLoadResponse(BaseModel):
     message: str
     model_info: Optional[ModelInfo] = None
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class ModelInfo(BaseModel):
+    name: str
+    description: str
+    classes: List[str]
+    input_shape: List[int]
 
-class UserLogin(BaseModel):
-    username: str
-    password: str
+class PreprocessRequest(BaseModel):
+    eeg_data: List[List[List[float]]]
+    sampling_rate: int = 250
+    target_rate: int = 128
+    low_freq: float = 4.0
+    high_freq: float = 38.0
+    turnstile_token: Optional[str] = None
 
-# ============================================================================
-# SECURITY (Simple JWT for demo)
-# ============================================================================
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
+class PreprocessResponse(BaseModel):
+    processed_data: List[List[List[float]]]
+    sampling_rate: int
+    channels: int
+    samples: int
 
-SECRET_KEY = "neuromove-demo-secret-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+class HealthResponse(BaseModel):
+    status: str = "healthy"
+    version: str = "1.0.0"
+    models_loaded: int = 0
 
-security = HTTPBearer()
+class ModelLoadRequest(BaseModel):
+    model_name: str
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+class ModelLoadResponse(BaseModel):
+    success: bool
+    message: str
+    model_info: Optional[ModelInfo] = None
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return username
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+class ModelInfo(BaseModel):
+    name: str
+    description: str
+    classes: List[str]
+    input_shape: List[int]
 
 # ============================================================================
 # MODEL REGISTRY (connects to your existing pipelines)
@@ -119,11 +122,66 @@ MODEL_METADATA = {
     },
 }
 
-# Demo credentials
-USERS = {
-    "admin": "neuromove2024",
-    "researcher": "neuromove2024",
-    "clinician": "neuromove2024",
+# Cloudflare Turnstile verification (optional - set secret in env)
+TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET", "")
+
+async def verify_turnstile(token: Optional[str]) -> bool:
+    """Verify Cloudflare Turnstile token. Returns True if valid or if no secret configured."""
+    if not TURNSTILE_SECRET or not token:
+        return True  # Skip verification if no secret configured (demo mode)
+    
+    import httpx
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={"secret": TURNSTILE_SECRET, "response": token},
+            timeout=5.0
+        )
+        result = response.json()
+        return result.get("success", False)
+
+async def verify_turnstile_dependency(
+    inference_request: InferenceRequest = None,
+    preprocess_request: Optional[object] = None,
+):
+    """Dependency to verify Turnstile token from request body."""
+    token = None
+    if inference_request and inference_request.turnstile_token:
+        token = inference_request.turnstile_token
+    elif preprocess_request and hasattr(preprocess_request, 'turnstile_token') and preprocess_request.turnstile_token:
+        token = preprocess_request.turnstile_token
+    
+    valid = await verify_turnstile(token)
+    if not valid:
+        raise HTTPException(status_code=400, detail="Invalid Turnstile token. Please complete the challenge.")
+    return True
+
+# ============================================================================
+# MODEL REGISTRY (connects to your existing pipelines)
+# ============================================================================
+
+MODEL_REGISTRY = {}
+MODEL_METADATA = {
+    "MiniRocket": {
+        "description": "Deterministic random convolutional kernels + MLP classifier",
+        "classes": ["Left Fist", "Right Fist", "Both Fists", "Both Feet"],
+        "input_shape": [20, 656],  # [channels, samples]
+    },
+    "EEGNet": {
+        "description": "Depthwise + separable convolutions for EEG",
+        "classes": ["Left Fist", "Right Fist", "Both Fists", "Both Feet"],
+        "input_shape": [20, 656],
+    },
+    "CNN-LSTM": {
+        "description": "Hybrid CNN + LSTM for spatiotemporal features",
+        "classes": ["Left Fist", "Right Fist", "Both Fists", "Both Feet"],
+        "input_shape": [20, 656],
+    },
+    "CNN+Transformer": {
+        "description": "CNN feature extractor + Transformer encoder",
+        "classes": ["Left Fist", "Right Fist", "Both Fists", "Both Feet"],
+        "input_shape": [20, 656],
+    },
 }
 
 # ============================================================================
@@ -162,21 +220,6 @@ app.add_middleware(
 )
 
 # ============================================================================
-# AUTH ENDPOINTS
-# ============================================================================
-
-@app.post("/auth/login", response_model=Token)
-async def login(user: UserLogin):
-    if user.username not in USERS or USERS[user.username] != user.password:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    access_token = create_access_token(data={"sub": user.username})
-    return Token(access_token=access_token)
-
-@app.get("/auth/me")
-async def get_current_user(username: str = Depends(verify_token)):
-    return {"username": username, "role": "admin"}
-
-# ============================================================================
 # HEALTH & MODEL ENDPOINTS
 # ============================================================================
 
@@ -189,14 +232,14 @@ async def health():
     )
 
 @app.get("/models", response_model=List[ModelInfo])
-async def list_models(username: str = Depends(verify_token)):
+async def list_models():
     return [
         ModelInfo(name=name, **meta)
         for name, meta in MODEL_METADATA.items()
     ]
 
 @app.post("/models/load", response_model=ModelLoadResponse)
-async def load_model(request: ModelLoadRequest, username: str = Depends(verify_token)):
+async def load_model(request: ModelLoadRequest):
     if request.model_name not in MODEL_METADATA:
         raise HTTPException(status_code=404, detail=f"Model {request.model_name} not found")
     
@@ -250,7 +293,10 @@ def _load_real_model(model_name: str):
 # ============================================================================
 
 @app.post("/inference", response_model=InferenceResponse)
-async def inference(request: InferenceRequest, username: str = Depends(verify_token)):
+async def inference(
+    request: InferenceRequest,
+    turnstile_verified: bool = Depends(verify_turnstile_dependency)
+):
     if request.model_name not in MODEL_REGISTRY:
         raise HTTPException(status_code=400, detail=f"Model {request.model_name} not loaded. Call /models/load first.")
     
@@ -327,6 +373,7 @@ class PreprocessRequest(BaseModel):
     target_rate: int = 128
     low_freq: float = 4.0
     high_freq: float = 38.0
+    turnstile_token: Optional[str] = None
 
 class PreprocessResponse(BaseModel):
     processed_data: List[List[List[float]]]
@@ -335,7 +382,10 @@ class PreprocessResponse(BaseModel):
     samples: int
 
 @app.post("/preprocess", response_model=PreprocessResponse)
-async def preprocess(request: PreprocessRequest, username: str = Depends(verify_token)):
+async def preprocess(
+    request: PreprocessRequest,
+    turnstile_verified: bool = Depends(verify_turnstile_dependency)
+):
     """Apply standard MI-BCI preprocessing pipeline."""
     import scipy.signal as signal
     

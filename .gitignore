@@ -20,6 +20,9 @@
 !/requirements.txt
 !/pyproject.toml
 !/README.md
+!/ENTERPRISE_PLAN.md
+!/docker-compose.yml
+!/.env.example
 !/.gitignore
 !/.pre-commit-config.yaml
 !/.github/
