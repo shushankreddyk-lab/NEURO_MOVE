@@ -1,0 +1,99 @@
+# Ignore everything by default
+*
+
+# But track the project folder
+!/eeg-mi-bci/
+!/eeg-mi-bci-archive-565657a/
+!/neuro-move-release/
+!/figures/
+!/reports/
+!/scripts/
+!/notebooks/
+!/datasets/
+!/dataset/
+!/models/
+!/results/
+!/showcase/
+!/tools/
+!/docs/
+!/tests/
+!/requirements.txt
+!/pyproject.toml
+!/README.md
+!/.gitignore
+!/.pre-commit-config.yaml
+!/.github/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Large files / data
+*.pkl
+*.pth
+*.onnx
+*.h5
+*.hdf5
+*.mat
+*.edf
+*.gdf
+*.csv
+*.parquet
+*.npy
+*.npz
+
+# Models and weights
+*.pth
+*.pkl
+*.joblib
+*.model
+
+# IDE config
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/extensions.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Build outputs
+*.exe
+*.dll
+*.dylib
