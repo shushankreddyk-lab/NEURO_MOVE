@@ -1,0 +1,18 @@
+from pathlib import Path
+
+# --- NeuroMove path resolution (env-overridable) ---
+_PROJECT_ROOT = Path(os.environ.get("NEUROMOVE_ROOT", Path(__file__).resolve().parents[2]))
+_PIP_PACKAGES = os.environ.get("NEUROMOVE_PIP_PACKAGES")
+import sys
+sys.path.insert(0, _PIP_PACKAGES)
+import os
+import glob
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+from evaluate_all_models import evaluate_models
+
+def main():
+    evaluate_models('models')
+
+if __name__ == "__main__":
+    main()

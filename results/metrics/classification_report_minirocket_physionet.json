@@ -1,0 +1,39 @@
+{
+    "Left Fist": {
+        "precision": 0.5,
+        "recall": 0.6,
+        "f1-score": 0.5454545454545454,
+        "support": 5.0
+    },
+    "Right Fist": {
+        "precision": 0.5,
+        "recall": 0.25,
+        "f1-score": 0.3333333333333333,
+        "support": 4.0
+    },
+    "Both Fists": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1-score": 0.5,
+        "support": 4.0
+    },
+    "Both Feet": {
+        "precision": 0.6666666666666666,
+        "recall": 0.8,
+        "f1-score": 0.7272727272727273,
+        "support": 5.0
+    },
+    "accuracy": 0.5555555555555556,
+    "macro avg": {
+        "precision": 0.5416666666666666,
+        "recall": 0.5375000000000001,
+        "f1-score": 0.5265151515151515,
+        "support": 18.0
+    },
+    "weighted avg": {
+        "precision": 0.5462962962962963,
+        "recall": 0.5555555555555556,
+        "f1-score": 0.5387205387205387,
+        "support": 18.0
+    }
+}

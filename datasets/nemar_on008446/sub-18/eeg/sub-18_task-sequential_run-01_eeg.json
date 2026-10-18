@@ -1,0 +1,347 @@
+{
+  "TaskName": "SequentialCueOrder",
+  "TaskDescription": "SequentialCueOrder cue presentation paradigm",
+  "Manufacturer": "g.tec GmbH",
+  "PowerLineFrequency": 50,
+  "SamplingFrequency": 512,
+  "RecordingDuration": 916.0,
+  "NumberOfChannels": 65,
+  "ChannelTypes": [
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "EEG",
+    "STI 014"
+  ],
+  "BIDSVersion": "1.6.0",
+  "EEGReference": "Linked Mastoids",
+  "SoftwareFilters": "n/a",
+  "BlockAssignment": {
+    "which_block_this_was": "first",
+    "original_first_condition": "Sequential",
+    "original_second_condition": "Random"
+  },
+  "EventsFile": "sub-18_task-sequential_run-01_events.tsv",
+  "Chains": [
+    {
+      "name": "Fp1",
+      "type": "EEG"
+    },
+    {
+      "name": "Fpz",
+      "type": "EEG"
+    },
+    {
+      "name": "Fp2",
+      "type": "EEG"
+    },
+    {
+      "name": "AF7",
+      "type": "EEG"
+    },
+    {
+      "name": "AF5",
+      "type": "EEG"
+    },
+    {
+      "name": "AF4",
+      "type": "EEG"
+    },
+    {
+      "name": "AF8",
+      "type": "EEG"
+    },
+    {
+      "name": "F7",
+      "type": "EEG"
+    },
+    {
+      "name": "F5",
+      "type": "EEG"
+    },
+    {
+      "name": "F3",
+      "type": "EEG"
+    },
+    {
+      "name": "F1",
+      "type": "EEG"
+    },
+    {
+      "name": "Fz",
+      "type": "EEG"
+    },
+    {
+      "name": "F2",
+      "type": "EEG"
+    },
+    {
+      "name": "F4",
+      "type": "EEG"
+    },
+    {
+      "name": "F6",
+      "type": "EEG"
+    },
+    {
+      "name": "F8",
+      "type": "EEG"
+    },
+    {
+      "name": "FT7",
+      "type": "EEG"
+    },
+    {
+      "name": "FC5",
+      "type": "EEG"
+    },
+    {
+      "name": "FC3",
+      "type": "EEG"
+    },
+    {
+      "name": "FC1",
+      "type": "EEG"
+    },
+    {
+      "name": "FCz",
+      "type": "EEG"
+    },
+    {
+      "name": "FC2",
+      "type": "EEG"
+    },
+    {
+      "name": "FC4",
+      "type": "EEG"
+    },
+    {
+      "name": "FC6",
+      "type": "EEG"
+    },
+    {
+      "name": "FT8",
+      "type": "EEG"
+    },
+    {
+      "name": "T7",
+      "type": "EEG"
+    },
+    {
+      "name": "C5",
+      "type": "EEG"
+    },
+    {
+      "name": "C3",
+      "type": "EEG"
+    },
+    {
+      "name": "C1",
+      "type": "EEG"
+    },
+    {
+      "name": "Cz",
+      "type": "EEG"
+    },
+    {
+      "name": "C2",
+      "type": "EEG"
+    },
+    {
+      "name": "C4",
+      "type": "EEG"
+    },
+    {
+      "name": "C6",
+      "type": "EEG"
+    },
+    {
+      "name": "T8",
+      "type": "EEG"
+    },
+    {
+      "name": "TP7",
+      "type": "EEG"
+    },
+    {
+      "name": "CP5",
+      "type": "EEG"
+    },
+    {
+      "name": "CP3",
+      "type": "EEG"
+    },
+    {
+      "name": "CP1",
+      "type": "EEG"
+    },
+    {
+      "name": "CPz",
+      "type": "EEG"
+    },
+    {
+      "name": "CP2",
+      "type": "EEG"
+    },
+    {
+      "name": "CP4",
+      "type": "EEG"
+    },
+    {
+      "name": "CP6",
+      "type": "EEG"
+    },
+    {
+      "name": "TP8",
+      "type": "EEG"
+    },
+    {
+      "name": "P7",
+      "type": "EEG"
+    },
+    {
+      "name": "P5",
+      "type": "EEG"
+    },
+    {
+      "name": "P3",
+      "type": "EEG"
+    },
+    {
+      "name": "P1",
+      "type": "EEG"
+    },
+    {
+      "name": "Pz",
+      "type": "EEG"
+    },
+    {
+      "name": "P2",
+      "type": "EEG"
+    },
+    {
+      "name": "P4",
+      "type": "EEG"
+    },
+    {
+      "name": "P6",
+      "type": "EEG"
+    },
+    {
+      "name": "P8",
+      "type": "EEG"
+    },
+    {
+      "name": "PO7",
+      "type": "EEG"
+    },
+    {
+      "name": "PO3",
+      "type": "EEG"
+    },
+    {
+      "name": "POz",
+      "type": "EEG"
+    },
+    {
+      "name": "PO2",
+      "type": "EEG"
+    },
+    {
+      "name": "PO8",
+      "type": "EEG"
+    },
+    {
+      "name": "O1",
+      "type": "EEG"
+    },
+    {
+      "name": "Oz",
+      "type": "EEG"
+    },
+    {
+      "name": "O2",
+      "type": "EEG"
+    },
+    {
+      "name": "AF9",
+      "type": "EEG"
+    },
+    {
+      "name": "AF10",
+      "type": "EEG"
+    },
+    {
+      "name": "Ref1",
+      "type": "EEG"
+    },
+    {
+      "name": "Ref2",
+      "type": "EEG"
+    },
+    {
+      "name": "Marker",
+      "type": "STI 014"
+    }
+  ]
+}

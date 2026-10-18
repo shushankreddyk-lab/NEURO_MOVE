@@ -1,0 +1,513 @@
+ Contents  lists available  at ScienceDirect
+NeuroImage
+journal  homepage:  www.elsevier.com/locate/ynimg 
+Motor  imagery  EEG  signal  classification  using  minimally  random  
+convolutional  kernel  transform  and hybrid  deep  learning
+Jamal  Hwaidia, Mohamed  Chahine  Ghanemb,c
+,∗
+aDepartment  of Engineering,  City St George, University  of London, EC1V  0HB, London, UK
+bSchool of Computer  Science and Informatics,  University  of Liverpool, L69  3BX, Liverpool, UK
+cSchool of Computer  Science and Mathematics,  Keele University, ST5  5BG, Keele, UK
+A R T I C L E  I N F O
+Dataset link: https://physionet.org/content/ee
+gmmidb/1.0.0/, https://www.bbci.de/competi
+tion/iv/
+Keywords:
+Electroencephalography
+EEG
+Motor imagery
+Minimally  random convolutional  kernel 
+transform
+Convolutional  neural network
+Long short term memory
+Deep learning
+Signal classification A B S T R A C T
+The brain-computer  interface  (BCI) establishes  a non-muscle  channel  that enables direct communication  
+between  the human body and an external  device. Electroencephalography  (EEG) is a popular non-invasive  
+technique  for recording  brain signals. It is critical to process and comprehend  the hidden patterns  linked to a 
+specific cognitive  or motor task, for instance,  measured  through  the motor imagery  brain-computer  interface  
+(MI-BCI).  A significant  challenge  is presented  by classifying  motor imagery-based  electroencephalogram  (MI-
+EEG) tasks, given that EEG signals exhibit nonstationarity,  time-variance,  and individual  diversity.  Achieving  
+good classification  accuracy  is also challenging  due to the increasing  number of classes and the inherent  
+variability  among individuals.  To overcome  these issues, this paper proposes  a novel method for classifying  
+EEG motor imagery  signals that efficiently  extracts features  using the Minimally  Random  Convolutional  
+Kernel Transform  (MiniRocket).  A linear classifier  then utilises the extracted  features  for activity recognition.  
+Furthermore,  a novel deep learning  model based on Convolutional  Neural Network  (CNN) and Long Short-
+Term Memory  (LSTM) architecture  was proposed  and demonstrated  to serve as a baseline.  The classification  
+via MiniRocket’s  features  achieved  higher performance  than the best deep learning  models at a lower 
+computational  cost. PhysioNet  and BCI Comp IV 2a datasets  were used to evaluate  the performance  of the 
+proposed  approaches.  Using PhysioNet,  the proposed  models achieved  mean accuracy  values of 98.63% and 
+98.06%,  respectively,  for the MiniRocket  and CNN-LSTM.  With the BCI-CompIV-2a  dataset, proposed  models 
+achieved  mean accuracy  values of 92.57% and 92.32%,  respectively.  The findings  demonstrate  that the 
+proposed  approach  can significantly  enhance  motor imagery  EEG accuracy  and provide new insights into the 
+feature extraction  and classification  of MI-EEG.  An additional  future direction  is non-additive  electrode-source  
+fusion (Choquet-integral/coalition  formulations)  to improve  robustness  under low-SNR  EEG and inter-subject  
+variability.
+1. Introduction
+A human–computer  interaction  technique  based on brain signals 
+is known as brain-computer  interface  (BCI) technology  (Greenfield  
+et al., 2012 ; Wolpaw  et al., 2000 ; Moore , 2003 ). It offers a com-
+munication  channel  for non-neuromuscular  control  and communica-
+tion between  the human brain and the outside  world using a brain-
+computer  interface  without  the use of muscles  or the peripheral  nervous  
+system (Zander and Kothe , 2011 ; Ghanem  et al., 2015 ).
+Electroencephalography  (EEG) signals represent  electrical  signals 
+from the brain nerves in the BCI system.  It serves as the system’s  
+foundation  for signal processing  as well (Mathiyazhagan  and Devasena , 
+2025 ; Wang et al., 2020 ). The electrical  signals produced  by the brain’s 
+neurons  during EEG brain rhythms  are microvolts  (He et al., 2018 ). EEG 
+∗Corresponding  author at: School of Computer  Science and Informatics,  University  of Liverpool,  L69 3BX, Liverpool,  UK.
+E-mail addresses:  jamal.hwidi@city.ac.uk  (J. Hwaidi) , mohamed.chahine.ghanem@liverpool.ac.uk  (M.C. Ghanem) .uses affordable  equipment  and permits  patient movement  while record-
+ing. These are advantages  over other non-invasive  recording  methods  
+such as magnetoencephalography  (MEG) and functional  magnetic  res-
+onance  imaging  (fMRI),  which require  patients  to remain stationary  
+while using expensive,  large-scale  equipment  (Millán et al., 2004 ).
+Various  EEG signal types have been employed  as BCI control  signals.  
+The most common  signals are P300 evoked  potentials,  steady-state  
+visual evoked  potentials  (SSVEP),  and motor imagery  (MI). The power 
+spectrum  of various  frequency  bands can change  for various  move-
+ment tasks, reflecting  neuronal  firing pattern  changes.  Event-related  
+synchronisation  (ERS) and event-related  desynchronisation  (ERD) are 
+two names for this phenomenon.  The primary  spectrums  of ERS and 
+https://doi.org/10.1016/j.neuroimage.2026.121816
+Received  21 August 2025; Received  in revised form 13 February  2026; Accepted  16 February  2026NeuroImage  328 (2026)  121816  
+Available  online  19 February  2026  
+1053-8119/©  2026  The Authors.  Published  by Elsevier  Inc. This is an open access  article  under  the CC BY license  ( http://creativecommons.org/licenses/by/4.0/  ). 
+J. Hwaidi and M.C. Ghanem
+ERD in MI tasks are 𝜇 (8–14 Hz) and 𝛽 (14–30  Hz) (Pfurtscheller  and 
+Da Silva , 1999 ).
+Different  kinds of motor or cognitive  activities  can be understood  us-
+ing EEG. The term ‘‘motor  imagery’’  (MI) describes  a subject’s  ability to 
+move their limbs mentally  even though  they are not being moved (Yuan 
+and He, 2014 ).
+An emerging  area of biomedical  applications  is BCI based on EEG 
+motor imagery  (Pfurtscheller  and Neuper , 2001 ). Clinically,  MI-BCIs  
+have progressed  classification  towards  closed-loop  therapeutic  and as-
+sessment  systems,  particularly  in post-stroke  neurorehabilitation  where 
+decoded  MI is coupled  to contingent  feedback  (robotic  orthoses  or 
+functional  electrical  stimulation)  to drive Hebbian-like  plasticity.  In 
+particular,  sham-controlled  clinical  studies have reported  that daily 
+BMI/BCI  training  can improve  motor outcomes  compared  to phys-
+iotherapy  alone, and subsequent  meta-analyses  indicate  an overall 
+positive  effect while highlighting  heterogeneity  and the need for stan-
+dardised  protocols,  robust multi-session  generalisation,  and reduced  
+calibration  burden.  These deployments  impose  constraints  not captured  
+by offline benchmarks:  low-latency  inference,  stability  across days/ses-
+sions, robustness  to fatigue/medication-related  variability,  and safety 
+monitoring  in real-world  environments.  The emphasis  on computation-
+ally efficient,  reproducible  feature transforms  (as pursued  here with 
+MiniRocket)  is therefore  directly  relevant  to embedded  or bedside  
+clinical-grade  MI-BCI implementations.  The motor imagery  classifica-
+tion problem  can also be used to identify  and separate  various  types of 
+thinking  or imagining  (Tonin et al., 2011 ; Ang et al., 2012 ). Due to its 
+advantages  over other cerebral  signals,  researchers  have given special 
+consideration  to the classification  of EEG signals.  Although  a specialist  
+could also perform  this classification,  doing so would not be as quick 
+or accurate,  so various  machine  learning  and deep learning  techniques  
+have been used to automate  the classification  of MI (Yang et al., 2018 ).
+Beyond  purely algorithmic  countermeasures  (artefact  rejection,  do-
+main adaptation,  and robust temporal  feature learning),  robustness  
+against  EEG non-stationarity  is increasingly  pursued  via hybrid (multi-
+modal)  BCIs, most prominently  EEG–fNIRS.  EEG provides  millisecond-
+scale electrophysiological  dynamics  but is sensitive  to impedance  drift, 
+motion/EMG  contamination,  and environmental  interference;  fNIRS 
+measures  task-related  haemodynamic  responses  (HbO/HbR)  and is 
+comparatively  less affected  by electromagnetic  noise, offering  com-
+plementary  information  at slower time scales. Cross-modal  fusion can 
+therefore  act as an implicit  regulariser  under distribution  shift by 
+constraining  the latent neural state with an additional  physiologi-
+cal channel  and by exposing  confounding  physiological-state  factors 
+(fatigue/hypoxia)  that modulate  EEG statistics.  Recent open-access  
+resources  explicitly  target such stress-condition  shifts; for example,  an 
+EEG+fNIRS  dataset  collected  over two weeks of high-altitude  exposure  
+during Stroop tasks was released  to support  algorithm  development  
+for oxygen-deficiency  monitoring  and robustness  benchmarking  under 
+extreme  environments.  While the present  work focuses  on unimodal  MI-
+EEG decoding,  the proposed  MiniRocket-based  pipeline  is directly  ex-
+tensible  to multimodal  settings  by applying  the transform  per modality  
+and fusing at feature-  or decision-level  (Ji et al., 2024 ).
+Traditional  MI-BCI classification  approaches  are generally  cate-
+gorised  into two groups based on the features  of EEG signals:  (1) 
+spatial feature classification  (Hekmatmanesh  et al., 2020 ) and (2) 
+spatial-frequency  feature classification  (Thomas  et al., 2009 ). Accord-
+ing to Sakhavi  et al. (2018 ), several prior MI-BCI algorithms  neglected  
+the temporal  characteristics  of EEG signals and neglected  to con-
+sider the dynamic  energy representation  of EEG. Automatic  function  
+selectors  are only partially  effective  at reversing  this tendency.
+Deep learning  (DL) techniques  have recently  outperformed  tradi-
+tional handcrafted  techniques  in a number  of fields, including  image 
+processing,  speech processing,  video processing,  and text processing  (de 
+Haan et al., 2019 ; Fenil et al., 2019 ; Sahu and Anand , 2018 ). EEG 
+signal characteristics  like low signal-to-noise  ratio (SNR), fewer data, and multiple  channels  make it challenging  to develop  a general  DL 
+model for the identification  of EEG signals.
+It is important  to have a meaningful  design for the DL frame-
+work used to process  EEG signals.  Some successes  have been seen in 
+researchers’  efforts to apply DL techniques  to the BCI field.
+Deep neural networks  (DNN) with more data, improved  learning  
+methods,  and faster computation  have gained in popularity  (Bengio and 
+Bengio , 1999 ). By processing  the data from an EEG time series in the 
+RNN networks’  internal  memory,  EEG signals can be decoded  (Bengio 
+et al., 1994 ). As opposed  to a normal  RNN, Long Short-Term  Memory  
+(LSTM)  is an RNN with the capacity  to maintain  the sequence  of data 
+over an extended  period and identify  the desired  pattern  (Graves and 
+Schmidhuber , 2005 ). Convolutional  neural network  (CNN) models  can 
+recognise  strong spatial details in images (LeCun et al., 1998 ). Re-
+searchers  have extensively  applied  to investigate  the classification  and 
+spatial characteristics  of EEG signals (Amin et al., 2019 ; Lawhern  et al., 
+2018 ; Riyad et al., 2020 ). To improve  DNNs’ capacity  to simultaneously  
+extract spatial and temporal  characteristics,  CNN and LSTM neural 
+networks  were combined  to create a hybrid neural network  that can 
+learn both spatial and temporal  features  (Zhang et al., 2019 ).
+Despite  the impressive  accomplishments  of prior work in this field, 
+the BCI system still lacks standards  for practical  application.  Moreover,  
+there is still considerable  opportunity  for improvement  in both the EEG 
+signals classification  methodology  and accuracy.
+The main contributions  of this paper are as follows:
+(1)The independent  component  analysis  (ICA) technique  is utilised  
+to separate  the 𝜇 and 𝛽 frequencies  as segmentation  targets from 
+other frequencies.
+(2)The MI EEG signals are subjected  to a Minirocket  feature ex-
+traction  method.  The MiniRocket  can enhance  the accuracy  of 
+EEG classification  by retaining  more crucial feature information  
+while also processing  less data.
+(3)A hybrid neural network,  which consists  of CNN and LST,M is 
+utilised  to enhance  motor imagery  accuracy  in EEG classification  
+and compared  to MiniRocket’s  feature-based  classifier.
+Recent approaches  to MI-BCI can be grouped  into three broad 
+categories:  (i) deterministic  time–series  transforms  such as ROCKET  
+and MiniRocket  that generate  features  for lightweight  classifiers,  (ii) 
+compact  CNN/LSTM  hybrids  that learn spatial and temporal  features  
+end-to-end,  and (iii) light-weight  classifiers  like ridge regression  or 
+SVM. Our work focuses  on a systematic  comparison  between  a deter-
+ministic  transform  (MiniRocket  + ridge) and a compact  CNN–LSTM  
+network,  quantifying  both accuracy  and computational  cost. The re-
+mainder  of the paper is organised  as follows:  Section  2 reviews  the 
+literature  on the classification  of EEG MI utilising  machine  learning  
+and deep learning  techniques.  Section  3 presents  the data description  
+and system method.  The discussion  of the methodology  with existing  
+work and conclusion  are given in Sections  4 and 5, respectively.  For 
+clarity we summarise  related MI-BCI literature  next (Section  2) focusing  
+on methods  directly  compared  to our pipeline  (MiniRocket  + linear 
+classifier  and compact  CNN-LSTM),  rather than a broad survey.
+2. Related  work
+We focus this short related-work  summary  on MI-EEG  methods  
+directly  comparable  to our contribution:  (i) time-series  transforms  
+(ROCKET/MiniRocket  family),  (ii) compact  CNN/LSTM  hybrids,  and 
+(iii) light-weight  classifiers  (ridge/SVM/LR).  This concentrated  review 
+emphasises  the central argument:  MiniRocket  offers near-SOTA  accu-
+racy with far fewer trainable  parameters  and lower CPU cost, while 
+hybrid CNN-LSTM  models  provide  an end-to-end  baseline  for spatio-
+temporal  feature learning.  Substantial  efforts have been made in the 
+past to improve  the accuracy  of the MI classification  through  feature 
+extraction  and classification  algorithms  (Lotte et al., 2018 ; Zhang et al., 
+2018 ).NeuroImage  328 (2026)  121816  
+2 
+J. Hwaidi and M.C. Ghanem
+Hybrid deep-learning  models  combining  convolutional  and recur-
+rent layers have recently  shown strong performance  in MI-EEG  classi-
+fication.  For example,  Bian et al. (2024 ) reports a CNN–LSTM  model 
+augmented  with generative  adversarial  networks  to achieve  96.06. H. 
+Li et al. (2022 ), Khademi  et al. (2022 ) propose  transfer-learning  based 
+CNN–LSTM  and CNN–GRU  hybrids,  respectively,  to leverage  pretrained  
+spatial filters. These works typically  employ  deeper architectures  and 
+data augmentation.  In contrast,  our CNN–LSTM  baseline  is deliberately  
+compact  and uses no generative  augmentation,  enabling  a transpar-
+ent comparison  with a deterministic  MiniRocket  pipeline.  To classify  
+MI-EEG  data, conventional  machine  learning  techniques  have been 
+extensively  used. The MI-EEG  signal is typically  processed  using tra-
+ditional  methods  in three steps: preprocessing,  feature extraction,  and 
+classification.
+Preprocessing  involves  a number  of operations,  such as channel  
+selection,  signal filtering,  signal normalisation,  and removal  of artefacts  
+(removing  the noise from MI-EEG  signals).  Independent  component  
+analysis  (ICA) is the technique  that is most frequently  used to remove  
+artefacts  (Jafarifarmand  and Badamchizadeh , 2019 ).
+Existing  research  indicates  that a variety of feature extraction  algo-
+rithms have been proposed  for extracting  task-related  MI features  from 
+EEG signals with high dimensions.  Depending  on the processing  domain  
+for the data, the MI features  can be categorised  into three types: tem-
+poral features,  spectral  features,  and spatial features.  Temporal  features  
+like mean, variance,  Hjorth parameters,  and skewness  are derived  from 
+the time domain  at various  time points or throughout  various  time seg-
+ments (Pawar and Dhage , 2020 ). Spectral  features  can be either time-
+frequency  features  like short-time  Fourier  transform  (STFT) (Hyvärinen  
+et al., 2010 ) and wavelet  transform  (WT) (Zhou et al., 2016 ; Malan 
+and Sharma , 2022 ) or frequency-domain  features  like power spectral  
+density  (PSD) and fast Fourier  transform  (FFT) (Djamal  et al., 2017 ). 
+Spatial features,  such as common  spatial patterns  (CSP), are intended  to 
+identify  characteristics  from specific  scalp electrode  locations  (Ramoser  
+et al., 2000 ; Wang et al., 2006 ). The regularisation  feature in sparse 
+CSP (Fu et al., 2020 ) adds sparsity  to CSP values. Other methods  that 
+have been proposed  to improve  CSP functionality  include  stationary  
+CSP (Samek et al., 2012 ), divergence  CSP (Samek et al., 2013 ), sub-
+band CSP (SBCSP)  (Novi et al., 2007 ), probabilistic  CSP (Wu et al., 
+2014 ), and frequency-domain  CSP (FDCSP)  (Wang et al., 2017 ). Filter 
+bank CSP (FBCSP)  (Ang et al., 2008 ) is an enhanced  variation  of the 
+CSP approach  that leverages  frequency  information  in MI-EEG  signals 
+and spatial information  across EEG channels.  Furthermore,  discrimi-
+native filter bank CSP (DFBCSP)  (Higashi  and Tanaka , 2012 ) is an 
+extension  of CSP that uses optimisation  to create spatial weights  for 
+finite impulse  response  filters.
+During the classification  phase, various  classifiers  were used, for 
+instance,  the naive Bayesian  classifier  (Ang et al., 2012 ), linear dis-
+criminant  analysis  (LDA) (Chen et al., 2014 ), support  vector machine  
+(SVM) (Chatterjee  and Bandyopadhyay , 2016 ), K- nearest-neighbour  
+(KNN) (Hu et al., 2016 ), and extreme  learning  machine  (ELM) (Wang 
+et al., 2019 ; Zhang et al., 2020 ), to categorise  the derived  MI features  
+into different  MI tasks.
+Malan and Sharma  (2022 ) used a neighbourhood  component  analy-
+sis (NCA)-based  supervised  learning  framework  to enhance  the spatial 
+features  that CSP had obtained  for each sub-band.  SVM was ultimately  
+trained  to handle the classification.  SVM is inefficient  when there are 
+a large number  of observation  samples  and is sensitive  to missing  data, 
+despite  the fact that it can perform  inference  in a reasonably  quick 
+amount  of time. KNN’s use in classifying  MI EEG signals is constrained  
+by its high time and space complexity,  which is not sensitive  to missing  
+values. Generally,  even though  the traditional  machine  learning  algo-
+rithms have produced  impressive  results,  their accuracy  has not been 
+satisfactory.
+On the other hand, being able to automatically  extract the dis-
+criminative  features,  deep learning  methods  with deep neural net-
+works (DNN) have recently  performed  remarkably  well in several areas, such as speech recognition,  computer  vision, and medical  diagno-
+sis (Qamhan  et al., 2021 ; Altaheri  et al., 2019 ; Zhao et al., 2019 ; Han 
+et al., 2022 ; Muhammad  et al., 2020 , 2017 ). The growing  popularity  of 
+deep learning  has significantly  reduced  the need for feature extraction.  
+Deep learning  algorithms  can produce  and predict new features  without  
+specifying  which ones to use or how to extract them (Sun et al., 2017 ; 
+Mahajan  et al., 2022 ).
+To classify  MI EEG, various  researchers  have used deep learning  
+methods.  CNN can learn reliable  spatial features  (Schirrmeister  et al., 
+2017 ). RNN can successfully  learn the EEG signal’s  sequential  relation-
+ship (Luo et al., 2018 ). For unsupervised  feature learning,  autoencoder  
+(AE) models  are appropriate  (Bozhkov  and Georgieva , 2020 ). Shallow  
+CNN (sCNN)  and deep CNN (dCNN)  architectures  were developed  
+by Schirrmeister  et al. (2017 ) to extract a wide range of features  and to 
+comprehend  the temporal  structure  of band power variations.  However,  
+the dCNN underperformed  the sCNN because  there was less training  
+data available.  Studies  have indicated  that the CNN’s various  layers 
+can extract various  abstractions  from the EEG signal. As a result, Amin 
+et al. (2019 ) layered  and filtered  extracted  features  from CNN models  
+to discover  how time-series  signals are structured  both locally and 
+overall.  The classification  accuracy  was greatly improved  by combining  
+features.  Moreover,  the pragmatic  CNN (pCNN)  network  was developed  
+by Tayeb et al. (2019 ), which is less complicated  and more accurate  
+than dCNN. Tabar and Halici (Tabar and Halici , 2016 ) developed  a 
+network  to classify  two classes of MI tasks using CNN and stacked  
+autoencoders  (SAE). They first used Short-Time  Fourier  Transform  
+(STFT) to extract information  from the EEG signal’s  time and frequency  
+domains  and convert  it into two-dimensional  (2D) images,  forwarding  
+these images to the CNN-SAE  network  for classification.  To improve  
+differential  phase-synchronised  representations  for examining  the EEG-
+synchronised  transitions  from being alert to being drowsy,  Reddy et al. 
+(2019 ) used fuzzy common-space  patterns.  The findings  of the data 
+analysis  indicate  that traditional  regression  methods  like support  vec-
+tor regression  (SVR) and ridge regression  are outperformed  by the 
+suggested  multi-task  deep network.  Four expert CNNs were combined  
+into a modular  network  by Olivas-Padilla  and Chacon-Murguia  (2019 ). 
+Binary classification  is carried out by each expert CNN, and the results 
+are then fully connectedly  analysed.
+Recent MI studies have focused  on multiscale  spatial–temporal  fu-
+sion and extremely  efficient  time-series  transforms.  Notably,  Jin et al. 
+in Jin et al. (2025 ) present  a multiscale  spatial–temporal  fusion net-
+work for MI, and the MiniRocket  transform  (Dempster  et al., 2020 ) 
+by Dempster  et al. that has been demonstrated  as a very fast, high-
+accuracy  transform  for general  time-series  classification;  these works 
+motivated  our combined  MiniRocket  vs CNN-LSTM  comparison  and the 
+computational  benchmarking  we now report
+EEG signals are time-sequenced  nonlinear  signals.  Time series with 
+nonlinear  characteristics,  like EEG, are frequently  handled  by long-
+short-term  memory  (LSTM),  a RNN variant.  The LSTM network  was 
+employed  for the first time by Shen et al. (2017 ) to deal with issues 
+with EEG signal classification,  and they achieved  notable  improvements  
+in both the MI-EEG  dataset  used in BCI competitions  with individ-
+uals who are healthy,  as well as the dataset  compiled  from stroke 
+patients.  Speech recognition  and natural  language  processing  were 
+the inspirations  for this work. The LSTM deep neural network  was 
+employed  by Tortora  et al. (2020 ) in order to deal with time-dependent  
+information  contained  in brain signals during locomotion.  Lu et al. 
+(2019 ) classified  sequential-spatial-frequency  features  using a deep 
+RNN architecture.  Additionally,  by viewing  the signal as having various  
+non-stationary  and nonlinear  characteristics,  this method  also reduces  
+variations  in classification  between  individuals.  Ma et al. (2018 ) ex-
+tracted both spatial and temporal  properties  from the eegmmidb  dataset  
+by combining  the LSTM and bidirectional  LSTM (BiLSTM),  obtaining  a 
+result that was 8.25% more accurate  than conventional  methods.
+Recent advances  have explored  multiscale  spatial–temporal  fusion 
+and efficient  time-series  transforms  for MI EEG decoding.  For example,  NeuroImage  328 (2026)  121816  
+3 
+J. Hwaidi and M.C. Ghanem
+a multiscale  spatial–temporal  feature fusion neural network  (MSTFNet)  
+was recently  proposed  for MI-BCI and shows state-of-the-art  perfor-
+mance on several benchmarks  (Jin et al., 2021 ) and Jin et al. (2025 ). 
+In parallel,  the ROCKET  family (ROCKET  → MINIROCKET)  has been 
+developed  specifically  for fast, highly accurate  time-series  transforms  
+and has been applied  across many domains;  MINIROCKET  offers near-
+ROCKET  accuracy  with substantial  speedups.  Several  recent papers 
+apply MiniRocket/ROCKET  variants  to physiological  signals or propose  
+Rocket ensembles  for multivariate  EEG/MEG.  These developments  mo-
+tivate our focused  comparison  between  a MiniRocket+linear  pipeline  
+and a compact  CNN-LSTM  baseline  for MI EEG classification  (Jin et al., 
+2025 ).
+Extracting  both spatial and temporal  information  simultaneously,  a 
+variety of neural networks  have been combined  (hybrid  DNN). Zhang 
+et al. (2021 ) employed  CNN and LSTM to extract the signal’s  sequence  
+relationship  and frequency-spatial  information.  Due to their ability to 
+simultaneously  learn multiple  features,  hybrid neural networks  have 
+been shown to outperform  other neural network  architectures.  H. Li 
+et al. (2022 ) proposed  a CNN- and LSTM-based  multilevel  spatial–
+temporal  feature fusion EEG classification  algorithm.  Integral  extrac-
+tion and fusion of the middle layer feature,  the spatial feature,  and 
+the temporal  feature.  It overcomes  the traditional  machine  learning  
+algorithms’  tendency  to easily lose manually  selected  features.  Further-
+more, Khademi  et al. (2022 ), Derdour  et al. (2025a ) proposed  a hybrid 
+neural network  using CNN and LSTM to classify  four motor imagery  
+tasks in the BCI Competition  IV dataset  2a. MiniRocket  computes  deter-
+ministic  proportion-of-positive-values  (PPV) features  from each input 
+time series. These features  are passed to a ridge regression  classifier  
+that produces  the final class predictions.  Importantly,  MiniRocket  does 
+not generate  labels or gradients;  the ridge classifier  is trained  in a 
+closed form, and there is no label transfer  between  MiniRocket  and the 
+CNN–LSTM  branch.  The CNN–LSTM  network  is trained  end-to-end  via 
+back-propagation  using the true motor-imagery  labels.
+Hybrid EEG–fNIRS  BCIs are increasingly  studied  as a practical  route 
+to stable decoding  when unimodal  EEG is degraded  by physiological  
+or environmental  factors (Ji et al., 2024 ). Systematic  reviews  report 
+that multimodal  designs  can improve  decoding  performance  by exploit-
+ing EEG’s temporal  precision  together  with fNIRS’ spatially-localised  
+haemodynamic  sensitivity,  with fusion implemented  via early fea-
+ture concatenation  (after resampling/temporal  alignment),  intermedi-
+ate shared-representation  learning,  or late fusion of calibrated  posterior  
+probabilities/log-odds.  A key technical  issue is cross-modal  synchroni-
+sation: haemodynamic  responses  follow electrophysiological  changes  
+with a delay governed  by the haemodynamic  response  function;  con-
+sequently,  hybrid pipelines  often use time-lagged  fNIRS windows  (or 
+learned  temporal  alignment)  rather than naïve synchronous  concatena-
+tion. In addition,  the emergence  of large, public multimodal  datasets  
+under challenging  physiological  regimes  (hypoxia/fatigue  paradigms)  
+is enabling  reproducible  benchmarking  of robustness  claims beyond  
+single-session  EEG-only  evaluations.  These trends motivate  positioning  
+unimodal  advances  (such as fast, reproducible  MiniRocket  features)  as 
+building  blocks that can be combined  with multimodal  fusion to meet 
+clinical-grade  stability  requirements  (Ji et al., 2024 )
+3. Methodology
+This work’s primary  focus is an empirical  comparison  between  a 
+MiniRocket  + linear pipeline  and a compact  CNN-LSTM  baseline:  we 
+evaluate  accuracy,  parameter  counts,  and wall-clock  runtime  on public 
+MI datasets.  Where possible,  we also validate  generalisability  across 
+datasets  (PhysioNet  and BCI-CompIV-2a)  rather than proposing  gen-
+erative augmentation  strategies.  Fig.  1 illustrates  the proposed  model 
+architecture.  A total of 10 datasets  were downloaded,  five for the 
+training  set, two for the validation  set, and the remaining  three for 
+the test set. These data were downloaded  separately  for each subject,  
+resulting  in 10 data points in total. Data from various  subjects  were combined  to create the test and training  set. Five symmetrical  electrode  
+pairs placed throughout  the motor cortex produced  the MI-EEG  raw 
+signals for each trial, with the signals from each pair constituting  a 
+sample.
+MiniRocket  is used to extract deterministic  PPV features  which 
+are passed to a linear classifier  (ridge) — the ridge outputs  are final 
+class predictions  (no labels are generated  by MiniRocket).  The CNN-
+LSTM branch is trained  end-to-end  by back-propagation  using the true 
+trial labels; there is no label transfer  from MiniRocket  to the LSTM. 
+Data segmentation  (Section  3.2) creates non-overlapping  windows,  so 
+training  and test splits are subject-wise  and trial-wise  consistent
+The MiniRocket  Features  (MRF) module  is then used to send the 
+denoised  signal to the Minirocket  algorithm.  MRF extracts  the features  
+from a minibatch  of time series samples.  A linear classifier  can model 
+the information  in the extracted  features  related to the series class 
+membership.  Moreover,  A hybrid CNN-LSTM  architecture  was also 
+proposed.  As CNN-LSTM  uses two convolutional  layers for feature 
+extraction  and an LSTM layer for additional  classification,  these ar-
+chitectures  offer a comparable  baseline.  This allowed  us to compare  
+the effectiveness  of randomised  kernels  (MRF) and deep learning-based  
+methods  (CNN-LSTM).
+3.1. Dataset
+The PhysioNet  motor-imagery  dataset  contains  109 subjects  per-
+forming  four imagined  tasks: T1 (left fist), T2 (right fist), T3 (both 
+fists) and T4 (both feet). In this study, we report per-subject  results 
+for ten representative  participants  (S1–S10)  for clarity. Some studies 
+in Table  2 report five MI classes because  they include  additional  
+actions  (tongue  movement)  or both real and imagined  movements;  our 
+experiments  consistently  use the four standard  imagined  tasks. Raw 
+EEG data sampled  at 160 Hz are down-sampled  to 128 Hz by applying  
+an anti-alias  low-pass  filter followed  by resampling  at a 4:5 ratio.
+The BCI2000  system developers  (Goldberger  et al., 2000 ) recorded  
+the PhysioNet  MI-EEG  dataset  (EEGMMIDB)  (Schalk et al., 2004 ). It is 
+made up of more than 1500 EEG recordings  lasting between  one and 
+two minutes  that were recorded  at a sampling  rate of 160 Hz from 
+109 various  subjects.  Each subject performed  four MI tasks: T1, T2, T3, 
+and T4, referring  to the left and right fists, both fists, and both feet, 
+respectively.  Each MI task required  21 trials. Fig.  2 shows the timing 
+diagram  for the trial. The subject relaxes for 2 s before the start of the 
+trial at time 𝑡= −2 . At time 𝑡= 0, the target appears  on the screen, and 
+the symbols  are as follows:
+(1)L stands for the left fist motor imagination  as it opens and closes.
+(2)R stands for the right fist motor imagination  when it opens and 
+closes.
+(3)BLR stands for both fists’ motor imagination  when it opens and 
+closes.
+(4)BF stands for both feet motor imagination  when it opens and 
+closes.
+The subject received  the MI task for four seconds.  The trial ends 
+when the target disappears  at 𝑡= 4 s. A new trial starts after a 
+two-second  intermission  (Dose et al., 2018 ). The motor imagination  
+operates  at a sampling  frequency  of 160 Hz for approximately  four 
+seconds  each time. Therefore,  the effective  data size for each electrode  
+during a test is 640. The sample contains  a pair of symmetric  electrodes,  
+and the data from these electrodes  is serially  connected.  The sample 
+size is therefore  1280.
+For each MI task, each subject completed  21 trials for a total of 84 
+trials. A 10-fold  cross-validation  was performed  on the dataset  used in 
+this study. The trials consisted  of 10 segments  for each subject.  Two test 
+trials and the remaining  training  trials were used for each task class, 
+each of which had its own requirements.  Thus, the training  set has 76 
+trials, while the test set has 8 trials. There are 840 trials total, 760 for NeuroImage  328 (2026)  121816  
+4 
+J. Hwaidi and M.C. Ghanem
+Fig. 1.  Overview  of the two evaluated  classifiers:  (a) MiniRocket  feature transform  + ridge classifier,  and (b) hybrid CNN–LSTM  deep model (trained  end-to-end).  
+The branches  are not fused; they are benchmarked  separately.
+Fig. 2.  The trial’s timing diagram.
+training  and 80 for testing,  in the datasets  for 10 subjects  (S1∼S10). 
+Additionally,  9 samples  were produced  by each trial. In this study, a 
+dataset  containing  7560 samples  from 10 subjects  was chosen for model 
+training  and generalisation  performance  validation.
+Although  other datasets,  such as BCI Competition  IV-2a is fre-
+quently  cited as a validation  dataset  in the BCI community,  our re-
+view shows that the cited comparative  studies predominantly  used 
+the PhysioNet  EEG Motor Movement/Imagery  Database  as their main 
+benchmark.  For consistency  with those works and to ensure repro-
+ducibility,  we therefore  adopted  PhysioNet  as our primary  dataset  and 
+matched  their preprocessing,  subject-wise  splits, and cross-validation  
+protocols.  PhysioNet  offers broad subject variability,  standardised  trial 
+formats,  and open accessibility  that facilitate  direct method-to-method  
+comparison;  by contrast,  differences  in channel  montages,  trial timing,  
+and recording  protocols  between  PhysioNet  and BCI-Comp  IV-2a limit 
+straightforward  cross-dataset  performance  transfer.  We acknowledge  
+that cross-dataset  validation  on BCI-Comp  IV-2a would strengthen  gen-
+eralisability  and plan to include  it in follow-up  work; however,  it was 
+not used as the primary  benchmark  here to preserve  fair, reproducible  
+comparisons  with the majority  of prior studies.3.2. Preprocessing
+Signal amplification  and filtration  processes  are applied  to the data 
+at the time of acquisition.  The use of data segmentation  was demon-
+strated to segment  the data stream.  The EEG dataset  were preprocessed  
+using the following  procedures:
+1.A 128 Hz sampling  rate was used for the data.
+2.In this experiment,  𝜇 and 𝛽 waves were taken into considera-
+tion when dividing  EEG signals into bands using independent  
+component  analysis  (ICA).
+3.60-second  trials were used to divide the data, so three-second  
+pre-trial  intervals  were eliminated,  and the data was averaged  
+using a common  reference.
+To prevent  data leakage,  each subject’s  trials are partitioned  into 
+non-overlapping  windows  and then split into training,  validation  and 
+test sets in a 5:2:3 ratio. The test set contains  trials not used during 
+training  or model selection.
+3.3. MiniRocket
+High computational  complexity  is a limitation  of the majority  of 
+state-of-the-art  (SOTA)  time series classification  techniques.  They are 
+consequently  difficult  to train on smaller  datasets  and virtually  useless 
+on larger datasets.  In comparison  to other SOTA time series classifiers,  
+Random  Convolutional  Kernel Transform  (ROCKET)  (Dempster  et al., 
+2020 ) recently  achieved  SOTA accuracy  in a much shorter  amount  of 
+time by modifying  the deep learning  convolutional  kernel to enhance  
+the precision  of shapelet  extraction  algorithms,  which are used to NeuroImage  328 (2026)  121816  
+5 

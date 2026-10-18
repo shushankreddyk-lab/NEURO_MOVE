@@ -1,0 +1,18 @@
+{
+    "group2": {
+        "minirocket_acc": 0.62,
+        "cnn_acc": 0.695
+    },
+    "group3": {
+        "minirocket_acc": 0.6,
+        "cnn_acc": 0.645
+    },
+    "group4": {
+        "minirocket_acc": 0.69,
+        "cnn_acc": 0.79
+    },
+    "group5": {
+        "minirocket_acc": 0.585,
+        "cnn_acc": 0.73
+    }
+}

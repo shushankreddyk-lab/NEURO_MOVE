@@ -1,0 +1,97 @@
+{
+  "StudyDesign": {
+    "Sessions": 1,
+    "BlocksPerSession": 2,
+    "Counterbalancing": "Between-subject block order assignment"
+  },
+  "ConditionCodes": {
+    "OS": "SequentialCueOrder",
+    "OR": "RandomCueOrder"
+  },
+  "ParticipantBlockAssignment": {
+    "sub-01": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-02": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-03": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-04": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-05": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-06": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-07": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-08": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-09": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-10": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-11": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-12": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-13": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-14": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-15": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-16": {
+      "block1_condition": "Sequential",
+      "block2_condition": "Random"
+    },
+    "sub-17": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-18": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-19": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    },
+    "sub-20": {
+      "block1_condition": "Random",
+      "block2_condition": "Sequential"
+    }
+  },
+  "Summary": {
+    "total_participants": 20,
+    "same_order_both_blocks": 0
+  }
+}

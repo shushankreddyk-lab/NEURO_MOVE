@@ -1,0 +1,39 @@
+{
+    "Left Hand": {
+        "precision": 0.7,
+        "recall": 0.875,
+        "f1-score": 0.7777777777777778,
+        "support": 8.0
+    },
+    "Right Hand": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 8.0
+    },
+    "Both Feet": {
+        "precision": 0.75,
+        "recall": 0.5,
+        "f1-score": 0.6,
+        "support": 6.0
+    },
+    "Tongue": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 7.0
+    },
+    "accuracy": 0.8620689655172413,
+    "macro avg": {
+        "precision": 0.8625,
+        "recall": 0.84375,
+        "f1-score": 0.8444444444444444,
+        "support": 29.0
+    },
+    "weighted avg": {
+        "precision": 0.8655172413793104,
+        "recall": 0.8620689655172413,
+        "f1-score": 0.8559386973180076,
+        "support": 29.0
+    }
+}

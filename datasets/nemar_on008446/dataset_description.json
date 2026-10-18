@@ -1,0 +1,22 @@
+{
+    "Name": "Random and Sequential Order Finger Motor Imagery ",
+    "BIDSVersion": "1.6.0",
+    "DatasetType": "raw",
+    "Authors": [
+        "Damm, Laura Marie",
+        "Jiang, Dai",
+        "Demosthenous, Andreas"
+    ],
+    "License": "CC0",
+    "EthicsApprovals": [
+        "UCL Humanities, Arts and Sciences Research Ethics Committee; Approval Number: 26907/001"
+    ],
+    "TaskNames": [
+        "Random Finger Cue Order",
+        "Sequential Finger Cue Order"
+    ],
+    "Funding": [
+        "Engineering and Physical Sciences Research Council (EPSRC) grant EP/S022139/1"
+    ],
+    "DatasetDOI": "doi:10.18112/openneuro.ds008446.v1.0.1"
+}

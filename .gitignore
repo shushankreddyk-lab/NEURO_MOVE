@@ -1,7 +1,7 @@
 # Ignore everything by default
 *
 
-# But track the project folder
+# Track project directories
 !/eeg-mi-bci/
 !/eeg-mi-bci-archive-565657a/
 !/neuro-move-release/
@@ -23,6 +23,23 @@
 !/.gitignore
 !/.pre-commit-config.yaml
 !/.github/
+
+# Track all files within project directories
+!/eeg-mi-bci/**
+!/eeg-mi-bci-archive-565657a/**
+!/neuro-move-release/**
+!/figures/**
+!/reports/**
+!/scripts/**
+!/notebooks/**
+!/datasets/**
+!/dataset/**
+!/models/**
+!/results/**
+!/showcase/**
+!/tools/**
+!/docs/**
+!/tests/**
 
 # Python
 __pycache__/

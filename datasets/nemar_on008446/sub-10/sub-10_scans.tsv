@@ -1,0 +1,5 @@
+filename	acq_time	sampling_frequency
+eeg/sub-10_task-random_run-01_eeg.edf	n/a	512
+eeg/sub-10_task-sequential_run-01_eeg.edf	n/a	512
+eeg/sub-10_task-random_run-02_eeg.edf	n/a	512
+eeg/sub-10_task-sequential_run-02_eeg.edf	n/a	512
