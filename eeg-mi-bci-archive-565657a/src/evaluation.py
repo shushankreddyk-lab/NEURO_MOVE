@@ -1,66 +1,198 @@
-import os
+"""
+Evaluation & LOSO (Leave-One-Subject-Out) Cross-Validation.
+"""
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
+from sklearn.model_selection import LeaveOneGroupOut
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
+from typing import Dict, List, Tuple, Any, Optional
+import json
+from pathlib import Path
 
-def generate_evaluation_artifacts(artifacts_dir='artifacts/'):
-    os.makedirs(artifacts_dir, exist_ok=True)
+
+def loso_cv_scores(
+    pipeline_class,
+    X: np.ndarray,
+    y: np.ndarray,
+    groups: np.ndarray,
+    pipeline_kwargs: Dict = None,
+    fit_kwargs: Dict = None,
+    n_jobs: int = 1
+) -> Dict[str, Any]:
+    """
+    Leave-One-Subject-Out Cross-Validation.
     
-    classes = ['Left Fist (L)', 'Right Fist (R)', 'Both Fists (BLR)', 'Both Feet (BF)']
+    Args:
+        pipeline_class: Pipeline class (e.g., MiniRocketPipeline)
+        X: (n_trials, n_channels, n_samples)
+        y: (n_trials,) labels
+        groups: (n_trials,) subject IDs
+        pipeline_kwargs: kwargs for pipeline __init__
+        fit_kwargs: kwargs for pipeline.fit()
+        n_jobs: parallel jobs (1 for GPU pipelines)
     
-    # --- Confusion Matrix ---
-    # According to specs:
-    # Left Fist (L): 98.74%
-    # Right Fist (R): 97.38%
-    # Both Fists (BLR): 96.49%
-    # Both Feet (BF): 98.79%
+    Returns:
+        Dict with per-subject scores and aggregate metrics
+    """
+    if pipeline_kwargs is None:
+        pipeline_kwargs = {}
+    if fit_kwargs is None:
+        fit_kwargs = {}
     
-    cm = np.array([
-        [98.74, 0.40, 0.50, 0.36],
-        [0.80, 97.38, 0.90, 0.92],
-        [1.10, 1.20, 96.49, 1.21],
-        [0.40, 0.30, 0.51, 98.79]
-    ])
+    logo = LeaveOneGroupOut()
+    subject_scores = []
+    subject_details = []
     
-    plt.figure(figsize=(7, 6))
-    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues",
-                xticklabels=classes, yticklabels=classes, cbar_kws={'label': 'Accuracy (%)'})
-    plt.title('MiniRocket + Ridge CV Confusion Matrix')
-    plt.ylabel('True Class')
-    plt.xlabel('Predicted Class')
-    plt.tight_layout()
-    plt.savefig(os.path.join(artifacts_dir, 'confusion_matrices.png'), dpi=150)
-    plt.close()
+    unique_subjects = np.unique(groups)
     
-    # --- ROC Curves (Mocked for >96% AUC) ---
-    plt.figure(figsize=(7, 6))
-    fpr = np.linspace(0, 1, 100)
-    for i, c in enumerate(classes):
-        tpr = 1 - np.exp(-50 * fpr * (i*0.1 + 1))
-        tpr = np.clip(tpr + fpr * 0.01, 0, 1)
-        plt.plot(fpr, tpr, label=f'{c} (AUC = {0.98 - i*0.005:.3f})')
+    for fold, (train_idx, test_idx) in enumerate(logo.split(X, y, groups)):
+        test_subject = groups[test_idx][0]
         
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) - Multi-Class')
-    plt.legend(loc="lower right")
-    plt.tight_layout()
-    plt.savefig(os.path.join(artifacts_dir, 'roc_curves.png'), dpi=150)
-    plt.close()
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+        
+        # Create fresh pipeline for each fold
+        pipeline = pipeline_class(**pipeline_kwargs)
+        pipeline.fit(X_train, y_train, **fit_kwargs)
+        
+        y_pred = pipeline.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred, average='macro')
+        cm = confusion_matrix(y_test, y_pred)
+        
+        subject_scores.append(acc)
+        subject_details.append({
+            'fold': fold,
+            'subject': int(test_subject),
+            'n_train': len(train_idx),
+            'n_test': len(test_idx),
+            'accuracy': float(acc),
+            'f1_macro': float(f1),
+            'confusion_matrix': cm.tolist(),
+        })
+        
+        print(f"LOSO Fold {fold+1}/{len(unique_subjects)}: Subject {test_subject} - Acc: {acc:.4f}, F1: {f1:.4f}")
     
-    # --- Benchmark CSV ---
-    data = [
-        {"Model": "MiniRocket + Ridge (Proposed)", "PhysioNet Acc (%)": 98.63, "BCI-IV-2a Acc (%)": 92.57, "Parameters": "~40,000", "Inference Latency (ms)": 0.6},
-        {"Model": "Hybrid CNN-LSTM (Baseline)", "PhysioNet Acc (%)": 98.06, "BCI-IV-2a Acc (%)": 92.32, "Parameters": "~250,000", "Inference Latency (ms)": 8.0},
-        {"Model": "CNN-GRU (Prior Art)", "PhysioNet Acc (%)": 97.50, "BCI-IV-2a Acc (%)": 91.80, "Parameters": "~245,000", "Inference Latency (ms)": 7.5}
-    ]
-    df = pd.DataFrame(data)
-    df.to_csv(os.path.join(artifacts_dir, 'benchmark_results.csv'), index=False)
+    return {
+        'subject_scores': subject_scores,
+        'subject_details': subject_details,
+        'mean_accuracy': float(np.mean(subject_scores)),
+        'std_accuracy': float(np.std(subject_scores)),
+        'median_accuracy': float(np.median(subject_scores)),
+        'min_accuracy': float(np.min(subject_scores)),
+        'max_accuracy': float(np.max(subject_scores)),
+        'bci_illiteracy_rate': float(np.mean(np.array(subject_scores) < 0.7)),  # <70% threshold
+        'n_subjects': len(unique_subjects),
+    }
+
+
+def compute_metrics(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    labels: List[str] = None
+) -> Dict[str, Any]:
+    """Compute comprehensive classification metrics."""
+    acc = accuracy_score(y_true, y_pred)
+    f1_macro = f1_score(y_true, y_pred, average='macro')
+    f1_weighted = f1_score(y_true, y_pred, average='weighted')
+    f1_per_class = f1_score(y_true, y_pred, average=None)
+    cm = confusion_matrix(y_true, y_pred)
     
-if __name__ == '__main__':
-    generate_evaluation_artifacts()
-    print("Generated evaluation artifacts.")
+    report = classification_report(y_true, y_pred, target_names=labels, output_dict=True)
+    
+    return {
+        'accuracy': float(acc),
+        'f1_macro': float(f1_macro),
+        'f1_weighted': float(f1_weighted),
+        'f1_per_class': f1_per_class.tolist(),
+        'confusion_matrix': cm.tolist(),
+        'classification_report': report,
+    }
+
+
+def evaluate_model_on_subjects(
+    pipeline,
+    X: np.ndarray,
+    y: np.ndarray,
+    subject_ids: np.ndarray,
+    labels: List[str] = None
+) -> Dict[str, Any]:
+    """Evaluate a fitted pipeline per subject."""
+    unique_subjects = np.unique(subject_ids)
+    results = []
+    
+    for subj in unique_subjects:
+        mask = subject_ids == subj
+        X_subj = X[mask]
+        y_subj = y[mask]
+        
+        if len(X_subj) == 0:
+            continue
+        
+        y_pred = pipeline.predict(X_subj)
+        metrics = compute_metrics(y_subj, y_pred, labels)
+        metrics['subject'] = int(subj)
+        metrics['n_trials'] = len(X_subj)
+        results.append(metrics)
+    
+    return {
+        'per_subject': results,
+        'mean_accuracy': float(np.mean([r['accuracy'] for r in results])),
+        'std_accuracy': float(np.std([r['accuracy'] for r in results])),
+    }
+
+
+def save_evaluation_results(results: Dict[str, Any], output_path: str):
+    """Save evaluation results to JSON."""
+    with open(output_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f"Saved evaluation results to {output_path}")
+
+
+def load_evaluation_results(input_path: str) -> Dict[str, Any]:
+    """Load evaluation results from JSON."""
+    with open(input_path, 'r') as f:
+        return json.load(f)
+
+
+def print_loso_summary(results: Dict[str, Any]):
+    """Print formatted LOSO summary."""
+    print("\n" + "="*60)
+    print("LOSO CROSS-VALIDATION SUMMARY")
+    print("="*60)
+    print(f"Subjects evaluated: {results['n_subjects']}")
+    print(f"Mean Accuracy:      {results['mean_accuracy']*100:.2f}%")
+    print(f"Std Accuracy:       {results['std_accuracy']*100:.2f}%")
+    print(f"Median Accuracy:    {results['median_accuracy']*100:.2f}%")
+    print(f"Min Accuracy:       {results['min_accuracy']*100:.2f}%")
+    print(f"Max Accuracy:       {results['max_accuracy']*100:.2f}%")
+    print(f"BCI Illiteracy:     {results['bci_illiteracy_rate']*100:.1f}% (<70%)")
+    print("-"*60)
+    print("Per-Subject:")
+    for detail in results['subject_details']:
+        status = "✓" if detail['accuracy'] >= 0.7 else "✗"
+        print(f"  Subject {detail['subject']:3d}: {detail['accuracy']*100:5.1f}% {status}")
+    print("="*60)
+
+
+if __name__ == "__main__":
+    # Demo with synthetic data
+    from scripts.generate_synthetic import generate_synthetic_eeg
+    
+    print("Generating synthetic data for LOSO demo...")
+    X, y, ch_names = generate_synthetic_eeg(
+        n_trials=400, n_channels=20, n_samples=656, n_classes=4
+    )
+    
+    # Create subject groups (10 subjects, 40 trials each)
+    n_subjects = 10
+    groups = np.repeat(np.arange(n_subjects), 40)
+    
+    # Shuffle together
+    idx = np.random.permutation(len(y))
+    X, y, groups = X[idx], y[idx], groups[idx]
+    
+    print(f"Data: X={X.shape}, y={y.shape}, groups={len(np.unique(groups))} subjects")
+    
+    # Note: Actual pipeline would need torch/cuda
+    print("\nSkipping actual LOSO (requires GPU + trained pipeline)")
+    print("Use: python -m src.evaluation loso ...")

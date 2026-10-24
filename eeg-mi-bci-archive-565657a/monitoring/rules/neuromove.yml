@@ -1,0 +1,99 @@
+groups:
+  - name: neuromove-api
+    interval: 30s
+    rules:
+      - alert: NeuroMoveAPIHighLatency
+        expr: neuromove_latency_ms > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NeuroMove API high inference latency"
+          description: "API inference latency is {{ $value }}ms (threshold: 100ms)"
+
+      - alert: NeuroMoveAPICriticalLatency
+        expr: neuromove_latency_ms > 500
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NeuroMove API critical inference latency"
+          description: "API inference latency is {{ $value }}ms (threshold: 500ms)"
+
+      - alert: NeuroMoveModelNotLoaded
+        expr: neuromove_model_loaded == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NeuroMove model not loaded"
+          description: "No model is currently loaded in the API"
+
+      - alert: NeuroMoveHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NeuroMove API high error rate"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      - alert: NeuroMoveHighInferenceQueue
+        expr: neuromove_active_connections > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NeuroMove high WebSocket connections"
+          description: "{{ $value }} active WebSocket connections"
+
+  - name: neuromove-system
+    interval: 30s
+    rules:
+      - alert: NeuroMoveHighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: NeuroMoveHighMemory
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: NeuroMoveDiskFull
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critical on {{ $labels.instance }}"
+          description: "Only {{ $value }}% disk space available"
+
+  - name: neuromove-training
+    interval: 60s
+    rules:
+      - alert: NeuroMoveTrainingFailed
+        expr: mlflow_run_status{status="FAILED"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NeuroMove training run failed"
+          description: "Training run {{ $labels.run_name }} failed"
+
+      - alert: NeuroMoveTrainingStalled
+        expr: time() - mlflow_run_last_update_timestamp > 3600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NeuroMove training run stalled"
+          description: "Training run {{ $labels.run_name }} hasn't updated in 1 hour"

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroMove Enterprise - Turnstile Integration Example</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #0a0a0a; color: #e0e0e0; }
+        .container { background: #1a1a1a; border-radius: 12px; padding: 24px; margin: 20px 0; border: 1px solid #333; }
+        .btn { background: #0066cc; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+        .btn:hover:not(:disabled) { background: #0052a3; }
+        .output { background: #0d0d0d; border: 1px solid #333; border-radius: 6px; padding: 16px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow: auto; }
+        .turnstile-container { margin: 16px 0; }
+        .status { padding: 12px; border-radius: 6px; margin: 12px 0; }
+        .status.success { background: #1a3a1a; border: 1px solid #2d7d2d; color: #4ade80; }
+        .status.error { background: #3a1a1a; border: 1px solid #7d2d2d; color: #f87171; }
+        .status.info { background: #1a2a3a; border: 1px solid #2d5d7d; color: #60a5fa; }
+        pre { margin: 0; }
+        h1, h2 { color: #60a5fa; }
+        code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <h1>🧠 NeuroMove Enterprise - Turnstile Integration</h1>
+    <p>Example showing Cloudflare Turnstile integration with NeuroMove API.</p>
+    
+    <div class="container">
+        <h2>1. Turnstile Widget</h2>
+        <p>Complete the challenge to get a token:</p>
+        <div class="turnstile-container" id="turnstile-widget"></div>
+        <div id="turnstile-status"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. API Configuration</h2>
+        <p>API Base URL: <code id="api-url">http://localhost:8000</code></p>
+        <button class="btn" onclick="loadConfig()">Load Turnstile Config</button>
+        <div class="output" id="config-output">Click "Load Turnstile Config" to fetch site key from API</div>
+    </div>
+
+    <div class="container">
+        <h2>3. Inference with Turnstile</h2>
+        <p>Run inference with Turnstile token in header:</p>
+        <button class="btn" id="inference-btn" disabled>Run Inference</button>
+        <div class="output" id="inference-output"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. WebSocket with Turnstile</h2>
+        <p>Real-time streaming with Turnstile token in query params:</p>
+        <button class="btn" id="ws-btn" disabled>Connect WebSocket</button>
+        <div class="output" id="ws-output"></div>
+    </div>
+
+    <script>
+        let turnstileToken = null;
+        let turnstileWidgetId = null;
+        const API_BASE = 'http://localhost:8000';
+
+        // Initialize Turnstile widget
+        window.onload = function() {
+            turnstileWidgetId = turnstile.render('#turnstile-widget', {
+                sitekey: 'YOUR_SITE_KEY', // Will be replaced after config load
+                theme: 'dark',
+                callback: (token) => {
+                    turnstileToken = token;
+                    showStatus('turnstile-status', 'success', '✅ Turnstile verified! Token: ' + token.substring(0, 20) + '...');
+                    document.getElementById('inference-btn').disabled = false;
+                    document.getElementById('ws-btn').disabled = false;
+                },
+                'expired-callback': () => {
+                    showStatus('turnstile-status', 'error', '❌ Turnstile token expired. Please refresh.');
+                    turnstileToken = null;
+                    document.getElementById('inference-btn').disabled = true;
+                    document.getElementById('ws-btn').disabled = true;
+                }
+            });
+        };
+
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config/turnstile`);
+                const config = await response.json();
+                document.getElementById('config-output').textContent = JSON.stringify(config, null, 2);
+                
+                // Re-render Turnstile with actual site key
+                if (config.site_key && config.enabled) {
+                    if (turnstileWidgetId) turnstile.remove(turnstileWidgetId);
+                    turnstileWidgetId = turnstile.render('#turnstile-widget', {
+                        sitekey: config.site_key,
+                        theme: 'dark',
+                        callback: (token) => {
+                            turnstileToken = token;
+                            showStatus('turnstile-status', 'success', '✅ Turnstile verified! Token: ' + token.substring(0, 20) + '...');
+                            document.getElementById('inference-btn').disabled = false;
+                            document.getElementById('ws-btn').disabled = false;
+                        },
+                        'expired-callback': () => {
+                            showStatus('turnstile-status', 'error', '❌ Turnstile token expired. Please refresh.');
+                            turnstileToken = null;
+                            document.getElementById('inference-btn').disabled = true;
+                            document.getElementById('ws-btn').disabled = true;
+                        }
+                    });
+                }
+            } catch (e) {
+                document.getElementById('config-output').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        async function runInference() {
+            const output = document.getElementById('inference-output');
+            const btn = document.getElementById('inference-btn');
+            
+            if (!turnstileToken) {
+                showStatus('inference-output', 'error', '❌ Please complete Turnstile challenge first');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            output.textContent = 'Running inference...';
+            
+            // Generate synthetic EEG data (1 batch, 20 channels, 656 samples)
+            const generateEEG = () => {
+                const data = [];
+                for (let b = 0; b < 1; b++) {
+                    const batch = [];
+                    for (let c = 0; c < 20; c++) {
+                        const channel = [];
+                        for (let s = 0; s < 656; s++) {
+                            // Simulate mu rhythm (10Hz) + noise
+                            const t = s / 160;
+                            const mu = Math.sin(2 * Math.PI * 10 * t) * 10;
+                            const noise = (Math.random() - 0.5) * 5;
+                            channel.push(mu + noise);
+                        }
+                        batch.push(channel);
+                    }
+                    data.push(batch);
+                }
+                return data;
+            };
+            
+            const eegData = generateEEG();
+            
+            try {
+                const response = await fetch(`${API_BASE}/inference`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer neuromove-client', // Replace with your API key
+                        'X-Turnstile-Token': turnstileToken // Turnstile token in header
+                    },
+                    body: JSON.stringify({
+                        data: eegData,
+                        return_probabilities: true
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    output.textContent = JSON.stringify(result, null, 2);
+                    showStatus('inference-output', 'success', '✅ Inference successful!');
+                } else {
+                    output.textContent = JSON.stringify(result, null, 2);
+                    showStatus('inference-output', 'error', '❌ Error: ' + (result.detail || 'Unknown error'));
+                    // If token expired, reset
+                    if (response.status === 403) turnstileToken = null;
+                }
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+                showStatus('inference-output', 'error', '❌ Request failed: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Inference';
+            }
+        }
+
+        let ws = null;
+        async function connectWebSocket() {
+            const output = document.getElementById('ws-output');
+            const btn = document.getElementById('ws-btn');
+            
+            if (!turnstileToken) {
+                showStatus('ws-output', 'error', '❌ Please complete Turnstile challenge first');
+                return;
+            }
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                showStatus('ws-output', 'info', 'Already connected');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            output.textContent = 'Connecting to WebSocket...';
+            
+            // Pass Turnstile token and API key as query params
+            const wsUrl = `${API_BASE.replace('http', 'ws')}/ws/inference?api_key=neuromove-client&cf-turnstile-response=${turnstileToken}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                showStatus('ws-output', 'success', '✅ WebSocket connected!');
+                btn.textContent = 'Disconnect';
+                btn.disabled = false;
+                btn.onclick = disconnectWebSocket;
+                
+                // Send test data every 2 seconds
+                ws.interval = setInterval(() => {
+                    const eegData = [];
+                    for (let b = 0; b < 1; b++) {
+                        const batch = [];
+                        for (let c = 0; c < 20; c++) {
+                            const channel = [];
+                            for (let s = 0; s < 656; s++) {
+                                const t = s / 160;
+                                const mu = Math.sin(2 * Math.PI * 10 * t) * 10;
+                                const noise = (Math.random() - 0.5) * 5;
+                                channel.push(mu + noise);
+                            }
+                            batch.push(channel);
+                        }
+                        eegData.push(batch);
+                    }
+                    ws.send(JSON.stringify({ data: eegData, request_id: Date.now().toString() }));
+                }, 2000);
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                output.textContent = JSON.stringify(data, null, 2);
+            };
+            
+            ws.onerror = (e) => {
+                showStatus('ws-output', 'error', '❌ WebSocket error: ' + e.message);
+            };
+            
+            ws.onclose = () => {
+                showStatus('ws-output', 'info', '🔌 WebSocket disconnected');
+                btn.textContent = 'Connect WebSocket';
+                btn.disabled = false;
+                btn.onclick = connectWebSocket;
+                if (ws.interval) clearInterval(ws.interval);
+            };
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function showStatus(elementId, type, message) {
+            const el = document.getElementById(elementId);
+            el.className = 'status ' + type;
+            el.textContent = message;
+        }
+    </script>
+</body>
+</html>

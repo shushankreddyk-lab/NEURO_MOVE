@@ -1,0 +1,119 @@
+# NeuroMove Enterprise Configuration
+# All runtime parameters centralized here
+
+paths:
+  project_root: "${NEUROMOVE_ROOT}"
+  data_dir: "${NEUROMOVE_ROOT}/datasets"
+  models_dir: "${NEUROMOVE_ROOT}/eeg-mi-bci-archive-565657a/models"
+  artifacts_dir: "${NEUROMOVE_ROOT}/eeg-mi-bci-archive-565657a/artifacts"
+  logs_dir: "${NEUROMOVE_ROOT}/logs"
+
+# MiniRocket Configuration
+minirocket:
+  num_kernels: 10000
+  kernel_lengths: [7, 9, 11]
+  dilations: [1, 2, 4, 8, 16, 32]
+  hidden_dim: 512
+  dropout: 0.15
+  head_epochs: 30
+  head_lr: 5e-4
+  batch_size: 256
+  weight_decay: 5e-3
+  label_smoothing: 0.01
+  use_class_weights: true
+
+# Signal Processing
+preprocessing:
+  sfreq: 160
+  low_freq: 4.0
+  high_freq: 38.0
+  notch_freq: 50.0  # Set to 60 for US
+  apply_car: true
+  zscore_normalize: true
+  channel_montage: "standard_1020"
+  motor_channels: 
+    - "FC3"
+    - "FC4"
+    - "C3"
+    - "C4"
+    - "CP3"
+    - "CP4"
+    - "Cz"
+    - "FCz"
+    - "CPz"
+    - "F3"
+    - "F4"
+    - "Fz"
+    - "P3"
+    - "P4"
+    - "Pz"
+    - "O1"
+    - "O2"
+    - "Oz"
+    - "T3"
+    - "T4"
+
+# Dashboard Configuration
+dashboard:
+  page_title: "NeuroMove Enterprise | MI-BCI Neural Intelligence Platform"
+  page_icon: "🧠"
+  layout: "wide"
+  initial_sidebar_state: "collapsed"
+  theme: "dark"
+  max_width: 1600
+  refresh_interval_ms: 100
+
+# Model Registry
+model_registry:
+  file: "${paths.models_dir}/registry.json"
+  auto_register: true
+  track_metrics: ["accuracy", "f1", "latency_ms", "training_time_s"]
+
+# Inference Engine
+inference:
+  default_model: "minirocket"
+  fallback_models: ["eegnet", "cnn_lstm"]
+  batch_size: 1
+  max_latency_ms: 100
+  confidence_threshold: 0.5
+
+# Datasets
+datasets:
+  physionet_eegmmidb:
+    name: "PhysioNet EEGMMIDB"
+    subjects: 109
+    channels: 64
+    sfreq: 160
+    classes: 4
+    tasks: ["left_fist", "right_fist", "both_feet", "tongue"]
+    path: "${paths.data_dir}/physionet"
+  bci_competition_iv_2a:
+    name: "BCI Competition IV 2a"
+    subjects: 9
+    channels: 22
+    sfreq: 250
+    classes: 4
+    tasks: ["left_hand", "right_hand", "both_feet", "tongue"]
+    path: "${paths.data_dir}/BCICIV_2a_gdf"
+  high_gamma:
+    name: "High-Gamma Dataset"
+    subjects: 20
+    channels: 128
+    sfreq: 500
+    classes: 4
+    path: "${paths.data_dir}/high_gamma"
+
+# Security & Compliance
+security:
+  hipaa_compliant: true
+  encryption: "AES-256"
+  audit_log: true
+  zero_cloud_mode: true
+  fda_class_ii_ready: true
+
+# Performance Targets
+performance:
+  target_inference_latency_ms: 1.0
+  target_accuracy: 0.95
+  max_memory_mb: 500
+  gpu_memory_fraction: 0.8

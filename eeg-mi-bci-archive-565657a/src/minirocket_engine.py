@@ -8,9 +8,9 @@ import numpy as np
 import time
 import sys
 
-# --- Force CUDA torch from D:\pip_packages (overrides system CPU torch) ---
+# --- Force CUDA torch from env override (NEUROMOVE_PIP_PACKAGES) ---
 _D_PKGS = _PIP_PACKAGES
-if _D_PKGS not in sys.path:
+if _D_PKGS and _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
 import torch
@@ -131,7 +131,7 @@ class MiniRocketPipeline:
         self.classes_ = None
         self.training_time = 0.0
 
-    def fit(self, X, y, X_val=None, y_val=None, progress_callback=None):
+    def fit(self, X, y, X_val=None, y_val=None, progress_callback=None, channel_names=None, sfreq=None):
         """
         X shape: (n_instances, n_channels, n_timepoints)
         y shape: (n_instances,)
@@ -142,6 +142,8 @@ class MiniRocketPipeline:
             raise ValueError("X must be 3D (batch, channels, time) for pure GPU MiniRocket.")
 
         self.classes_ = np.unique(y)
+        self.channel_names = channel_names or [f"CH_{i}" for i in range(X.shape[1])]
+        self.sfreq = sfreq or 160.0
         n_cls = len(self.classes_)
         
         # 0) Fit Biases from a subset of data
@@ -211,7 +213,7 @@ class MiniRocketPipeline:
         crit = nn.CrossEntropyLoss(weight=class_w_tensor, label_smoothing=0.01)
         
         amp = self.device.type == "cuda"
-        scaler = torch.amp.GradScaler("cuda") if amp else None
+        scaler = torch.amp.GradScaler(device="cuda") if amp else None
         
         self.gpu_head.train()
         for epoch in range(self.head_epochs):
@@ -224,7 +226,7 @@ class MiniRocketPipeline:
                 bx, by = bx.to(self.device), by.to(self.device)
                 opt.zero_grad()
                 if amp:
-                    with torch.amp.autocast("cuda"):
+                    with torch.amp.autocast(device_type="cuda"):
                         logits = self.gpu_head(bx)
                         loss = crit(logits, by)
                     scaler.scale(loss).backward()
@@ -273,14 +275,16 @@ class MiniRocketPipeline:
         return self
 
     def predict(self, X):
+        if self.gpu_head is None or self.feat_mean is None or self.feat_std is None:
+            raise RuntimeError("Model not fitted. Call fit() first.")
         idx = np.argmax(self.predict_proba(X), axis=1)
         if hasattr(self, 'classes_') and self.classes_ is not None:
             return self.classes_[idx]
         return idx
 
     def predict_proba(self, X):
-        self.extractor.eval()
-        self.gpu_head.eval()
+        if self.gpu_head is None or self.feat_mean is None or self.feat_std is None:
+            raise RuntimeError("Model not fitted. Call fit() first.")
         X_t = torch.tensor(X, dtype=torch.float32)
         
         # Safely handle legacy numpy arrays or PyTorch tensors
@@ -312,13 +316,16 @@ class MiniRocketPipeline:
                 probs.append(p)
                 
         return np.vstack(probs)
-    
+
     def save(self, filepath):
-        if not hasattr(self, 'channel_names') or self.channel_names is None:
-            raise ValueError("channel_names is mandatory for saving the model.")
-        if not hasattr(self, 'sfreq') or self.sfreq is None:
-            raise ValueError("sfreq is mandatory for saving the model.")
-            
+        # Use defaults if not set (for backward compatibility)
+        channel_names = getattr(self, 'channel_names', None)
+        if channel_names is None:
+            channel_names = [f"CH_{i}" for i in range(self.in_channels)]
+        sfreq = getattr(self, 'sfreq', None)
+        if sfreq is None:
+            sfreq = 160.0
+             
         state = {
             'extractor': self.extractor.state_dict(),
             'gpu_head': self.gpu_head.state_dict(),
@@ -331,14 +338,14 @@ class MiniRocketPipeline:
             'dropout': self.dropout,
             'in_channels': self.in_channels,
             'seq_len': self.seq_len,
-            'channel_names': self.channel_names,
-            'sfreq': self.sfreq,
+            'channel_names': channel_names,
+            'sfreq': sfreq,
             'label_classes': getattr(self, 'classes_', None),
         }
         torch.save(state, filepath)
 
     def load(self, filepath):
-        state = torch.load(filepath, map_location=self.device, weights_only=False)
+        state = torch.load(filepath, map_location=self.device, weights_only=True)
         self.num_kernels = state.get('num_kernels', 10000)
         self.hidden = state.get('hidden', 512)
         self.dropout = state.get('dropout', 0.15)

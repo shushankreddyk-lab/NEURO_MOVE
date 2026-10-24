@@ -1,4 +1,12 @@
-if selected_tab == '📊 Training Process':
+# SNIPPET: Training Process Tab — meant to be embedded in dashboard/app.py
+# This file is not executable standalone; it's a code fragment for patching.
+def render_training_process_tab(selected_tab):
+    if selected_tab != '📊 Training Process':
+        return
+    import os
+    import re
+    import streamlit as st
+    
     st.markdown("""
     <div style="background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.2); border-radius:8px; padding:15px; margin-bottom:20px;">
         <h3 style="color:#0ea5e9; font-size:1.2rem; margin-top:0;">Faculty Defense: Specific Model Explanation</h3>
@@ -10,20 +18,20 @@ if selected_tab == '📊 Training Process':
     
     selected_dataset_tab1 = st.selectbox("Select Dataset:", ["High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL"], key="dataset_sel_tab1")
     # Map dataset name to folder name
-ds_folder_map = {
-    "High-Gamma Dataset": "HighGamma",
-    "Kaya Finger Movements": "Kaya",
-    "WAY-EEG-GAL": "WAY",
-    "": ""
-}
-mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
-models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)
+    ds_folder_map = {
+        "High-Gamma Dataset": "HighGamma",
+        "Kaya Finger Movements": "Kaya",
+        "WAY-EEG-GAL": "WAY",
+        "": ""
+    }
+    mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
+    models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)
 
-trained_models = []
-if os.path.exists(models_dir):
-    trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
-    trained_models.sort()
-        
+    trained_models = []
+    if os.path.exists(models_dir):
+        trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
+        trained_models.sort()
+    
     if trained_models:
         selected_faculty_model = st.selectbox("Select a Trained Model for Defense:", trained_models, key="faculty_model_sel")
         
@@ -36,7 +44,6 @@ if os.path.exists(models_dir):
         elif "cnn" in selected_faculty_model.lower():
             arch_type = "13-Layer CNN-LSTM (Deep convolutional spatial filters followed by recurrent temporal tracking)"
             
-        import re
         sub_match = re.search(r'subs(\d+)(to)?(\d+)?', selected_faculty_model)
         if sub_match:
             if sub_match.group(3):

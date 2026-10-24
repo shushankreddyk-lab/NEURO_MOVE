@@ -14,12 +14,12 @@ import sys
 
 import sys
 
-# --- Force CUDA torch from D:\pip_packages (overrides system CPU torch) ---
-_D_PKGS = r"D:\pip_packages"
-if os.path.exists(_D_PKGS) and _D_PKGS not in sys.path:
+# --- Force CUDA torch from env override (NEUROMOVE_PIP_PACKAGES) ---
+_D_PKGS = os.environ.get("NEUROMOVE_PIP_PACKAGES")
+if _D_PKGS and _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
-# Ensure src is in path to import modules, prioritizing it over the root src
+# Ensure src is in path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Force reload of src modules (fixes stale cached classes in Streamlit)
@@ -28,6 +28,12 @@ for _m in list(sys.modules.keys()):
         del sys.modules[_m]
 
 import torch
+# Load config
+try:
+    from src.config_loader import get_config
+    cfg = get_config()
+except Exception:
+    cfg = None
 
 @st.cache_resource
 def get_model_pipelines():
@@ -38,7 +44,92 @@ def get_model_pipelines():
     from src.cnn_lstm_engine import CNN_LSTM_Pipeline
     return AdvancedEEGPipeline, MiniRocketPipeline, EEGNet_Pipeline, ConvNet_Pipeline, CNN_LSTM_Pipeline
 
-st.set_page_config(layout="wide", page_title="NeuroDecoder MI-BCI", page_icon="🧠")
+
+@st.cache_resource
+def load_trained_model(model_name: str = "minirocket", model_path: str = None):
+    """Load a trained model from disk."""
+    try:
+        from src.minirocket_engine import MiniRocketPipeline
+        from src.eegnet_engine import EEGNet_Pipeline
+        from src.cnn_lstm_engine import CNN_LSTM_Pipeline
+        import numpy as np
+        
+        if model_path is None:
+            models_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
+            model_path = os.path.join(models_dir, f"{model_name}_latest.pth")
+        
+        if not os.path.exists(model_path):
+            return None, f"Model not found at {model_path}"
+        
+        if model_name == "minirocket":
+            pipeline = MiniRocketPipeline()
+            pipeline.load(model_path)
+            return pipeline, None
+        elif model_name == "eegnet":
+            pipeline = EEGNet_Pipeline()
+            pipeline.load(model_path)
+            return pipeline, None
+        elif model_name == "cnn_lstm":
+            pipeline = CNN_LSTM_Pipeline()
+            pipeline.load(model_path)
+            return pipeline, None
+        else:
+            return None, f"Unknown model: {model_name}"
+    except Exception as e:
+        return None, str(e)
+
+
+def preprocess_eeg_data(data: np.ndarray, sfreq: float = None, channel_names: list = None) -> np.ndarray:
+    """Preprocess raw EEG data for inference."""
+    if sfreq is None:
+        sfreq = cfg.get('preprocessing.sfreq', 160) if cfg else 160
+    
+    # Ensure 3D: (batch, channels, time)
+    if data.ndim == 2:
+        data = data[np.newaxis, ...]
+    
+    # Apply bandpass filter
+    try:
+        from scipy.signal import butter, filtfilt
+        low = cfg.get('preprocessing.low_freq', 4.0) if cfg else 4.0
+        high = cfg.get('preprocessing.high_freq', 38.0) if cfg else 38.0
+        nyquist = sfreq / 2
+        b, a = butter(4, [low/nyquist, high/nyquist], btype='band')
+        data = filtfilt(b, a, data, axis=-1)
+    except Exception:
+        pass
+    
+    # Apply CAR if enabled
+    if cfg.get('preprocessing.apply_car', True) if cfg else True:
+        data = data - np.mean(data, axis=1, keepdims=True)
+    
+    # Z-score normalize
+    if cfg.get('preprocessing.zscore_normalize', True) if cfg else True:
+        mean = np.mean(data, axis=-1, keepdims=True)
+        std = np.std(data, axis=-1, keepdims=True) + 1e-8
+        data = (data - mean) / std
+    
+    return data
+
+
+def run_inference(model, data: np.ndarray) -> dict:
+    """Run inference on preprocessed EEG data."""
+    try:
+        probs = model.predict_proba(data)
+        pred_idx = np.argmax(probs, axis=1)
+        pred_class = model.classes_[pred_idx] if hasattr(model, 'classes_') else pred_idx
+        confidence = np.max(probs, axis=1)
+        return {
+            'prediction': pred_class,
+            'probabilities': probs,
+            'confidence': confidence,
+            'classes': model.classes_ if hasattr(model, 'classes_') else None
+        }
+    except Exception as e:
+        return {'error': str(e)}
+
+
+st.set_page_config(layout="wide", page_title="NeuroMove Enterprise | MI-BCI Neural Intelligence Platform", page_icon="🧠")
 
 st.markdown("""
 <style>
@@ -318,6 +409,25 @@ with st.sidebar:
         "Dataset",
         ["PhysioNet EEGMMIDB", "BCI Competition IV 2a", "High-Gamma Dataset", "Kaya Finger Movements", "WAY-EEG-GAL", "NEMAR Finger MI"],
         index=0,
+        label_visibility="collapsed"
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Model Selection
+    st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Inference Model</div>", unsafe_allow_html=True)
+    selected_model = st.selectbox(
+        "Model",
+        ["MiniRocket (GPU)", "EEGNet", "CNN-LSTM", "ConvNets", "Advanced EEG"],
+        index=0,
+        label_visibility="collapsed"
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # File Upload for Inference
+    st.markdown("<div style='font-size:0.8rem; color:#8aa0b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;'>Upload EEG Data</div>", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader(
+        "EDF/FIF/CSV/NPY",
+        type=["edf", "fif", "csv", "npy"],
         label_visibility="collapsed"
     )
     st.markdown("<br>", unsafe_allow_html=True)

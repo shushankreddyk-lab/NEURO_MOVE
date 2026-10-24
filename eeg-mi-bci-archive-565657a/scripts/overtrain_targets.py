@@ -42,16 +42,17 @@ def overfit_targets():
         except Exception as e:
             print(f"Error overtraining {ds_name}: {e}")
             
-    try:
-        if not os.path.exists(mat_path):
-            pass
-        X_all, y_all = loader.load_data()
-        pipeline = MiniRocketPipeline()
-        pipeline.fit(X_all, y_all)
-        pipeline.save(model_path)
-        print(f"Saved to: {model_path}")
-    except Exception as e:
-        print(f"Error: {e}")
+    # Legacy block (mat_path/loader undefined) — disabled
+    # try:
+    #     if not os.path.exists(mat_path):
+    #         pass
+    #     X_all, y_all = loader.load_data()
+    #     pipeline = MiniRocketPipeline()
+    #     pipeline.fit(X_all, y_all)
+    #     pipeline.save(model_path)
+    #     print(f"Saved to: {model_path}")
+    # except Exception as e:
+    #     print(f"Error: {e}")
 
 if __name__ == '__main__':
     overfit_targets()

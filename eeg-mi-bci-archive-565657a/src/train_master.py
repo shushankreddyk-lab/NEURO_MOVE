@@ -1,14 +1,14 @@
+import os
+import sys
 from pathlib import Path
 
 # --- NeuroMove path resolution (env-overridable) ---
 _PROJECT_ROOT = Path(os.environ.get("NEUROMOVE_ROOT", Path(__file__).resolve().parents[2]))
 _PIP_PACKAGES = os.environ.get("NEUROMOVE_PIP_PACKAGES")
-import os
-import sys
 
-# --- Force CUDA torch from D:\pip_packages (overrides system CPU torch) ---
+# --- Force CUDA torch from env override (NEUROMOVE_PIP_PACKAGES) ---
 _D_PKGS = _PIP_PACKAGES
-if _D_PKGS not in sys.path:
+if _D_PKGS and _D_PKGS not in sys.path:
     sys.path.insert(0, _D_PKGS)
 
 import numpy as np

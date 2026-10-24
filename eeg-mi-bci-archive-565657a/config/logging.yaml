@@ -1,0 +1,90 @@
+# Structured Logging Configuration for NeuroMove Enterprise
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d"
+    datefmt: "%Y-%m-%dT%H:%M:%S%z"
+  
+  console:
+    format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    datefmt: "%H:%M:%S"
+  
+  detailed:
+    format: "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+filters:
+  add_request_id:
+    class: neuromove.logging.RequestIdFilter
+  
+  add_model_context:
+    class: neuromove.logging.ModelContextFilter
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: console
+    stream: ext://sys.stdout
+    filters: [add_request_id, add_model_context]
+  
+  file_json:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/neuromove_api.json
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf8
+    filters: [add_request_id, add_model_context]
+  
+  file_detailed:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: logs/neuromove_api_detailed.log
+    maxBytes: 10485760
+    backupCount: 5
+    encoding: utf8
+  
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: json
+    filename: logs/neuromove_errors.json
+    maxBytes: 10485760
+    backupCount: 10
+    encoding: utf8
+
+loggers:
+  neuromove-api:
+    level: INFO
+    handlers: [console, file_json, error_file]
+    propagate: false
+  
+  neuromove-training:
+    level: INFO
+    handlers: [console, file_json, error_file]
+    propagate: false
+  
+  neuromove-inference:
+    level: INFO
+    handlers: [console, file_json, error_file]
+    propagate: false
+  
+  uvicorn:
+    level: INFO
+    handlers: [console, file_json]
+    propagate: false
+  
+  uvicorn.access:
+    level: INFO
+    handlers: [console, file_json]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console, file_json, error_file]
