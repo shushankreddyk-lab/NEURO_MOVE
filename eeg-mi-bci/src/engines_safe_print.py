@@ -1,36 +1,16 @@
-"""Shared Windows-safe stdout guard for EEG pipelines (fixes Errno 22)."""
+"""
+engines_safe_print - Unified implementation from archive.
+This is a thin wrapper importing from the canonical archive implementation.
+"""
+import sys
+from pathlib import Path
 
+# Ensure archive src is in path
+_archive_src = Path(__file__).resolve().parents[2] / "eeg-mi-bci-archive-565657a" / "src"
+if str(_archive_src) not in sys.path:
+    sys.path.insert(0, str(_archive_src))
 
-def _install_windows_stdout_guard():
-    import os as _os
-    import sys as _sys
-    if _os.name != 'nt':
-        return
-    try:
-        _sys.stdout.reconfigure(errors='replace')
-    except Exception:
-        pass
-    try:
-        _sys.stderr.reconfigure(errors='replace')
-    except Exception:
-        pass
-    try:
-        import io as _io
-        if isinstance(_sys.stdout, _io.TextIOWrapper):
-            _sys.stdout._windows_console = False
-    except Exception:
-        pass
+from engines_safe_print import *
 
-_install_windows_stdout_guard()
-
-def safe_print(*args, **kwargs):
-    import sys as _sys
-    try:
-        _sys.stdout.write(' '.join(str(a) for a in args) + '\n')
-    except OSError:
-        pass
-    try:
-        _sys.stdout.flush()
-    except OSError:
-        pass
-
+# Re-export for backward compatibility
+__all__ = [name for name in dir() if not name.startswith('_')]

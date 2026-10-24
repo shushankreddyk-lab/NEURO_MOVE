@@ -1,9 +1,16 @@
-"""Ensure src is importable and stdout survives Windows console flushes."""
-import os as _os
-import sys as _sys
-_HERE = _os.path.dirname(_os.path.abspath(__file__))
-_ROOT = _os.path.dirname(_HERE)
-for _p in (_HERE, _ROOT):
-    if _p not in _sys.path:
-        _sys.path.insert(0, _p)
+"""
+sitecustomize - Unified implementation from archive.
+This is a thin wrapper importing from the canonical archive implementation.
+"""
+import sys
+from pathlib import Path
 
+# Ensure archive src is in path
+_archive_src = Path(__file__).resolve().parents[2] / "eeg-mi-bci-archive-565657a" / "src"
+if str(_archive_src) not in sys.path:
+    sys.path.insert(0, str(_archive_src))
+
+from sitecustomize import *
+
+# Re-export for backward compatibility
+__all__ = [name for name in dir() if not name.startswith('_')]
