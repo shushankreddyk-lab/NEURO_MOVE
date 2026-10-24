@@ -2,8 +2,8 @@ import sys
 import os
 import numpy as np
 
-# Add eeg-mi-bci to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "eeg-mi-bci")))
+# Add project root / eeg-mi-bci to path (scripts/ is sibling of eeg-mi-bci/)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "eeg-mi-bci")))
 
 from src.minirocket_engine import MiniRocketPipeline
 

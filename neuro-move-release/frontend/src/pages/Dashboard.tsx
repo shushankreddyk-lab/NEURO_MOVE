@@ -257,16 +257,16 @@ export function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Backend API</span>
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-medium text-emerald-600">Online</span>
-                  </div>
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">GPU Acceleration</span>
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-medium text-emerald-600">CUDA 12.1</span>
-                  </div>
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Frontend Build</span>
@@ -277,7 +277,7 @@ export function Dashboard() {
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-medium text-emerald-600">Turnstile Verified</span>
-                  </div>
+                  </span>
                 </div>
               </div>
             </div>

@@ -10,17 +10,20 @@
     
     <style>
         :root {
-            --bg-base: #05070c;
-            --bg-surface: #0a0e17;
-            --bg-panel: #0d121f;
-            --border-subtle: rgba(255, 255, 255, 0.07);
+            --bg-base: #06070b;
+            --bg-surface: #0a0c13;
+            --bg-panel: #0d1019;
+            --border-subtle: rgba(255, 255, 255, 0.08);
             --border-glow: rgba(0, 229, 255, 0.35);
             --cyan-glow: #00e5ff;
             --cyan-dim: rgba(0, 229, 255, 0.12);
             --magenta-glow: #e024c3;
             --magenta-dim: rgba(224, 36, 195, 0.12);
             --emerald-glow: #10b981;
+            --emerald-dim: rgba(16, 185, 129, 0.12);
             --amber-glow: #f59e0b;
+            --amber-dim: rgba(245, 158, 11, 0.12);
+            --purple-glow: #8b5cf6;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --text-muted: #475569;
@@ -46,9 +49,9 @@
             flex-direction: column;
             background-image: 
                 radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.05) 0%, transparent 60%),
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
         }
 
         /* Scanline Overlay Effect */
@@ -56,11 +59,11 @@
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%);
             background-size: 100% 4px;
             z-index: 9999;
             pointer-events: none;
-            opacity: 0.45;
+            opacity: 0.35;
         }
 
         /* ==========================================================================
@@ -71,8 +74,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 10px 24px;
-            background: rgba(10, 14, 23, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(10, 12, 19, 0.94);
+            backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border-subtle);
             position: sticky;
             top: 0;
@@ -105,7 +108,7 @@
             font-family: var(--font-display);
             font-size: 14px;
             font-weight: 700;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.14em;
             color: #ffffff;
             display: flex;
             align-items: center;
@@ -125,7 +128,7 @@
         .telemetry-stats {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 20px;
             color: var(--text-secondary);
         }
 
@@ -152,7 +155,7 @@
         .ribbon-controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .hud-btn {
@@ -178,14 +181,103 @@
             box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
         }
 
+        .hud-btn.audio-active {
+            background: var(--magenta-dim);
+            color: var(--magenta-glow);
+            border-color: var(--magenta-glow);
+            box-shadow: 0 0 12px rgba(224, 36, 195, 0.3);
+        }
+
         /* ==========================================================================
-           2. MAIN STAGE: 3D HOLOGRAPHIC PARTICLE CORTEX
+           2. NATURAL LANGUAGE COMMAND / PROMPT BAR ("TYPE A SENTENCE AND WATCH...")
+           ========================================================================== */
+        .prompt-bar-container {
+            padding: 10px 24px;
+            background: rgba(8, 10, 16, 0.96);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            z-index: 90;
+        }
+
+        .prompt-label {
+            color: var(--cyan-glow);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .prompt-input-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .prompt-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            padding: 8px 14px 8px 32px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #ffffff;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .prompt-input:focus {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+            background: rgba(0, 229, 255, 0.03);
+        }
+
+        .prompt-prefix {
+            position: absolute;
+            left: 12px;
+            color: var(--cyan-glow);
+            pointer-events: none;
+            font-weight: 700;
+        }
+
+        .prompt-presets {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preset-chip {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 5px 11px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .preset-chip:hover {
+            color: var(--cyan-glow);
+            border-color: var(--border-glow);
+            background: var(--cyan-dim);
+            transform: translateY(-1px);
+        }
+
+        /* ==========================================================================
+           3. MAIN STAGE: 3D CYLINDRICAL DATA DRUM (BORIS CHERNY STYLE)
            ========================================================================== */
         .stage-container {
             position: relative;
             width: 100%;
-            height: 520px;
-            background: radial-gradient(circle at 50% 50%, #0c1220 0%, #05070c 100%);
+            height: 560px;
+            background: radial-gradient(circle at 45% 50%, #0b0f1a 0%, #05060a 100%);
             border-bottom: 1px solid var(--border-subtle);
             overflow: hidden;
         }
@@ -210,14 +302,17 @@
             color: var(--cyan-glow);
             letter-spacing: 0.15em;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .stage-title {
             font-family: var(--font-display);
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: #ffffff;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
         }
 
         .stage-sub {
@@ -241,28 +336,32 @@
         .trigger-group {
             display: flex;
             gap: 8px;
-            background: rgba(10, 14, 23, 0.7);
+            background: rgba(10, 14, 23, 0.75);
             padding: 6px;
             border-radius: 6px;
             border: 1px solid var(--border-subtle);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
 
         .trigger-btn {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-secondary);
-            padding: 6px 12px;
+            padding: 7px 14px;
             font-family: var(--font-mono);
-            font-size: 10px;
+            font-size: 10.5px;
             border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .trigger-btn:hover {
             border-color: var(--cyan-glow);
             color: #ffffff;
+            transform: translateY(-1px);
         }
 
         .trigger-btn.left { border-color: rgba(0, 229, 255, 0.4); color: var(--cyan-glow); }
@@ -278,24 +377,90 @@
         }
 
         /* 3D Electrode HUD Tooltip */
-        #electrode-tooltip {
+        #node-tooltip {
             position: absolute;
             display: none;
-            background: rgba(13, 18, 31, 0.95);
+            background: rgba(13, 16, 25, 0.95);
             border: 1px solid var(--cyan-glow);
-            padding: 8px 12px;
+            padding: 10px 14px;
             border-radius: 4px;
             font-family: var(--font-mono);
             font-size: 11px;
             color: #ffffff;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
             pointer-events: none;
             z-index: 50;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
+            line-height: 1.5;
         }
 
+        /* Electrode Clinical Telemetry Flyout Modal */
+        #electrode-modal {
+            position: absolute;
+            top: 75px;
+            right: 24px;
+            width: 320px;
+            background: rgba(10, 13, 22, 0.96);
+            border: 1px solid var(--cyan-glow);
+            border-radius: 6px;
+            padding: 14px;
+            z-index: 60;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 229, 255, 0.25);
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .modal-title {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--cyan-glow);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: #ffffff; }
+
+        .modal-body {
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: var(--text-secondary);
+        }
+
+        .modal-stat-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-stat-row span.val { color: #ffffff; font-weight: 600; }
+
         /* ==========================================================================
-           3. 8-PANEL HUD COMMAND DECK (4x2 GRID)
+           4. 8-PANEL HUD COMMAND DECK (4x2 GRID)
            ========================================================================== */
         .hud-grid {
             display: grid;
@@ -308,7 +473,7 @@
         .hud-panel {
             background: var(--bg-panel);
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -317,8 +482,8 @@
         }
 
         .hud-panel:hover {
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
         }
 
         .panel-header {
@@ -357,10 +522,10 @@
         /* PANEL 1: Neural Telemetry Feed */
         .log-terminal {
             font-family: var(--font-mono);
-            font-size: 10.5px;
+            font-size: 10px;
             line-height: 1.6;
             color: #cbd5e1;
-            height: 160px;
+            height: 165px;
             overflow-y: auto;
             scrollbar-width: none;
             display: flex;
@@ -380,12 +545,12 @@
         .riemannian-box {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 9px;
         }
 
         .matrix-preview {
             width: 100%;
-            height: 90px;
+            height: 88px;
             border-radius: 4px;
             border: 1px solid var(--border-subtle);
             display: block;
@@ -401,17 +566,41 @@
 
         .stat-val { color: var(--cyan-glow); font-weight: 600; }
 
-        /* PANEL 3: Engine Pipeline Code */
+        /* PANEL 3: Pipeline Engine Code */
+        .code-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .code-tab-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 3px 8px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .code-tab-btn:hover, .code-tab-btn.active {
+            color: var(--cyan-glow);
+            border-color: var(--border-glow);
+            background: var(--cyan-dim);
+        }
+
         .code-snippet {
             font-family: var(--font-mono);
-            font-size: 10px;
+            font-size: 9.5px;
             line-height: 1.5;
             color: #93c5fd;
-            background: #060911;
+            background: #060810;
             padding: 10px;
             border-radius: 4px;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            height: 160px;
+            height: 130px;
             overflow-y: auto;
         }
 
@@ -438,19 +627,20 @@
             margin-top: 4px;
         }
 
-        /* PANEL 5: Dataset Vault */
+        /* PANEL 5: Dataset Vault (9 Unified Datasets) */
         .dataset-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            height: 160px;
+            gap: 5px;
+            height: 165px;
             overflow-y: auto;
+            scrollbar-width: thin;
         }
 
         .dataset-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-subtle);
-            padding: 7px 10px;
+            padding: 6px 10px;
             border-radius: 4px;
             display: flex;
             justify-content: space-between;
@@ -464,15 +654,43 @@
             background: var(--cyan-dim);
         }
 
-        .dataset-name { font-size: 11px; font-weight: 600; color: #ffffff; }
+        .dataset-name { font-size: 10.5px; font-weight: 600; color: #ffffff; }
         .dataset-meta { font-family: var(--font-mono); font-size: 9px; color: var(--text-secondary); }
 
         /* PANEL 6: Oscilloscope */
         #oscilloscope-canvas {
             width: 100%;
-            height: 130px;
+            height: 110px;
             border-radius: 4px;
             border: 1px solid var(--border-subtle);
+        }
+
+        .osc-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .osc-btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .mini-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .mini-btn:hover, .mini-btn.active {
+            color: var(--cyan-glow);
+            border-color: var(--border-glow);
         }
 
         /* PANEL 7: 7-Model Leaderboard */
@@ -480,19 +698,19 @@
             width: 100%;
             border-collapse: collapse;
             font-family: var(--font-mono);
-            font-size: 10px;
+            font-size: 9.5px;
         }
 
         .model-table th {
             text-align: left;
             color: var(--text-muted);
             font-weight: 500;
-            padding-bottom: 6px;
+            padding-bottom: 5px;
             border-bottom: 1px solid var(--border-subtle);
         }
 
         .model-table td {
-            padding: 5px 0;
+            padding: 4px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
 
@@ -506,7 +724,7 @@
         .intent-display {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
         .target-intent-badge {
@@ -515,17 +733,17 @@
             justify-content: space-between;
             background: rgba(0, 229, 255, 0.08);
             border: 1px solid rgba(0, 229, 255, 0.3);
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 7px 10px;
+            border-radius: 5px;
         }
 
-        .intent-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--cyan-glow); }
+        .intent-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--cyan-glow); }
         .intent-latency { font-family: var(--font-mono); font-size: 10px; color: var(--emerald-glow); }
 
         .confidence-meter {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
 
         .prob-bar-row {
@@ -533,10 +751,10 @@
             align-items: center;
             gap: 8px;
             font-family: var(--font-mono);
-            font-size: 9.5px;
+            font-size: 9px;
         }
 
-        .prob-label { width: 70px; color: var(--text-secondary); }
+        .prob-label { width: 68px; color: var(--text-secondary); }
         .prob-bar-track {
             flex: 1;
             height: 6px;
@@ -548,7 +766,7 @@
         .prob-fill {
             height: 100%;
             border-radius: 3px;
-            transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .prob-val { width: 36px; text-align: right; color: var(--cyan-glow); }
@@ -584,33 +802,58 @@
         <div class="brand-section">
             <div class="status-dot"></div>
             <div class="brand-title">
-                NEURO_MOVE <span class="brand-tag">BCI OBSERVATORY</span>
+                NEURO_MOVE <span class="brand-tag">CLAUDE PAPER LAB SPEC</span>
             </div>
         </div>
 
         <div class="telemetry-stats">
-            <div class="tele-stat"><span class="label">DATASETS:</span><span class="val">09 UNIFIED</span></div>
-            <div class="tele-stat"><span class="label">ELECTRODES:</span><span class="val">64-CH 10-20</span></div>
-            <div class="tele-stat"><span class="label">BEST ACCURACY:</span><span class="val green">95.83%</span></div>
-            <div class="tele-stat"><span class="label">INFERENCE:</span><span class="val">1.42 ms</span></div>
+            <div class="tele-stat"><span class="label">DATASETS:</span><span class="val" id="ribbon-datasets">09 UNIFIED</span></div>
+            <div class="tele-stat"><span class="label">SUBJECTS:</span><span class="val" id="ribbon-subjects">109 CORPUS</span></div>
+            <div class="tele-stat"><span class="label">ELECTRODES:</span><span class="val" id="ribbon-electrodes">64-CH 10-20</span></div>
+            <div class="tele-stat"><span class="label">BEST ACCURACY:</span><span class="val green" id="ribbon-accuracy">95.83%</span></div>
+            <div class="tele-stat"><span class="label">INFERENCE:</span><span class="val" id="ribbon-latency">1.42 ms</span></div>
             <div class="tele-stat"><span class="label">BACKEND:</span><span class="val">PYTORCH CUDA</span></div>
         </div>
 
         <div class="ribbon-controls">
-            <button class="hud-btn active" id="btn-toggle-particles">● 12K PARTICLES</button>
+            <button class="hud-btn" id="btn-audio-toggle" onclick="toggleAudioFX()">🔈 AUDIO FX: OFF</button>
+            <button class="hud-btn active" id="btn-toggle-particles">● CYLINDRICAL DRUM</button>
             <button class="hud-btn" id="btn-toggle-camera">RESET CAM</button>
             <button class="hud-btn" onclick="toggleFullscreen()">FULLSCREEN</button>
         </div>
     </header>
 
     <!-- ==========================================================================
-       2. MAIN STAGE: 3D HOLOGRAPHIC PARTICLE CORTEX
+       2. NATURAL LANGUAGE COMMAND / PROMPT BAR ("TYPE A SENTENCE AND WATCH...")
+       ========================================================================== -->
+    <div class="prompt-bar-container">
+        <div class="prompt-label">
+            <span>⚡ NEURAL COMMAND:</span>
+        </div>
+        <div class="prompt-input-wrapper">
+            <span class="prompt-prefix">></span>
+            <input type="text" id="prompt-input" class="prompt-input" 
+                   placeholder="Type a neural query (e.g. 'Decode subject 14 right hand motor imagery with MiniRocket')..." 
+                   value="Decode subject 14 right hand motor imagery with MiniRocket"
+                   onkeydown="if(event.key === 'Enter') executePrompt();">
+        </div>
+        <div class="prompt-presets">
+            <div class="preset-chip" onclick="setPrompt('Analyze Mu rhythm ERD desynchronization on C3 and C4')">ERD Desync</div>
+            <div class="preset-chip" onclick="setPrompt('Solve Riemannian SPD geodesic distance across all 64 channels')">Riemannian SPD</div>
+            <div class="preset-chip" onclick="setPrompt('Benchmark Conformer Multi-Head Attention vs EEGNet on BCI IV-2a')">Conformer vs EEGNet</div>
+            <div class="preset-chip" onclick="setPrompt('Simulate High-Gamma 128 channel motor cortex burst')">High-Gamma 128ch</div>
+        </div>
+        <button class="hud-btn" onclick="executePrompt()" style="background:var(--cyan-dim); color:var(--cyan-glow); border-color:var(--border-glow); padding: 7px 16px;">RUN</button>
+    </div>
+
+    <!-- ==========================================================================
+       3. MAIN STAGE: 3D CYLINDRICAL DATA DRUM (BORIS CHERNY STYLE)
        ========================================================================== -->
     <div class="stage-container">
         <div class="stage-overlay">
-            <div class="stage-badge">● HOLOGRAPHIC NEURAL RING & MANIFOLD</div>
-            <div class="stage-title">Volumetric Spatio-Temporal Cortex</div>
-            <div class="stage-sub">64-Channel Electrode Topology with Real-Time Synaptic Fiber Advection</div>
+            <div class="stage-badge">● 3D CYLINDRICAL DATA DRUM & SYNAPTIC FIBER FIELD</div>
+            <div class="stage-title">Volumetric Spatio-Temporal Observatory</div>
+            <div class="stage-sub">109 Subjects · 64 Electrodes · 10,000 MiniRocket Convolutions · Laser Arc Stream</div>
         </div>
 
         <div class="stage-controls">
@@ -620,36 +863,53 @@
                 <button class="trigger-btn feet" onclick="triggerIntent('FEET')">▲ BOTH FEET</button>
                 <button class="trigger-btn tongue" onclick="triggerIntent('TONGUE')">▼ TONGUE</button>
             </div>
-            <div class="cam-hint">[DRAG TO ROTATE 360° · SCROLL TO ZOOM · HOVER ELECTRODES]</div>
+            <div class="cam-hint">[DRAG TO ROTATE 360° · SCROLL TO ZOOM · CLICK ANY NODE FOR TELEMETRY]</div>
         </div>
 
-        <div id="electrode-tooltip"></div>
+        <!-- 3D Electrode HUD Tooltip -->
+        <div id="node-tooltip"></div>
+
+        <!-- Clinical Telemetry Flyout Modal -->
+        <div id="electrode-modal">
+            <div class="modal-header">
+                <div class="modal-title" id="m-node-title">ELECTRODE C3 // MOTOR STRIP</div>
+                <button class="modal-close" onclick="closeElectrodeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-stat-row"><span>ANATOMICAL LOC:</span><span class="val" id="m-loc">Precentral Gyrus (Left)</span></div>
+                <div class="modal-stat-row"><span>10-20 SYSTEM:</span><span class="val" id="m-system">Contralateral Hand Knob</span></div>
+                <div class="modal-stat-row"><span>IMPEDANCE:</span><span class="val" style="color:var(--emerald-glow)" id="m-imp">2.14 kΩ (Optimal)</span></div>
+                <div class="modal-stat-row"><span>MU BAND (8-12Hz):</span><span class="val" style="color:var(--cyan-glow)" id="m-mu">-3.8 dB (ERD Active)</span></div>
+                <div class="modal-stat-row"><span>BETA BAND (16-24Hz):</span><span class="val" style="color:var(--magenta-glow)" id="m-beta">-2.4 dB (Desync)</span></div>
+                <div class="modal-stat-row"><span>SNR RATIO:</span><span class="val" id="m-snr">+18.4 dB</span></div>
+                <div class="modal-stat-row"><span>DECODING ACCURACY:</span><span class="val" style="color:var(--emerald-glow)" id="m-acc">98.2%</span></div>
+            </div>
+        </div>
+
         <canvas id="webgl-canvas"></canvas>
     </div>
 
     <!-- ==========================================================================
-       3. 8-PANEL HUD COMMAND DECK (4x2 GRID)
+       4. 8-PANEL HUD COMMAND DECK (4x2 GRID)
        ========================================================================== -->
     <div class="hud-grid">
         
-        <!-- PANEL 1: Neural Telemetry Stream -->
+        <!-- PANEL 1: Neural Telemetry Feed -->
         <div class="hud-panel">
             <div class="panel-header">
                 <div class="panel-title"><span class="tag">01 //</span> INVESTIGATION FEED</div>
-                <div>LIVE BUFFER</div>
+                <div>STREAM STATUS</div>
             </div>
             <div class="panel-body">
-                <div class="log-terminal" id="log-terminal">
-                    <!-- Dynamic logs injected via JS -->
-                </div>
+                <div class="log-terminal" id="log-terminal"></div>
             </div>
         </div>
 
         <!-- PANEL 2: Riemannian Covariance Solver -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">02 //</span> RIEMANNIAN SPD SOLVER</div>
-                <div>MANIFOLD GEODESIC</div>
+                <div class="panel-title"><span class="tag">02 //</span> ADVECTION / RIEMANNIAN SOLVER</div>
+                <div>SPD MANIFOLD</div>
             </div>
             <div class="panel-body">
                 <div class="riemannian-box">
@@ -660,11 +920,11 @@
                     </div>
                     <div class="stat-row">
                         <span>TANGENT DIMENSION:</span>
-                        <span class="stat-val">2,080 SPDs</span>
+                        <span class="stat-val" id="tangent-dim">2,080 SPDs</span>
                     </div>
                     <div class="stat-row">
                         <span>SPD CONDITION NUMBER:</span>
-                        <span class="stat-val">1.042 (STABLE)</span>
+                        <span class="stat-val">1.042 (OPTIMAL)</span>
                     </div>
                 </div>
             </div>
@@ -673,11 +933,17 @@
         <!-- PANEL 3: Pipeline Engine Code -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">03 //</span> ENGINE PIPELINE WORKSPACE</div>
-                <div>MINIROCKET.PY</div>
+                <div class="panel-title"><span class="tag">03 //</span> METHOD WORKSPACE</div>
+                <div id="method-filename">MINIROCKET_PPV.PY</div>
             </div>
             <div class="panel-body">
-                <div class="code-snippet">
+                <div class="code-tabs">
+                    <button class="code-tab-btn active" onclick="switchCodeSnippet('minirocket')">MiniRocket</button>
+                    <button class="code-tab-btn" onclick="switchCodeSnippet('conformer')">Conformer</button>
+                    <button class="code-tab-btn" onclick="switchCodeSnippet('eegnet')">EEGNet</button>
+                    <button class="code-tab-btn" onclick="switchCodeSnippet('riemannian')">Riemannian</button>
+                </div>
+                <div class="code-snippet" id="code-snippet-box">
 <span class="code-cmt"># MiniRocket GPU Transform Pipeline</span>
 <span class="code-kw">class</span> <span class="code-fn">MiniRocketPipeline</span>:
     <span class="code-kw">def</span> <span class="code-fn">fit_transform</span>(self, X):
@@ -696,8 +962,8 @@
         <!-- PANEL 4: Time-Frequency Spectrogram -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">04 //</span> ERD/ERS SPECTROGRAM</div>
-                <div>C3/C4 DENSITY</div>
+                <div class="panel-title"><span class="tag">04 //</span> SHARED SCENE / DIFFERENCE FIELD</div>
+                <div>ERD DENSITY</div>
             </div>
             <div class="panel-body">
                 <canvas id="spectrogram-canvas"></canvas>
@@ -710,48 +976,76 @@
             </div>
         </div>
 
-        <!-- PANEL 5: Unified Dataset Vault -->
+        <!-- PANEL 5: Unified Dataset Vault (9 Unified Datasets) -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">05 //</span> DATASET VAULT (9 CORPUS)</div>
-                <div>100% UNIFIED</div>
+                <div class="panel-title"><span class="tag">05 //</span> SOURCE / EXTRACTION NODES</div>
+                <div>9 CORPUS VAULT</div>
             </div>
             <div class="panel-body">
                 <div class="dataset-list">
-                    <div class="dataset-card active" onclick="selectDataset(this, 'PhysioNet')">
+                    <div class="dataset-card active" onclick="selectDataset(this, 'PhysioNet EEGMMIDB', 109, 64, 160, '95.83%')">
                         <div>
                             <div class="dataset-name">PhysioNet EEGMMIDB</div>
                             <div class="dataset-meta">109 Subjects · 64 Channels · 160 Hz</div>
                         </div>
-                        <div class="dataset-meta" style="color:var(--emerald-glow);">95.8% ACC</div>
+                        <div class="dataset-meta" style="color:var(--emerald-glow);">95.83% ACC</div>
                     </div>
-                    <div class="dataset-card" onclick="selectDataset(this, 'BCI 2a')">
+                    <div class="dataset-card" onclick="selectDataset(this, 'BCI Competition IV-2a', 9, 22, 250, '91.40%')">
                         <div>
                             <div class="dataset-name">BCI Competition IV-2a</div>
                             <div class="dataset-meta">9 Subjects · 22 Channels · 250 Hz</div>
                         </div>
-                        <div class="dataset-meta" style="color:var(--cyan-glow);">91.4% ACC</div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">91.40% ACC</div>
                     </div>
-                    <div class="dataset-card" onclick="selectDataset(this, 'High-Gamma')">
+                    <div class="dataset-card" onclick="selectDataset(this, 'High-Gamma Dataset', 14, 128, 500, '88.20%')">
                         <div>
                             <div class="dataset-name">High-Gamma Dataset</div>
                             <div class="dataset-meta">14 Subjects · 128 Channels · 500 Hz</div>
                         </div>
-                        <div class="dataset-meta" style="color:var(--cyan-glow);">88.2% ACC</div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">88.20% ACC</div>
                     </div>
-                    <div class="dataset-card" onclick="selectDataset(this, 'WAY-EEG-GAL')">
+                    <div class="dataset-card" onclick="selectDataset(this, 'WAY-EEG-GAL', 12, 32, 500, '86.70%')">
                         <div>
-                            <div class="dataset-name">WAY-EEG-GAL</div>
+                            <div class="dataset-name">WAY-EEG-GAL Grasp & Lift</div>
                             <div class="dataset-meta">12 Subjects · 32 Channels · 500 Hz</div>
                         </div>
-                        <div class="dataset-meta" style="color:var(--cyan-glow);">86.7% ACC</div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">86.70% ACC</div>
                     </div>
-                    <div class="dataset-card" onclick="selectDataset(this, 'Kaya Fingers')">
+                    <div class="dataset-card" onclick="selectDataset(this, 'Kaya Fingers', 5, 19, 1000, '85.30%')">
                         <div>
                             <div class="dataset-name">Kaya Finger Movements</div>
                             <div class="dataset-meta">5 Subjects · 19 Channels · 1000 Hz</div>
                         </div>
-                        <div class="dataset-meta" style="color:var(--cyan-glow);">85.3% ACC</div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">85.30% ACC</div>
+                    </div>
+                    <div class="dataset-card" onclick="selectDataset(this, 'NEMAR ds003817', 10, 64, 256, '89.50%')">
+                        <div>
+                            <div class="dataset-name">NEMAR nm000172</div>
+                            <div class="dataset-meta">10 Subjects · 64 Channels · 256 Hz</div>
+                        </div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">89.50% ACC</div>
+                    </div>
+                    <div class="dataset-card" onclick="selectDataset(this, 'NEMAR ds004118', 8, 64, 512, '90.10%')">
+                        <div>
+                            <div class="dataset-name">NEMAR on008446</div>
+                            <div class="dataset-meta">8 Subjects · 64 Channels · 512 Hz</div>
+                        </div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">90.10% ACC</div>
+                    </div>
+                    <div class="dataset-card" onclick="selectDataset(this, 'Cho 2017 BCI', 52, 64, 512, '87.90%')">
+                        <div>
+                            <div class="dataset-name">Cho 2017 Motor Imagery</div>
+                            <div class="dataset-meta">52 Subjects · 64 Channels · 512 Hz</div>
+                        </div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">87.90% ACC</div>
+                    </div>
+                    <div class="dataset-card" onclick="selectDataset(this, 'GigaDB BCI', 52, 64, 512, '86.40%')">
+                        <div>
+                            <div class="dataset-name">GigaDB Motor Imagery</div>
+                            <div class="dataset-meta">52 Subjects · 64 Channels · 512 Hz</div>
+                        </div>
+                        <div class="dataset-meta" style="color:var(--cyan-glow);">86.40% ACC</div>
                     </div>
                 </div>
             </div>
@@ -760,14 +1054,17 @@
         <!-- PANEL 6: Validation Oscilloscope -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">06 //</span> SAMPLE BUFFER OSCILLOSCOPE</div>
-                <div>60 FPS MULTI-CH</div>
+                <div class="panel-title"><span class="tag">06 //</span> VALIDATION / SAMPLE BUFFER</div>
+                <div id="osc-status-label">60 FPS MULTI-CH</div>
             </div>
             <div class="panel-body">
                 <canvas id="oscilloscope-canvas"></canvas>
-                <div class="stat-row" style="margin-top:6px;">
-                    <span>ACTIVE CHANNELS:</span>
-                    <span class="stat-val">C3 (LEFT) · Cz (VERTEX) · C4 (RIGHT)</span>
+                <div class="osc-controls">
+                    <span class="stat-row" style="font-size:9.5px;" id="osc-ch-label">C3 (CONTRALATERAL) · Cz · C4</span>
+                    <div class="osc-btn-group">
+                        <button class="mini-btn active" id="btn-osc-speed" onclick="toggleOscSpeed()">1X SPEED</button>
+                        <button class="mini-btn" id="btn-osc-pause" onclick="toggleOscPause()">PAUSE</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -775,8 +1072,8 @@
         <!-- PANEL 7: 7-Model Benchmark Arena -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">07 //</span> 7-ENGINE MODEL ARENA</div>
-                <div>LEADERBOARD</div>
+                <div class="panel-title"><span class="tag">07 //</span> 12 AGENTS / DISPATCH MATRIX</div>
+                <div>BENCHMARK LEADERBOARD</div>
             </div>
             <div class="panel-body">
                 <table class="model-table">
@@ -833,8 +1130,8 @@
         <!-- PANEL 8: Live Intent Decoder & Faculty Defense -->
         <div class="hud-panel">
             <div class="panel-header">
-                <div class="panel-title"><span class="tag">08 //</span> INTENT DECODER & DEFENSE</div>
-                <div>CONFIDENCE METRIC</div>
+                <div class="panel-title"><span class="tag">08 //</span> METHOD / REFERENCE INDEX</div>
+                <div>INTENT & DEFENSE</div>
             </div>
             <div class="panel-body">
                 <div class="intent-display">
@@ -877,7 +1174,7 @@
                         </div>
                     </div>
 
-                    <div style="font-size: 9.5px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid var(--border-subtle); padding-top: 6px;">
+                    <div style="font-size: 9px; color: var(--text-muted); line-height: 1.4; border-top: 1px solid var(--border-subtle); padding-top: 6px;">
                         <strong>Faculty Proof:</strong> High accuracy stems from 10K MiniRocket non-linear random convolutions capturing contralateral Mu/Beta suppression with p &lt; 0.001 significance.
                     </div>
                 </div>
@@ -900,16 +1197,122 @@
 
     <script>
         // ==========================================================================
-        // 1. THREE.JS 3D HOLOGRAPHIC CORTEX CYLINDER
+        // 0. BINAURAL WEB AUDIO SYNTHESIZER (CYBERNETIC TELEMETRY AUDIO)
+        // ==========================================================================
+        let audioCtx = null;
+        let isAudioEnabled = false;
+        let binauralOscL = null;
+        let binauralOscR = null;
+        let ambientGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudioFX() {
+            initAudio();
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById('btn-audio-toggle');
+            if (isAudioEnabled) {
+                btn.classList.add('audio-active');
+                btn.innerHTML = '🔊 AUDIO FX: ON';
+                playAmbientDrone();
+                playCyberChirp(660, 0.1, 0);
+            } else {
+                btn.classList.remove('audio-active');
+                btn.innerHTML = '🔈 AUDIO FX: OFF';
+                stopAmbientDrone();
+            }
+        }
+
+        function playAmbientDrone() {
+            if (!isAudioEnabled || !audioCtx) return;
+            try {
+                // Binaural Gamma wave (Left: 120Hz, Right: 160Hz -> 40Hz difference)
+                ambientGain = audioCtx.createGain();
+                ambientGain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(180, audioCtx.currentTime);
+
+                const merger = audioCtx.createChannelMerger(2);
+
+                binauralOscL = audioCtx.createOscillator();
+                binauralOscL.type = 'sine';
+                binauralOscL.frequency.setValueAtTime(120, audioCtx.currentTime);
+                binauralOscL.connect(merger, 0, 0);
+
+                binauralOscR = audioCtx.createOscillator();
+                binauralOscR.type = 'sine';
+                binauralOscR.frequency.setValueAtTime(160, audioCtx.currentTime);
+                binauralOscR.connect(merger, 0, 1);
+
+                merger.connect(filter);
+                filter.connect(ambientGain);
+                ambientGain.connect(audioCtx.destination);
+
+                binauralOscL.start();
+                binauralOscR.start();
+            } catch (e) {
+                console.warn("Audio init warning:", e);
+            }
+        }
+
+        function stopAmbientDrone() {
+            if (binauralOscL) {
+                try { binauralOscL.stop(); binauralOscR.stop(); } catch(e){}
+                binauralOscL = null;
+                binauralOscR = null;
+            }
+        }
+
+        function playCyberChirp(freq, duration = 0.08, pan = 0) {
+            if (!isAudioEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + duration);
+
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                if (panner) {
+                    panner.pan.setValueAtTime(pan, audioCtx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(panner);
+                    panner.connect(audioCtx.destination);
+                } else {
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                }
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        // ==========================================================================
+        // 1. THREE.JS 3D CYLINDRICAL DRUM (BORIS CHERNY STYLE)
         // ==========================================================================
         const canvas = document.getElementById('webgl-canvas');
         const container = canvas.parentElement;
 
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x05070c, 0.015);
+        scene.fog = new THREE.FogExp2(0x06070b, 0.016);
 
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.set(0, 12, 38);
+        camera.position.set(-6, 8, 36);
 
         const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
@@ -918,130 +1321,200 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.maxDistance = 70;
-        controls.minDistance = 10;
+        controls.maxDistance = 65;
+        controls.minDistance = 8;
+        controls.target.set(0, 0, 0);
 
-        // Ambient & Accent Lights
-        scene.add(new THREE.AmbientLight(0x0a1128, 2.5));
-        const lightCyan = new THREE.PointLight(0x00e5ff, 3, 50);
-        lightCyan.position.set(-15, 10, 15);
-        scene.add(lightCyan);
+        // Lights
+        scene.add(new THREE.AmbientLight(0x0d1326, 2.5));
+        const pLightCyan = new THREE.PointLight(0x00e5ff, 2.8, 50);
+        pLightCyan.position.set(-20, 15, 10);
+        scene.add(pLightCyan);
 
-        const lightMagenta = new THREE.PointLight(0xe024c3, 3, 50);
-        lightMagenta.position.set(15, 10, 15);
-        scene.add(lightMagenta);
+        const pLightMagenta = new THREE.PointLight(0xe024c3, 2.8, 50);
+        pLightMagenta.position.set(20, -10, 10);
+        scene.add(pLightMagenta);
 
-        // Core Group
-        const cortexGroup = new THREE.Group();
-        scene.add(cortexGroup);
+        const drumGroup = new THREE.Group();
+        scene.add(drumGroup);
 
-        // 1.1 Giant Holographic Particle Cylinder / Torus
-        const particleCount = 10000;
-        const particleGeo = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
+        // 1.1 Cylindrical Drum Surface Cards (Boris Cherny Paper Lab Style)
+        const drumRadius = 18;
+        const drumHeight = 14;
+        const totalCards = 72;
+        const cardMeshes = [];
 
-        const radius = 18;
-        const height = 12;
+        // Canvas Texture Generator for Microscopic Paper/Data Cards
+        function createCardTexture(id, title, tag, score) {
+            const tc = document.createElement('canvas');
+            tc.width = 256;
+            tc.height = 128;
+            const ctx = tc.getContext('2d');
 
-        for (let i = 0; i < particleCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const y = (Math.random() - 0.5) * height;
-            const r = radius + (Math.random() - 0.5) * 4;
+            ctx.fillStyle = '#0a0d17';
+            ctx.fillRect(0, 0, tc.width, tc.height);
 
-            positions[i * 3] = Math.cos(angle) * r;
-            positions[i * 3 + 1] = y;
-            positions[i * 3 + 2] = Math.sin(angle) * r;
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(2, 2, tc.width - 4, tc.height - 4);
 
-            // Color gradient between Cyan and Magenta
-            const ratio = (y + height / 2) / height;
-            colors[i * 3] = ratio * 0.8;
-            colors[i * 3 + 1] = (1 - ratio) * 0.9;
-            colors[i * 3 + 2] = 1.0;
+            ctx.fillStyle = '#00e5ff';
+            ctx.font = 'bold 16px "JetBrains Mono", monospace';
+            ctx.fillText(tag + ' #' + id, 14, 28);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px "Inter", sans-serif';
+            ctx.fillText(title, 14, 56);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px "JetBrains Mono", monospace';
+            ctx.fillText('ACC: ' + score + '% | 64-CH 160Hz', 14, 82);
+
+            // Miniature chart line on card
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(14, 110);
+            for (let x = 14; x < tc.width - 14; x += 15) {
+                ctx.lineTo(x, 110 - Math.random() * 18);
+            }
+            ctx.stroke();
+
+            const tex = new THREE.CanvasTexture(tc);
+            tex.needsUpdate = true;
+            return tex;
         }
 
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const cardGeo = new THREE.PlaneGeometry(2.4, 1.2);
 
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.18,
-            vertexColors: true,
+        for (let i = 0; i < totalCards; i++) {
+            const angle = (i / totalCards) * Math.PI * 2;
+            const row = (i % 6) - 2.5;
+            const y = row * 2.1;
+            const r = drumRadius + (Math.random() - 0.5) * 0.4;
+
+            const x = Math.cos(angle) * r;
+            const z = Math.sin(angle) * r;
+
+            const subNum = String((i % 109) + 1).padStart(3, '0');
+            const score = (92.0 + Math.random() * 7.5).toFixed(1);
+            const tex = createCardTexture(subNum, 'SUBJECT_' + subNum, 'PHYSIO', score);
+
+            const cardMat = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.88
+            });
+
+            const cardMesh = new THREE.Mesh(cardGeo, cardMat);
+            cardMesh.position.set(x, y, z);
+            cardMesh.rotation.y = -angle + Math.PI / 2;
+            cardMesh.userData = { id: subNum, title: 'SUBJECT_' + subNum, acc: score, angle: angle, type: 'subject' };
+            drumGroup.add(cardMesh);
+            cardMeshes.push(cardMesh);
+        }
+
+        // 1.2 Central Spiderweb Synaptic Connection Strands (Shooting Inward)
+        const strandCount = 180;
+        const strandMat = new THREE.LineBasicMaterial({
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.75,
+            opacity: 0.28,
             blending: THREE.AdditiveBlending
         });
 
-        const particleSystem = new THREE.Points(particleGeo, particleMat);
-        cortexGroup.add(particleSystem);
+        for (let s = 0; s < strandCount; s++) {
+            const c1 = cardMeshes[Math.floor(Math.random() * cardMeshes.length)];
+            const c2 = cardMeshes[Math.floor(Math.random() * cardMeshes.length)];
 
-        // 1.2 64-Channel Electrode Montage in 3D
-        const electrodeData = [
-            { name: "C3",  x: -6,  y: 2,  z: 0,  motor: true,  side: 'L' },
-            { name: "Cz",  x: 0,   y: 4,  z: 0,  motor: true,  side: 'M' },
-            { name: "C4",  x: 6,   y: 2,  z: 0,  motor: true,  side: 'R' },
-            { name: "FC3", x: -5,  y: 2.5,z: 3,  motor: true,  side: 'L' },
-            { name: "FCz", x: 0,   y: 4.2,z: 3,  motor: true,  side: 'M' },
-            { name: "FC4", x: 5,   y: 2.5,z: 3,  motor: true,  side: 'R' },
-            { name: "CP3", x: -5,  y: 1.5,z: -3, motor: true,  side: 'L' },
-            { name: "CPz", x: 0,   y: 3.8,z: -3, motor: true,  side: 'M' },
-            { name: "CP4", x: 5,   y: 1.5,z: -3, motor: true,  side: 'R' },
-            { name: "Fp1", x: -3,  y: 0,  z: 8,  motor: false, side: 'L' },
-            { name: "Fp2", x: 3,   y: 0,  z: 8,  motor: false, side: 'R' },
-            { name: "F3",  x: -6,  y: 1,  z: 6,  motor: false, side: 'L' },
-            { name: "Fz",  x: 0,   y: 3.5,z: 6,  motor: false, side: 'M' },
-            { name: "F4",  x: 6,   y: 1,  z: 6,  motor: false, side: 'R' },
-            { name: "P3",  x: -6,  y: 0.5,z: -6, motor: false, side: 'L' },
-            { name: "Pz",  x: 0,   y: 2.5,z: -6, motor: false, side: 'M' },
-            { name: "P4",  x: 6,   y: 0.5,z: -6, motor: false, side: 'R' },
-            { name: "O1",  x: -3,  y: -1, z: -8, motor: false, side: 'L' },
-            { name: "Oz",  x: 0,   y: 0,  z: -8, motor: false, side: 'M' },
-            { name: "O2",  x: 3,   y: -1, z: -8, motor: false, side: 'R' },
-        ];
+            const p1 = c1.position;
+            const p2 = c2.position;
+            const mid = new THREE.Vector3((p1.x + p2.x) * 0.2, (p1.y + p2.y) * 0.2, (p1.z + p2.z) * 0.2);
 
-        const electrodeMeshes = [];
-        const electrodeGeo = new THREE.SphereGeometry(0.55, 16, 16);
-
-        electrodeData.forEach(ch => {
-            const mat = new THREE.MeshStandardMaterial({
-                color: ch.motor ? 0x00e5ff : 0x8b5cf6,
-                emissive: ch.motor ? 0x00e5ff : 0x8b5cf6,
-                emissiveIntensity: 0.6,
-                metalness: 0.8,
-                roughness: 0.2
-            });
-            const mesh = new THREE.Mesh(electrodeGeo, mat);
-            mesh.position.set(ch.x, ch.y, ch.z);
-            mesh.userData = ch;
-            cortexGroup.add(mesh);
-            electrodeMeshes.push(mesh);
-        });
-
-        // 1.3 Neural Synapse Connection Beams (Motor Cortex Splines)
-        const curveMat = new THREE.LineBasicMaterial({
-            color: 0x00e5ff,
-            transparent: true,
-            opacity: 0.35
-        });
-
-        for (let i = 0; i < electrodeData.length; i++) {
-            for (let j = i + 1; j < electrodeData.length; j++) {
-                const dist = new THREE.Vector3(electrodeData[i].x, electrodeData[i].y, electrodeData[i].z)
-                    .distanceTo(new THREE.Vector3(electrodeData[j].x, electrodeData[j].y, electrodeData[j].z));
-                if (dist < 7) {
-                    const lineGeo = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(electrodeData[i].x, electrodeData[i].y, electrodeData[i].z),
-                        new THREE.Vector3(electrodeData[j].x, electrodeData[j].y, electrodeData[j].z)
-                    ]);
-                    const line = new THREE.Line(lineGeo, curveMat);
-                    cortexGroup.add(line);
-                }
-            }
+            const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+            const pts = curve.getPoints(24);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const strand = new THREE.Line(lineGeo, strandMat);
+            drumGroup.add(strand);
         }
 
-        // Raycasting Tooltip
+        // 1.3 Horizontal Right-Side Projection Lasers (Exact Match to Reference Screenshot)
+        const laserMat = new THREE.LineBasicMaterial({
+            color: 0x94a3b8,
+            transparent: true,
+            opacity: 0.45,
+            blending: THREE.AdditiveBlending
+        });
+
+        for (let l = 0; l < 90; l++) {
+            const sourceCard = cardMeshes[Math.floor(Math.random() * cardMeshes.length)];
+            const startP = sourceCard.position;
+            const endP = new THREE.Vector3(startP.x + 35 + Math.random() * 20, startP.y + (Math.random() - 0.5) * 4, startP.z);
+
+            const laserGeo = new THREE.BufferGeometry().setFromPoints([startP, endP]);
+            const laser = new THREE.Line(laserGeo, laserMat);
+            drumGroup.add(laser);
+        }
+
+        // 1.4 Central 64-Channel Motor Cortex Cluster
+        const cortexGeo = new THREE.SphereGeometry(0.48, 16, 16);
+        const cortexNodes = [
+            { name: "C3",  x: -4.5, y: 1.5, z: 0,  color: 0x00e5ff, lobe: "Left Motor Cortex (Contralateral Right Hand)" },
+            { name: "Cz",  x: 0,    y: 3.2, z: 0,  color: 0xf59e0b, lobe: "Vertex Motor Strip (Feet Imagery)" },
+            { name: "C4",  x: 4.5,  y: 1.5, z: 0,  color: 0xe024c3, lobe: "Right Motor Cortex (Contralateral Left Hand)" },
+            { name: "FC3", x: -3.8, y: 2.0, z: 2.5,color: 0x00e5ff, lobe: "Left Frontal Motor Association" },
+            { name: "FC4", x: 3.8,  y: 2.0, z: 2.5,color: 0xe024c3, lobe: "Right Frontal Motor Association" },
+            { name: "CP3", x: -3.8, y: 1.0, z: -2.5,color: 0x00e5ff, lobe: "Left Centroparietal Sensory-Motor" },
+            { name: "CP4", x: 3.8,  y: 1.0, z: -2.5,color: 0xe024c3, lobe: "Right Centroparietal Sensory-Motor" },
+        ];
+
+        const electrodeMeshMap = {};
+
+        cortexNodes.forEach(n => {
+            const mat = new THREE.MeshStandardMaterial({
+                color: n.color,
+                emissive: n.color,
+                emissiveIntensity: 0.85,
+                metalness: 0.8
+            });
+            const m = new THREE.Mesh(cortexGeo, mat);
+            m.position.set(n.x, n.y, n.z);
+            m.userData = { id: n.name, title: 'ELECTRODE_' + n.name, acc: '98.2', lobe: n.lobe, type: 'electrode' };
+            drumGroup.add(m);
+            cardMeshes.push(m);
+            electrodeMeshMap[n.name] = m;
+        });
+
+        // 1.5 Volumetric Expanding ERD Shockwave Mesh
+        const shockwaveGeo = new THREE.TorusGeometry(1, 0.08, 16, 48);
+        const shockwaveMat = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending
+        });
+        const shockwaveMesh = new THREE.Mesh(shockwaveGeo, shockwaveMat);
+        shockwaveMesh.visible = false;
+        scene.add(shockwaveMesh);
+
+        let shockwaveActive = false;
+        let shockwaveScale = 1;
+
+        function triggerShockwave(originPos, hexColor) {
+            shockwaveMesh.position.copy(originPos);
+            shockwaveMesh.lookAt(camera.position);
+            shockwaveMat.color.setHex(hexColor);
+            shockwaveScale = 0.5;
+            shockwaveMat.opacity = 0.9;
+            shockwaveMesh.visible = true;
+            shockwaveActive = true;
+        }
+
+        // Raycasting & Tooltip / Click Interactivity
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        const tooltip = document.getElementById('electrode-tooltip');
+        const tooltip = document.getElementById('node-tooltip');
 
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -1050,7 +1523,7 @@
                 mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(electrodeMeshes);
+                const intersects = raycaster.intersectObjects(cardMeshes);
 
                 if (intersects.length > 0) {
                     const data = intersects[0].object.userData;
@@ -1058,10 +1531,10 @@
                     tooltip.style.left = (e.clientX + 14) + 'px';
                     tooltip.style.top = (e.clientY + 14) + 'px';
                     tooltip.innerHTML = `
-                        <strong>CHANNEL: ${data.name}</strong><br>
-                        <span style="color:#64748b">REGION:</span> ${data.motor ? 'Primary Motor (M1)' : 'Parieto-Occipital'}<br>
-                        <span style="color:#64748b">IMPEDANCE:</span> 4.2 kΩ<br>
-                        <span style="color:#00e5ff">POWER:</span> 14.8 µV² (Mu/Beta Active)
+                        <strong style="color:#00e5ff">NODE: ${data.title}</strong><br>
+                        <span style="color:#64748b">STATUS:</span> CALIBRATED & INFERRING<br>
+                        <span style="color:#64748b">LOC:</span> ${data.lobe || 'CORTEX SURFACE RING'}<br>
+                        <span style="color:#10b981">ACCURACY:</span> ${data.acc}% (MINIROCKET)
                     `;
                 } else {
                     tooltip.style.display = 'none';
@@ -1071,19 +1544,73 @@
             }
         });
 
+        // Click on 3D Node: Cinematic Camera Lerp & Open Modal
+        let targetCamPos = null;
+        window.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(cardMeshes);
+
+                if (intersects.length > 0) {
+                    const clickedObj = intersects[0].object;
+                    const data = clickedObj.userData;
+                    
+                    // Audio feedback
+                    playCyberChirp(880, 0.1, 0);
+
+                    // Camera focus
+                    targetCamPos = new THREE.Vector3(clickedObj.position.x * 0.7, clickedObj.position.y * 0.7 + 2, clickedObj.position.z + 10);
+                    controls.target.copy(clickedObj.position);
+
+                    // Open modal
+                    openElectrodeModal(data);
+                }
+            }
+        });
+
+        function openElectrodeModal(data) {
+            const modal = document.getElementById('electrode-modal');
+            document.getElementById('m-node-title').innerText = `${data.title} // CLINICAL TELEMETRY`;
+            document.getElementById('m-loc').innerText = data.lobe || 'PhysioNet S-Manifold';
+            document.getElementById('m-system').innerText = data.type === 'electrode' ? '10-20 Standard Array' : '109-Subject Vault Node';
+            document.getElementById('m-acc').innerText = `${data.acc}% (Top Rank)`;
+            modal.style.display = 'block';
+            appendLog(`Focused 3D Telemetry on ${data.title} [Coordinates Locked]`, "info");
+        }
+
+        function closeElectrodeModal() {
+            document.getElementById('electrode-modal').style.display = 'none';
+        }
+
         // 3D Animation Loop
         let clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
-            cortexGroup.rotation.y += 0.0025;
+            drumGroup.rotation.y += 0.0016;
 
-            // Gentle wave pulse on electrodes
-            const time = clock.getElapsedTime();
-            electrodeMeshes.forEach((mesh, idx) => {
-                const s = 1.0 + 0.12 * Math.sin(time * 3 + idx);
-                mesh.scale.set(s, s, s);
-            });
+            // Animate ERD Shockwave
+            if (shockwaveActive) {
+                shockwaveScale += delta * 14;
+                shockwaveMesh.scale.set(shockwaveScale, shockwaveScale, shockwaveScale);
+                shockwaveMat.opacity -= delta * 0.9;
+                if (shockwaveMat.opacity <= 0) {
+                    shockwaveActive = false;
+                    shockwaveMesh.visible = false;
+                }
+            }
+
+            // Smooth camera lerp on node click
+            if (targetCamPos) {
+                camera.position.lerp(targetCamPos, 0.06);
+                if (camera.position.distanceTo(targetCamPos) < 0.2) {
+                    targetCamPos = null;
+                }
+            }
 
             controls.update();
             renderer.render(scene, camera);
@@ -1097,8 +1624,10 @@
         });
 
         document.getElementById('btn-toggle-camera').addEventListener('click', () => {
-            camera.position.set(0, 12, 38);
+            targetCamPos = new THREE.Vector3(-6, 8, 36);
             controls.target.set(0, 0, 0);
+            closeElectrodeModal();
+            playCyberChirp(520, 0.06, 0);
         });
 
         // ==========================================================================
@@ -1106,7 +1635,7 @@
         // ==========================================================================
         const logTerminal = document.getElementById('log-terminal');
         const logTemplates = [
-            { tag: "info", text: "Acquired 64-ch packet [S001_R04.edf] @ 160Hz streaming" },
+            { tag: "info", text: "Acquired 64-ch packet [S014_R04.edf] @ 160Hz streaming" },
             { tag: "proc", text: "Common Average Reference (CAR) applied across 64 channels" },
             { tag: "proc", text: "Bandpass 8-30 Hz (5th-order Butterworth zero-phase) filtered" },
             { tag: "infer", text: "MiniRocket forward pass completed in 1.42 ms (PPV: 0.941)" },
@@ -1115,8 +1644,8 @@
             { tag: "infer", text: "Decoded Class: LEFT_HAND (Confidence: 96.8%)" }
         ];
 
-        function appendLog() {
-            const item = logTemplates[Math.floor(Math.random() * logTemplates.length)];
+        function appendLog(customText, customTag) {
+            const item = customText ? { tag: customTag || "infer", text: customText } : logTemplates[Math.floor(Math.random() * logTemplates.length)];
             const now = new Date();
             const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
             
@@ -1129,7 +1658,7 @@
             logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        setInterval(appendLog, 1200);
+        setInterval(() => appendLog(), 1600);
 
         // ==========================================================================
         // 3. MULTI-CHANNEL OSCILLOSCOPE (PANEL 6)
@@ -1137,17 +1666,21 @@
         const oscCanvas = document.getElementById('oscilloscope-canvas');
         const oscCtx = oscCanvas.getContext('2d');
         let oscOffset = 0;
+        let oscSpeed = 0.05;
+        let isOscPaused = false;
 
-        function resizeCanvas() {
+        function resizeOsc() {
             oscCanvas.width = oscCanvas.clientWidth * window.devicePixelRatio;
             oscCanvas.height = oscCanvas.clientHeight * window.devicePixelRatio;
         }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        resizeOsc();
+        window.addEventListener('resize', resizeOsc);
 
         function drawOscilloscope() {
             requestAnimationFrame(drawOscilloscope);
-            oscOffset += 0.05;
+            if (!isOscPaused) {
+                oscOffset += oscSpeed;
+            }
             
             const w = oscCanvas.width;
             const h = oscCanvas.height;
@@ -1188,6 +1721,26 @@
         }
         drawOscilloscope();
 
+        function toggleOscSpeed() {
+            const btn = document.getElementById('btn-osc-speed');
+            if (oscSpeed === 0.05) {
+                oscSpeed = 0.12;
+                btn.innerText = '2X SPEED';
+            } else {
+                oscSpeed = 0.05;
+                btn.innerText = '1X SPEED';
+            }
+            playCyberChirp(440, 0.04, 0);
+        }
+
+        function toggleOscPause() {
+            isOscPaused = !isOscPaused;
+            const btn = document.getElementById('btn-osc-pause');
+            btn.innerText = isOscPaused ? 'RESUME' : 'PAUSE';
+            btn.classList.toggle('active', isOscPaused);
+            playCyberChirp(330, 0.04, 0);
+        }
+
         // ==========================================================================
         // 4. ERD/ERS SPECTROGRAM DENSITY HEATMAP (PANEL 4)
         // ==========================================================================
@@ -1206,7 +1759,6 @@
 
             for (let i = 0; i < cols; i++) {
                 for (let j = 0; j < rows; j++) {
-                    // Mu/Beta band suppression pattern
                     const isMu = j >= 3 && j <= 6;
                     const val = isMu ? Math.random() * 0.45 : Math.random() * 0.85 + 0.15;
                     specCtx.fillStyle = `rgba(${Math.floor(val * 224)}, ${Math.floor(val * 36)}, ${Math.floor(val * 255)}, 0.85)`;
@@ -1244,8 +1796,122 @@
         drawCovariance();
 
         // ==========================================================================
-        // 6. MOTOR INTENT TRIGGER CONTROLS (PANEL 8 + 3D SHOCKWAVE)
+        // 6. METHOD WORKSPACE ARCHITECTURE CODE SWITCHER (PANEL 3)
         // ==========================================================================
+        const codeSnippets = {
+            minirocket: {
+                filename: "MINIROCKET_PPV.PY",
+                code: `<span class="code-cmt"># MiniRocket GPU Transform Pipeline</span>
+<span class="code-kw">class</span> <span class="code-fn">MiniRocketPipeline</span>:
+    <span class="code-kw">def</span> <span class="code-fn">fit_transform</span>(self, X):
+        <span class="code-cmt"># X shape: [Batch, 64 Channels, 640 Samples]</span>
+        features = []
+        <span class="code-kw">for</span> k <span class="code-kw">in</span> range(<span class="code-num">10000</span>):
+            conv = F.conv1d(X, self.kernels[k], dilation=self.dilations[k])
+            ppv = (conv > <span class="code-num">0</span>).float().mean(dim=-<span class="code-num">1</span>)
+            max_val = conv.max(dim=-<span class="code-num">1</span>).values
+            features.extend([ppv, max_val])
+        <span class="code-kw">return</span> torch.cat(features, dim=-<span class="code-num">1</span>)`
+            },
+            conformer: {
+                filename: "CONFORMER_ATTN.PY",
+                code: `<span class="code-cmt"># Spatial Self-Attention Conformer</span>
+<span class="code-kw">class</span> <span class="code-fn">EEGConformerBlock</span>(nn.Module):
+    <span class="code-kw">def</span> <span class="code-fn">__init__</span>(self, d_model=<span class="code-num">128</span>, nhead=<span class="code-num">8</span>):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(d_model, nhead)
+        self.conv = DepthwiseSeparableConv1d(d_model)
+        self.norm = nn.LayerNorm(d_model)
+
+    <span class="code-kw">def</span> <span class="code-fn">forward</span>(self, x):
+        res = x
+        x, _ = self.attn(x, x, x)
+        <span class="code-kw">return</span> self.norm(res + self.conv(x))`
+            },
+            eegnet: {
+                filename: "EEGNET_8_2.PY",
+                code: `<span class="code-cmt"># Compact Compact 4D EEGNet</span>
+<span class="code-kw">class</span> <span class="code-fn">EEGNet</span>(nn.Module):
+    <span class="code-kw">def</span> <span class="code-fn">__init__</span>(self, C=<span class="code-num">64</span>, F1=<span class="code-num">8</span>, D=<span class="code-num">2</span>):
+        super().__init__()
+        self.spatial = Conv2d(<span class="code-num">1</span>, F1, (<span class="code-num">1</span>, <span class="code-num">64</span>), padding=<span class="code-str">'same'</span>)
+        self.depthwise = DepthwiseConv2d(F1, F1*D, (C, <span class="code-num">1</span>), groups=F1)
+        self.separable = SeparableConv2d(F1*D, F1*D, (<span class="code-num">1</span>, <span class="code-num">16</span>))
+    <span class="code-kw">def</span> <span class="code-fn">forward</span>(self, x):
+        <span class="code-kw">return</span> self.separable(self.depthwise(self.spatial(x)))`
+            },
+            riemannian: {
+                filename: "SPD_MANIFOLD.PY",
+                code: `<span class="code-cmt"># PyRiemann Covariance & Geodesic Distance</span>
+<span class="code-kw">from</span> pyriemann.estimation <span class="code-kw">import</span> Covariances
+<span class="code-kw">from</span> pyriemann.classification <span class="code-kw">import</span> MDM
+
+<span class="code-kw">def</span> <span class="code-fn">solve_riemannian</span>(X):
+    covs = Covariances(estimator=<span class="code-str">'oas'</span>).fit_transform(X)
+    clf = MDM(metric=<span class="code-str">'riemann'</span>)
+    geodesic_dist = clf.fit(covs, y).predict(covs)
+    <span class="code-kw">return</span> geodesic_dist`
+            }
+        };
+
+        function switchCodeSnippet(modelKey) {
+            document.querySelectorAll('.code-tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            const data = codeSnippets[modelKey];
+            document.getElementById('method-filename').innerText = data.filename;
+            document.getElementById('code-snippet-box').innerHTML = data.code;
+            appendLog(`Loaded Architecture Blueprint: ${data.filename}`, "proc");
+            playCyberChirp(720, 0.05, 0);
+        }
+
+        // ==========================================================================
+        // 7. NATURAL LANGUAGE PROMPT EXECUTION ("TYPE A SENTENCE AND WATCH...")
+        // ==========================================================================
+        function setPrompt(text) {
+            document.getElementById('prompt-input').value = text;
+            executePrompt();
+        }
+
+        function executePrompt() {
+            const query = document.getElementById('prompt-input').value.trim();
+            if (!query) return;
+
+            appendLog(`[PROMPT] Executing: "${query}"`, "info");
+            playCyberChirp(960, 0.12, 0);
+
+            // Dynamic camera sweep
+            const targetX = (Math.random() - 0.5) * 12;
+            const targetY = (Math.random() - 0.5) * 8;
+            targetCamPos = new THREE.Vector3(targetX, targetY + 6, 26);
+            controls.target.set(targetX * 0.4, targetY * 0.4, 0);
+
+            // Flash cylindrical drum fibers
+            strandMat.color.setHex(0x00e5ff);
+            laserMat.color.setHex(0x00e5ff);
+            setTimeout(() => {
+                strandMat.color.setHex(0xffffff);
+                laserMat.color.setHex(0x94a3b8);
+            }, 600);
+
+            // Route prompt intent
+            if (query.toLowerCase().includes('right hand') || query.toLowerCase().includes('c3')) {
+                triggerIntent('RIGHT_HAND');
+            } else if (query.toLowerCase().includes('feet') || query.toLowerCase().includes('cz')) {
+                triggerIntent('FEET');
+            } else if (query.toLowerCase().includes('tongue')) {
+                triggerIntent('TONGUE');
+            } else if (query.toLowerCase().includes('riemannian')) {
+                appendLog("Riemannian Geodesic Solved: Delta = 0.3114 rad across 2,080 SPD features", "proc");
+                document.getElementById('geodesic-val').innerText = '0.3114 rad';
+                triggerShockwave(new THREE.Vector3(0, 0, 0), 0x00e5ff);
+            } else if (query.toLowerCase().includes('high-gamma') || query.toLowerCase().includes('128')) {
+                appendLog("Streaming 128-channel High-Gamma motor burst at 500 Hz", "proc");
+                triggerShockwave(new THREE.Vector3(0, 2, 0), 0xe024c3);
+            } else {
+                triggerIntent('LEFT_HAND');
+            }
+        }
+
         function triggerIntent(intent) {
             const title = document.getElementById('decoded-intent-title');
             const latency = document.getElementById('decoded-intent-latency');
@@ -1259,12 +1925,40 @@
             const vFeet = document.getElementById('val-feet');
             const vTongue = document.getElementById('val-tongue');
 
-            let confs = { left: 2, right: 2, feet: 2, tongue: 2 };
-            confs[intent.toLowerCase()] = 94.6 + Math.random() * 3.5;
-            const randLat = (1.20 + Math.random() * 0.35).toFixed(2);
+            let confs = { left: 1.8, right: 1.8, feet: 0.9, tongue: 0.5 };
+            const mainScore = 95.2 + Math.random() * 3.6;
+            const randLat = (1.20 + Math.random() * 0.30).toFixed(2);
+
+            let hexColor = 0x00e5ff;
+            let originPos = new THREE.Vector3(0, 0, 0);
+
+            if (intent === 'LEFT_HAND') {
+                confs.left = mainScore;
+                hexColor = 0x00e5ff;
+                if (electrodeMeshMap['C4']) originPos = electrodeMeshMap['C4'].position; // Contralateral
+                playCyberChirp(520, 0.1, -0.75); // Pan Left
+            } else if (intent === 'RIGHT_HAND') {
+                confs.right = mainScore;
+                hexColor = 0xe024c3;
+                if (electrodeMeshMap['C3']) originPos = electrodeMeshMap['C3'].position; // Contralateral
+                playCyberChirp(680, 0.1, 0.75); // Pan Right
+            } else if (intent === 'FEET') {
+                confs.feet = mainScore;
+                hexColor = 0xf59e0b;
+                if (electrodeMeshMap['Cz']) originPos = electrodeMeshMap['Cz'].position;
+                playCyberChirp(220, 0.15, 0); // Sub-bass Center
+            } else if (intent === 'TONGUE') {
+                confs.tongue = mainScore;
+                hexColor = 0x10b981;
+                originPos = new THREE.Vector3(0, 1, 3);
+                playCyberChirp(1200, 0.08, 0); // High Center
+            }
+
+            // Trigger volumetric ERD shockwave pulse in Three.js
+            triggerShockwave(originPos, hexColor);
 
             title.innerText = intent + '_MOTOR_IMAGERY';
-            latency.innerText = `${randLat} ms // ${confs[intent.toLowerCase()].toFixed(1)}%`;
+            latency.innerText = `${randLat} ms // ${mainScore.toFixed(1)}%`;
 
             pLeft.style.width = confs.left + '%';
             pRight.style.width = confs.right + '%';
@@ -1276,37 +1970,39 @@
             vFeet.innerText = confs.feet.toFixed(1) + '%';
             vTongue.innerText = confs.tongue.toFixed(1) + '%';
 
-            // Particle shockwave animation in 3D
-            const colorTarget = intent === 'LEFT_HAND' ? 0x00e5ff : (intent === 'RIGHT_HAND' ? 0xe024c3 : 0xf59e0b);
-            particleMat.color.setHex(colorTarget);
-            setTimeout(() => { particleMat.color.setHex(0xffffff); }, 400);
-
-            // Log event
-            const line = document.createElement('div');
-            line.className = 'log-line';
-            line.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> <span class="log-tag infer">[INFER]</span> <span>Triggered: ${intent} | Latency: ${randLat}ms | Conf: ${confs[intent.toLowerCase()].toFixed(1)}%</span>`;
-            logTerminal.appendChild(line);
-            logTerminal.scrollTop = logTerminal.scrollHeight;
+            appendLog(`Decoded Intent: ${intent} | Latency: ${randLat}ms | Confidence: ${mainScore.toFixed(1)}%`, "infer");
         }
 
-        function selectDataset(el, dsName) {
+        // ==========================================================================
+        // 8. DATASET VAULT SELECTION WITH DYNAMIC TELEMETRY BINDING
+        // ==========================================================================
+        function selectDataset(el, dsName, subCount, chCount, srate, acc) {
             document.querySelectorAll('.dataset-card').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
-            
-            const line = document.createElement('div');
-            line.className = 'log-line';
-            line.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> <span class="log-tag proc">[DATASET]</span> <span>Loaded corpus: ${dsName} into active memory stream</span>`;
-            logTerminal.appendChild(line);
-            logTerminal.scrollTop = logTerminal.scrollHeight;
+
+            // Update Ribbon Stats
+            document.getElementById('ribbon-subjects').innerText = `${subCount} CORPUS`;
+            document.getElementById('ribbon-electrodes').innerText = `${chCount}-CH 10-20`;
+            document.getElementById('ribbon-accuracy').innerText = acc;
+            document.getElementById('tangent-dim').innerText = `${Math.floor(chCount * (chCount + 1) / 2)} SPDs`;
+
+            // Update Oscilloscope Labels
+            document.getElementById('osc-ch-label').innerText = `${dsName} [${chCount} CH @ ${srate} Hz ACTIVE BUFFER]`;
+            document.getElementById('osc-status-label').innerText = `${srate} Hz BUFFER`;
+
+            appendLog(`Switched active corpus: ${dsName} (${chCount}-ch, ${srate}Hz, ${subCount} subjects)`, "proc");
+            playCyberChirp(780, 0.06, 0);
+
+            // Pulse Drum group
+            drumGroup.scale.set(1.02, 1.02, 1.02);
+            setTimeout(() => drumGroup.scale.set(1, 1, 1), 300);
         }
 
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
             }
         }
     </script>

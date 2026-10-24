@@ -173,7 +173,11 @@ class MiniRocketPipeline:
         crit = nn.CrossEntropyLoss(label_smoothing=0.01)
         
         amp = self.device.type == "cuda"
-        scaler = torch.amp.GradScaler(device_type="cuda") if amp else None
+        # torch 2.6: torch.cuda.amp.GradScaler() takes no device_type kw; new torch.amp.GradScaler(device_type=..) on torch>=2.3
+        try:
+            scaler = torch.amp.GradScaler(device_type="cuda") if amp else None
+        except TypeError:
+            scaler = torch.cuda.amp.GradScaler() if amp else None
         
         self.gpu_head.train()
         for epoch in range(self.head_epochs):
@@ -182,7 +186,11 @@ class MiniRocketPipeline:
                 bx, by = bx.to(self.device), by.to(self.device)
                 opt.zero_grad()
                 if amp:
-                    with torch.amp.autocast(device_type="cuda"):
+                    try:
+                        actx = torch.amp.autocast(device_type="cuda")
+                    except TypeError:
+                        actx = torch.cuda.amp.autocast()
+                    with actx:
                         logits = self.gpu_head(bx)
                         loss = crit(logits, by)
                     scaler.scale(loss).backward()
@@ -213,7 +221,8 @@ class MiniRocketPipeline:
             raise RuntimeError("MiniRocketPipeline must be fitted before predict().")
         idx = np.argmax(self.predict_proba(X), axis=1)
         if hasattr(self, 'classes_') and self.classes_ is not None:
-            return self.classes_[idx]
+            classes = np.array(self.classes_) if not isinstance(self.classes_, np.ndarray) else self.classes_
+            return classes[idx]
         return idx
 
     def predict_proba(self, X):
@@ -257,11 +266,18 @@ class MiniRocketPipeline:
         channel_names = getattr(self, 'channel_names', None) or [f"EEG_{i}" for i in range(self.in_channels)]
         sfreq = getattr(self, 'sfreq', None) or 160.0
         
+        import numpy as _np
+
+        def _t(x):
+            if isinstance(x, _np.ndarray):
+                return torch.from_numpy(x)
+            return x
+
         state = {
             'extractor': self.extractor.state_dict(),
             'gpu_head': self.gpu_head.state_dict() if self.gpu_head is not None else None,
-            'feat_mean': self.feat_mean,
-            'feat_std': self.feat_std,
+            'feat_mean': _t(self.feat_mean),
+            'feat_std': _t(self.feat_std),
             'classes_': self.classes_.tolist() if hasattr(self.classes_, 'tolist') else list(self.classes_),
             'training_time': self.training_time,
             'num_kernels': self.num_kernels,
@@ -272,11 +288,16 @@ class MiniRocketPipeline:
             'channel_names': channel_names,
             'sfreq': sfreq,
             'label_classes': getattr(self, 'classes_', None),
+            'is_fitted': self.is_fitted,
         }
         torch.save(state, filepath)
 
     def load(self, filepath):
-        state = torch.load(filepath, map_location=self.device, weights_only=True)
+        try:
+            state = torch.load(filepath, map_location=self.device, weights_only=True)
+        except Exception:
+            state = torch.load(filepath, map_location=self.device, weights_only=False)
+        self.is_fitted = True
         self.num_kernels = state.get('num_kernels', 10000)
         self.hidden = state.get('hidden', 512)
         self.dropout = state.get('dropout', 0.15)

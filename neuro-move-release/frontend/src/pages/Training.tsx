@@ -164,7 +164,7 @@ export function Training() {
               <div className="flex items-center justify-between">
                 <h3 className="card-title">Training Monitor</h3>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${status === 'training' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                  <span className={`w-2 h-2 rounded-full ${status === 'training' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
                   <span className="text-xs font-medium text-slate-600 capitalize">{status}</span>
                 </div>
               </div>

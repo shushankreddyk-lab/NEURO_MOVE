@@ -19,10 +19,10 @@ ds_folder_map = {
 mapped_folder = ds_folder_map.get(selected_dataset_tab1, selected_dataset_tab1)
 models_dir = os.path.join(os.path.dirname(__file__), '..', 'models', mapped_folder)
 
-    trained_models = []
-    if os.path.exists(models_dir):
-        trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
-        trained_models.sort()
+trained_models = []
+if os.path.exists(models_dir):
+    trained_models = [f for f in os.listdir(models_dir) if f.endswith('.pth') or f.endswith('.pkl')]
+    trained_models.sort()
         
     if trained_models:
         selected_faculty_model = st.selectbox("Select a Trained Model for Defense:", trained_models, key="faculty_model_sel")

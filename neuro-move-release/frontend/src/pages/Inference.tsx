@@ -136,7 +136,7 @@ export function Inference() {
                 </div>
                 {turnstileToken ? (
                   <div className="flex items-center gap-2 text-emerald-600 mt-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span className="text-xs font-medium">Verified</span>
                   </div>
                 ) : null}

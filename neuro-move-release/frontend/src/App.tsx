@@ -7,6 +7,7 @@ import { Inference } from './pages/Inference'
 import { Models } from './pages/Models'
 import { Analytics } from './pages/Analytics'
 import { Settings } from './pages/Settings'
+import Visualization from './pages/Visualization'
 import './index.css'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/models" element={<Models />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/visualization" element={<Visualization />} />
         </Routes>
       </div>
     </Router>

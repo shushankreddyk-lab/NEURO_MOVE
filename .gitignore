@@ -57,6 +57,7 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+eeg-mi-bci-archive-565657a/paper_images/
 
 # Node.js
 node_modules/
